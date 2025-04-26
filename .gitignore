@@ -22,9 +22,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env
-# Allowing .env.local files to be committed
-# .env*.local
+# .env
+# Allowing # .env.local files to be committed
+# # .env*.local
 
 # turbo
 .turbo
