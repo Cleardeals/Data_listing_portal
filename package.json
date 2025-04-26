@@ -7,9 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "sync-env": "node copy-env.js",
-    "build": "npm run sync-env && turbo run build",
-    "dev": "npm run sync-env && turbo run dev",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },

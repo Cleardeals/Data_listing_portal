@@ -31,19 +31,16 @@ A monorepo with three Next.js applications using Turborepo and Supabase.
 
 ### Environment Variables
 
-The project uses a global `.env` file at the root of the project which contains Supabase credentials:
+The project uses a single global `.env` file at the root of the project which contains Supabase credentials:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://kjhgbrywkzhnjqziofvq.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqaGdicnl3a3pobmpxemlvZnZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MTQ2ODYsImV4cCI6MjA2MTE5MDY4Nn0._EgFJRs_-vJvJALd5oM0tFl14BTxpI08hfy5je_TjP4
 ```
 
-These environment variables are automatically synchronized to each application's `.env.local` file when running the development or build scripts.
+Each Next.js application loads these environment variables directly from the root `.env` file using its `next.config.ts`, eliminating the need for individual `.env.local` files in each application directory.
 
-If you need to modify environment variables:
-1. Edit the root `.env` file
-2. Run `npm run sync-env` to synchronize the changes to all applications
-3. Restart your development servers if needed
+If you need to modify environment variables, just edit the root `.env` file - all applications will automatically use the updated values.
 
 ### Running the Project
 
@@ -53,11 +50,7 @@ To run all applications in development mode:
 npm run dev
 ```
 
-This will:
-1. Synchronize environment variables from the root `.env` file to each application
-2. Start the development servers for all applications
-
-The applications will be available at:
+This will start the development servers for all applications. The ports may vary based on what's available on your system, but typically:
 - Web App: http://localhost:3000
 - Data Operator Panel: http://localhost:3001
 - Super Admin Panel: http://localhost:3002
@@ -67,18 +60,15 @@ The applications will be available at:
 To run a specific application:
 
 ```bash
-# Ensure environment variables are synchronized first
-npm run sync-env
-
-# Then run the specific application
+# Run web_app
 cd apps/web_app
 npm run dev
 
-# Or for data_operator_panel
+# Run data_operator_panel
 cd apps/data_operator_panel
 npm run dev
 
-# Or for super_admin_panel
+# Run super_admin_panel
 cd apps/super_admin_panel
 npm run dev
 ```
@@ -91,15 +81,13 @@ To build all applications:
 npm run build
 ```
 
-This will also synchronize environment variables before building.
-
 ## Features
 
 - Monorepo structure using Turborepo
 - Three Next.js applications
 - Shared UI package
 - Supabase integration for database and authentication
-- Centralized environment variables management
+- Centralized environment variables management using a single `.env` file
 
 ## Troubleshooting
 
@@ -110,10 +98,7 @@ If you encounter any issues:
    npm install
    ```
 
-2. Ensure environment variables are properly synchronized:
-   ```bash
-   npm run sync-env
-   ```
+2. Ensure the global `.env` file exists at the root of the project with the correct environment variables
 
 3. If you see errors related to missing SWC dependencies, try reinstalling Next.js in the specific app:
    ```bash
@@ -130,4 +115,4 @@ If you encounter any issues:
 - The UI package is shared across all applications
 - TypeScript is used for type safety
 - Tailwind CSS is used for styling
-- Environment variables are centrally managed in the root `.env` file
+- Environment variables are centrally managed in the root `.env` file and loaded directly by each application
