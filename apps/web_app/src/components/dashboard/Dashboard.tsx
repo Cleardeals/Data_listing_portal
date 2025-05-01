@@ -12,7 +12,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 gap-8">
         <div className="bg-white shadow-sm p-5 rounded-md">
-          <h2 className="text-xl lg:text-2xl font-medium text-gray-700 mb-3">Today's Property</h2>
+          <h2 className="text-xl lg:text-2xl font-medium text-gray-700 mb-3"> Today's  Property</h2>
           <div className="grid grid-cols-5 gap-1">
             <PropertyCountCard 
               title="Residential Rent" 
