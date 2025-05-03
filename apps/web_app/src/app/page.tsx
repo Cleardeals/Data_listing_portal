@@ -7,7 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push("/search");
+    router.push("/dashboard");
   }, [router]);
 
   return (
