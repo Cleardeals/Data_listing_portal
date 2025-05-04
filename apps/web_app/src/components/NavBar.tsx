@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
+
 
 export default function NavBar() {
-  const router = useRouter();
   return (
     <nav className="w-full bg-[#f8f9fa] border-b z-50 shadow-sm sticky top-0">
-      <div className=" mx-auto px-4 py-2.5">
+      
+      <div className="mx-auto px-4 py-2.5">
         <div className="flex items-center justify-between w-full">
           {/* Logo and Brand */}
           <Link href="/" className="flex items-center space-x-3">
             <img src="/favicon.png" alt="TPS" className="h-8 w-8" />
             <span className="text-2xl font-bold text-[#2c3e50]">
-              Techno Property Solution
+              ClearDeals
             </span>
           </Link>
 
@@ -24,8 +23,8 @@ export default function NavBar() {
 
             {/* Navigation Links */}
             <div className="flex items-center space-x-8">
-              <Link
-                href="/"
+              <Link 
+                href="/" 
                 className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors text-lg font-medium"
               >
                 <i className="fas fa-home text-lg"></i>
@@ -46,12 +45,12 @@ export default function NavBar() {
                 <i className="fas fa-user text-lg"></i>
                 <span>Profile</span>
               </Link>
-              <Link
-                href="/logout"
+              <Link 
+                href="/HomeContent" 
                 className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors text-lg font-medium"
               >
-                <i className="fas fa-sign-out-alt text-lg"></i>
-                <span>Logout</span>
+                <i className="fas fa-sign-in-alt text-lg"></i>
+                <span>Login</span>
               </Link>
             </div>
           </div>
