@@ -20,26 +20,32 @@ export default function Dashboard() {
               title="Residential Rent" 
               count={0} 
               bgColor="bg-[#1abc9c]" 
+             
+             
             />
             <PropertyCountCard 
               title="Residential Sell" 
               count={0} 
               bgColor="bg-[#27ae60]" 
+              
             />
             <PropertyCountCard 
               title="Commercial Rent" 
               count={0} 
               bgColor="bg-[#f39c12]" 
+             
             />
             <PropertyCountCard 
               title="Commercial Sell" 
               count={0} 
-              bgColor="bg-[#e74c3c]" 
+              bgColor="bg-[#e74c3c]"
+             
             />
             <PropertyCountCard 
               title="Total Property" 
               count={0} 
               bgColor="bg-[#95a5a6]" 
+             
             />
           </div>
         </div>
@@ -51,26 +57,31 @@ export default function Dashboard() {
               title="Residential Rent" 
               count={37} 
               bgColor="bg-[#1abc9c]" 
+              
             />
             <PropertyCountCard 
               title="Residential Sell" 
               count={55} 
               bgColor="bg-[#27ae60]" 
+             
             />
             <PropertyCountCard 
               title="Commercial Rent" 
               count={22} 
               bgColor="bg-[#f39c12]" 
+              
             />
             <PropertyCountCard 
               title="Commercial Sell" 
               count={6} 
-              bgColor="bg-[#e74c3c]" 
+              bgColor="bg-[#e74c3c]"
+             
             />
             <PropertyCountCard 
               title="Total" 
               count={120} 
-              bgColor="bg-[#95a5a6]" 
+              bgColor="bg-[#95a5a6]"
+              
             />
           </div>
         </div>

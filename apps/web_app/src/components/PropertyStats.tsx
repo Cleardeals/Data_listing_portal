@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const HomeIcon = ({ className }: { className?: string }) => (
@@ -27,10 +28,12 @@ type PropertyStatProps = {
   icon: React.ReactNode;
   bgColor: string;
   textColor: string;
+  Link :string;
 };
 
-const PropertyStat = ({ label, value, icon, bgColor, textColor }: PropertyStatProps) => {
+const PropertyStat = ({ label, value, icon, bgColor, textColor,Link:link }: PropertyStatProps) => {
   return (
+    <Link href={link} className="block w-full">
     <div className={cn("flex items-center w-full h-26", bgColor)}>
       <div className="flex items-center p-2 pl-3 ">
         <div className={cn("text-white", textColor)}>
@@ -42,6 +45,7 @@ const PropertyStat = ({ label, value, icon, bgColor, textColor }: PropertyStatPr
         <span className="text-base font-bold text-white">{value}</span>
       </div>
     </div>
+    </Link>
   );
 };
 
@@ -58,6 +62,8 @@ export const PropertyStats = ({ className }: { className?: string }) => {
         icon={<HomeIcon />}
         bgColor="bg-[#1abc9c]"
         textColor="text-white"
+        Link = "/residential_rent_page"
+        
       />
       
       <PropertyStat
@@ -66,6 +72,7 @@ export const PropertyStats = ({ className }: { className?: string }) => {
         icon={<HomeIcon />}
         bgColor="bg-[#27ae60]"
         textColor="text-white"
+        Link = "/residential_rent_page"
       />
       
       <PropertyStat
@@ -74,6 +81,7 @@ export const PropertyStats = ({ className }: { className?: string }) => {
         icon={<BuildingIcon />}
         bgColor="bg-[#f39c12]"
         textColor="text-white"
+         Link = "/residential_rent_page"
       />
       
       <PropertyStat
@@ -82,6 +90,7 @@ export const PropertyStats = ({ className }: { className?: string }) => {
         icon={<BuildingIcon />}
         bgColor="bg-[#e74c3c]"
         textColor="text-white"
+         Link = "/residential_rent_page"
       />
       
       <PropertyStat
@@ -90,6 +99,7 @@ export const PropertyStats = ({ className }: { className?: string }) => {
         icon={<GridIcon />}
         bgColor="bg-[#95a5a6]"
         textColor="text-white"
+         Link = "/residential_rent_page"
       />
     </div>
   );
