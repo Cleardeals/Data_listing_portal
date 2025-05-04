@@ -1,20 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Landing from '../components/landingpage/landing';
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push("/search");
-  }, [router]);
-
-  return (
-    <main>
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-xl">Redirecting to search...</div>
-      </div>
-    </main>
-  );
+  return <Landing />;
 }

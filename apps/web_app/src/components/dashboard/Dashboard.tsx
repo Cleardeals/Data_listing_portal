@@ -3,10 +3,12 @@
 import { PropertyStats } from "@/components/PropertyStats";
 import { PropertyCountCard } from "./PropertyCountCard";
 import { AreaChart } from "./AreaChart";
+import NavBar from "../NavBar";
 
 export default function Dashboard() {
   return (
     <div className="flex flex-col w-full gap-4 px-2">
+      <NavBar/>
       <PropertyStats/>
       
 
