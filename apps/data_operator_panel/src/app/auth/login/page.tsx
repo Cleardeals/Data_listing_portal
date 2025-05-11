@@ -7,6 +7,12 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
 
+  const checkUserRights = (phone: string, otp: string) => {
+    // Placeholder: Replace with real rights check logic
+    // For now, deny access if phone ends with '0'
+    return !phone.endsWith('0');
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md flex flex-col items-center">
@@ -28,7 +34,13 @@ export default function LoginPage() {
         />
         <button
           className="w-full bg-blue-600 text-white py-3 rounded-md shadow-md font-semibold text-lg hover:bg-blue-700 transition mb-4"
-          onClick={() => router.push("/index")}
+          onClick={() => {
+            if (checkUserRights(phone, otp)) {
+              router.push("/dashboard");
+            } else {
+              router.push("/auth/denied");
+            }
+          }}
         >
           Sign in
         </button>

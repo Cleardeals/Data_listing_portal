@@ -12,7 +12,7 @@ export default function SignupPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md flex flex-col items-center">
         <h2 className="text-2xl font-bold text-center text-blue-600 mb-2">Create Account</h2>
-        <p className="text-center text-black mb-6">Join Cleardeals and simplify your journey to buying, renting, or selling a home.</p>
+        <p className="text-center text-black mb-6">Join Project X.2 to buy the data</p>
         <input
           type="text"
           placeholder="Name"
