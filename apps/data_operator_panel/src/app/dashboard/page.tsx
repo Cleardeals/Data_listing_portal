@@ -41,10 +41,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-center">
           <div className="flex items-center justify-between" style={{ minWidth: 1150 }}>
             {/* Left: Dashboard Name */}
-            <div className="flex-1 text-blue-600 font-bold text-lg">Dash board Name</div>
+            <div className="flex-1 text-blue-600 font-bold text-lg">Data Operator Panel</div>
             {/* Center: Dashboard Name */}
             <div className="flex-1 flex justify-center">
-              <span className="text-blue-600 font-bold text-lg">Dash board Name</span>
+              <span className="text-blue-600 font-bold text-lg">Data Operator Panel</span>
             </div>
             {/* Right: Icons */}
             <div className="flex-1 flex items-center justify-end gap-6">

@@ -2,6 +2,52 @@
 
 import React, { useState } from 'react';
 
+// Define the AddEditPropertyModal component
+const AddEditPropertyModal = ({ 
+  open, 
+  onClose, 
+  mode, 
+  initialData, 
+  onSubmit 
+}: { 
+  open: boolean; 
+  onClose: () => void; 
+  mode: 'edit' | 'add'; 
+  initialData: any; 
+  onSubmit: (data: any) => void;
+}) => {
+  const [data, setData] = useState(initialData || {});
+  
+  if (!open) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
+        <h2 className="text-xl font-bold mb-4 text-gray-900">
+          {mode === 'edit' ? 'Edit' : 'Add'} Property
+        </h2>
+        {/* Form implementation would go here */}
+        <div className="mt-6 flex justify-end gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border rounded hover:bg-gray-100 text-gray-900"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onSubmit(data)}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AddEntryModal = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,6 +64,9 @@ const AddEntryModal = () => {
     status: 'Active'
   });
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState(null);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -28,6 +77,17 @@ const AddEntryModal = () => {
     // Handle form submission here
     console.log(formData);
     setIsModalOpen(false);
+  };
+
+  const handleEdit = (property: typeof formData) => {
+    setEditData(property);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = (data: typeof formData) => {
+    // Handle save edit logic here
+    console.log('Saving edited data:', data);
+    setShowEditModal(false);
   };
 
   return (
@@ -200,6 +260,14 @@ const AddEntryModal = () => {
           </div>
         </div>
       )}
+
+      <AddEditPropertyModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        mode="edit"
+        initialData={editData}
+        onSubmit={handleSaveEdit}
+      />
     </div>
   );
 };
