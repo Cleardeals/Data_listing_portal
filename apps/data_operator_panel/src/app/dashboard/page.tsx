@@ -2,7 +2,7 @@
 import React, { use, useState } from "react";
 import { FaBell, FaUserCircle, FaPlus, FaFilter, FaImages, FaTrash, FaWrench } from "react-icons/fa";
 import BulkUploadModal from "./bulkuploadmodal"; 
-import AddEntryModal from './addPropertyModal';
+import { AddEditPropertyModal } from './addPropertyModal';
 import { EditConfirmationModal } from "./editConfirmationModal";
 import { ConfirmationModal } from "./confirmationModal";
 import { DeleteConfirmationModal } from "./deleteConfirmationModal";
@@ -14,11 +14,27 @@ export default function DashboardPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [editData, setEditData] = useState<any | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   const handleEditConfirm = () => {
     if (selectedRow !== null) {
-      // Perform edit action for selectedRow
-      console.log(`Editing row ${selectedRow}`);
+      // Example: Replace with actual row data retrieval
+      const rowData = {
+        nameContact: '',
+        address: '',
+        premise: '',
+        area: '',
+        rent: '',
+        availability: 'Available',
+        condition: 'New',
+        sqft: '',
+        key: 'Yes',
+        brokerage: '',
+        status: 'Active'
+      };
+      setEditData(rowData);
+      setShowEditForm(true);
     }
     setShowEditModal(false);
   };
@@ -96,7 +112,6 @@ export default function DashboardPage() {
           <button className="px-6 py-2 rounded-full border border-blue-200 bg-white text-black" style={{ minWidth: 146 }}>High To Low</button>
           <div className="flex items-center gap-4 ml-4">
             <BulkUploadModal />
-            <AddEntryModal />
           </div>
         </div>
 
@@ -177,6 +192,15 @@ export default function DashboardPage() {
         onConfirm={handleEditConfirm}
         onClose={() => setShowEditModal(false)}
       />
+      {editData && (
+        <AddEditPropertyModal
+          open={showEditForm}
+          onClose={() => setShowEditForm(false)}
+          mode="edit"
+          initialData={editData}
+          onSubmit={(data: any) => { setShowEditForm(false); /* handle save */ }}
+        />
+      )}
 
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
