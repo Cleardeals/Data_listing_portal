@@ -3,19 +3,35 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mobile === '7417767067' && password === 'admin123') {
-      router.push('/dashboard');
-    } else {
-      setError('Invalid credentials');
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      // Simulated authentication delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (mobile === '7417767067' && password === 'admin123') {
+        // You could set a cookie or localStorage item here to remember the login
+        router.push('/dashboard');
+      } else {
+        setError('Invalid credentials');
+      }
+    } catch (err) {
+      setError('An error occurred during login. Please try again.');
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -23,17 +39,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col bg-[#ededed]">
       {/* Header */}
       <div className="flex items-center px-6 py-3 shadow bg-white">
-        <Image src="/favicon.png" alt="Techno Property Solution" width={40} height={40} className="h-10 mr-3" />
-        <span className="text-3xl text-[#1793a6] font-semibold" style={{ fontFamily: 'Orbitron, sans-serif' }}>
-          Techno Property Solution
-        </span>
+        <Link href="/">
+          <div className="flex items-center">
+            <Image src="/favicon.png" alt="Techno Property Solution" width={40} height={40} className="h-10 mr-3" />
+            <span className="text-3xl text-[#1793a6] font-semibold" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+              Techno Property Solution
+            </span>
+          </div>
+        </Link>
       </div>
 
       {/* Centered Card */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="text-center mb-6">
           <div className="text-[#1793a6] text-xl font-semibold">Welcome To Clear Deals Solution</div>
-          {/* <div className="text-[#1793a6] text-lg font-semibold">Ahmedabad WEST</div> */}
           <div className="text-[#1793a6] text-lg">Total Solution Of Admin Support</div>
         </div>
         <form
@@ -60,6 +79,7 @@ export default function LoginPage() {
                 value={mobile}
                 onChange={e => setMobile(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="mb-6 flex items-center border rounded px-3 py-2 bg-[#f7f7f7]">
@@ -73,14 +93,21 @@ export default function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <button
               type="submit"
               className="w-full bg-[#1793a6] text-white py-2 rounded font-semibold hover:bg-[#12788a] transition"
+              disabled={isLoading}
             >
-              Login
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
+            <div className="mt-4 text-center">
+              <Link href="/" className="text-[#1793a6] hover:underline">
+                Back to Home
+              </Link>
+            </div>
           </div>
         </form>
       </div>
@@ -97,4 +124,4 @@ export default function LoginPage() {
       </footer>
     </div>
   );
-} 
+}

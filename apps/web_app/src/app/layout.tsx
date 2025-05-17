@@ -2,7 +2,6 @@
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavBarWrapper from "@/components/NavBarWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,8 +24,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <NavBarWrapper />
-        <div className="mx-auto px-4 py-2.5">
+        <div className="mx-auto">
           {children}
         </div>
       </body>
