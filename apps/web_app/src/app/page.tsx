@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import logo from '../../public/image.png'; // Assuming you've moved the logo to public directory
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState<number>(0);
-  // Using local image paths that don't require special configuration
+  
+  // Using reliable web-hosted images instead of local ones that don't exist
   const slideImages: string[] = [
-    '/property-analytics.jpg',
-    '/property-image.jpg',
-    '/digital-property-interface.jpg',
+    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3',
+    'https://images.unsplash.com/photo-1582407947304-fd86f028f716?ixlib=rb-4.0.3',
+    'https://images.unsplash.com/photo-1560184897-ae75f418493e?ixlib=rb-4.0.3'
   ];
 
   useEffect(() => {
@@ -42,7 +42,10 @@ export default function Home() {
       {/* Navbar */}
       <nav className="flex justify-between items-center bg-white px-5 py-4 shadow-md">
         <Link href="/" className="flex items-center">
-          <Image src={logo} width={200} height={60} alt=""/>
+          {/* Using a placeholder logo div until logo image is available */}
+          <div className="w-[200px] h-[60px] flex items-center justify-center bg-blue-100 text-blue-800 font-semibold text-xl">
+            project X
+          </div>
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/" className="text-blue-500 font-medium">HOME</Link>
@@ -72,12 +75,12 @@ export default function Home() {
           style={{ transform: `translateX(-${currentSlide * 100}%)`, width: `${slideImages.length * 100}%` }}>
           {slideImages.map((src: string, i: number) => (
             <div className="w-full flex-shrink-0 h-[500px] relative" key={i}>
-              {/* Fallback */}
+              {/* Fallback in case image fails to load */}
               <div 
                 className="absolute inset-0 bg-gray-300 flex items-center justify-center"
                 style={{ backgroundColor: i % 2 === 0 ? '#f0f9ff' : '#e6f7ff' }}
               >
-                <span className="text-gray-500">Property Image {i+1}</span>
+                <span className="text-gray-500 text-xl font-medium">Property Image {i+1}</span>
               </div>
               <Image 
                 src={src} 
@@ -85,6 +88,7 @@ export default function Home() {
                 fill 
                 className="object-cover"
                 onError={(e) => {
+                  // Hide the image on error and show the background
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
                 priority={i === 0}
