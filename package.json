@@ -23,6 +23,8 @@
   },
   "packageManager": "npm@8.19.4",
   "dependencies": {
-    "@radix-ui/themes": "^3.2.1"
+    "@radix-ui/themes": "^3.2.1",
+    "@types/recharts": "^1.8.29",
+    "recharts": "^2.15.3"
   }
 }
