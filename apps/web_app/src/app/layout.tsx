@@ -33,6 +33,7 @@ export default function RootLayout({
 
   // Don't show navbar on login page
   const showNavBar = pathname !== "/login";
+  const isHomePage = pathname === "/";
 
   return (
     <html lang="en">
@@ -40,7 +41,8 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {showNavBar && (
+        {/* Only render header if not on homepage */}
+        {!isHomePage && showNavBar && (
           <nav className="bg-white shadow-md sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between h-16">
