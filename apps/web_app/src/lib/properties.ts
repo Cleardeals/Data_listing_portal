@@ -1,4 +1,4 @@
-import { Property } from "@/types/property";
+import { Property } from "@/lib/property";
 
 export const propertyData: Property[] = [
   {

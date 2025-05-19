@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Property } from "@/types/property";
-import { propertyData } from "@/data/properties";
+import { Property } from "@/lib/property";
+import { propertyData } from "@/lib/properties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
