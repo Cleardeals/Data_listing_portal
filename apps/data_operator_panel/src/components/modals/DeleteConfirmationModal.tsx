@@ -1,4 +1,4 @@
-import { ConfirmationModal } from './confirmationModal';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface DeleteModalProps {
   isOpen: boolean;

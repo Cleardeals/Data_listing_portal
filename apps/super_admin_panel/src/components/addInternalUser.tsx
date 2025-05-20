@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
+import { UserFormData, TableUser, availableRoles } from '../lib/internalUsers';
 
-interface AddEditUserModalProps {
+interface AddEditInternalUserModalProps {
   open: boolean;
   onClose: () => void;
   mode?: 'add' | 'edit';
-  initialData?: {
-    name: string;
-    email: string;
-    business: string;
-    contact: string;
-    permission: string;
-  };
-  onSubmit?: (data: any) => void;
+  userData?: TableUser | null;
+  onSave: (data: UserFormData) => void;
 }
 
 // Define an interface for the errors object
@@ -19,18 +14,29 @@ interface FormErrors {
   [key: string]: string | null;
 }
 
-const AddEditUserModal: React.FC<AddEditUserModalProps> = ({ 
-  open, 
-  onClose, 
+const AddEditInternalUserModal: React.FC<AddEditInternalUserModalProps> = ({
+  open,
+  onClose,
   mode = 'add',
-  initialData = { name: '', email: '', business: '', contact: '', permission: 'Permission 1' },
-  onSubmit 
+  userData = null,
+  onSave
 }) => {
-  const [formData, setFormData] = useState(initialData);
+  // Initialize form data based on mode and userData - removed permission field
+  const initialData = mode === 'edit' && userData ? {
+    name: userData.name || '',
+    email: userData.email || '',
+    role: userData.role || '',
+    contact: userData.contact || ''
+  } : {
+    name: '',
+    email: '',
+    role: '',
+    contact: ''
+  };
+
+  const [formData, setFormData] = useState<UserFormData>(initialData);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  if (!open) return null;
-  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -56,6 +62,7 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
+    if (!formData.role.trim()) newErrors.role = 'Role is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -63,10 +70,12 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
   
   const handleSubmit = () => {
     if (validate()) {
-      onSubmit && onSubmit(formData);
+      onSave(formData);
       onClose();
     }
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -74,7 +83,7 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
           <h2 className="text-xl font-bold text-gray-800">
-            {mode === 'edit' ? 'Edit User' : 'Add Entry'}
+            {mode === 'edit' ? 'Edit Internal User' : 'Add Internal User'}
           </h2>
           <button 
             onClick={onClose} 
@@ -112,13 +121,19 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
           </div>
 
           <div className="group">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Business</label>
-            <input
-              name="business"
-              value={formData.business}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              name="role"
+              value={formData.role}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-500 transition-all duration-200"
-            />
+              className={`w-full px-3 py-2 border ${errors.role ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-500 transition-all duration-200 bg-white`}
+            >
+              <option value="">Select Role</option>
+              {availableRoles.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+            {errors.role && <p className="mt-1 text-sm text-red-500">{errors.role}</p>}
           </div>
 
           <div className="group">
@@ -130,20 +145,6 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-500 transition-all duration-200"
             />
           </div>
-
-          <div className="group">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Permission</label>
-            <select
-              name="permission"
-              value={formData.permission}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-500 transition-all duration-200 bg-white"
-            >
-              <option>Permission 1</option>
-              <option>Permission 2</option>
-              <option>Permission 3</option>
-            </select>
-          </div>
         </div>
 
         {/* Action Buttons */}
@@ -152,7 +153,7 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
             onClick={handleSubmit}
             className="flex-1 py-2 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
           >
-            {mode === 'edit' ? 'Save Changes' : 'Add Entry'}
+            {mode === 'edit' ? 'Save Changes' : 'Add User'}
           </button>
           <button
             onClick={onClose}
@@ -166,4 +167,4 @@ const AddEditUserModal: React.FC<AddEditUserModalProps> = ({
   );
 };
 
-export default AddEditUserModal;
+export default AddEditInternalUserModal;

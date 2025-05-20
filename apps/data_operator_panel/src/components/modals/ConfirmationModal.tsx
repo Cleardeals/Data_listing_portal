@@ -1,4 +1,4 @@
-// ConfirmationModal.tsx (reusable component)
+// Reusable confirmation modal component
 interface ConfirmationModalProps {
   isOpen: boolean;
   message: string;
