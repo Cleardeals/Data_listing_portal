@@ -19,6 +19,15 @@ export default function DashboardPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [propertyData, setPropertyData] = useState<PropertyRow[]>([]);
   const [searchMode, setSearchMode] = useState<'default' | 'prompt'>('default');
+  const [promptInput, setPromptInput] = useState("");
+  const [filterValues, setFilterValues] = useState({
+    state: "State",
+    city: "Ahmedabad",
+    area: "Area",
+    type: "type",
+    subtype: "Sub-type",
+    budget: "Budget"
+  });
 
   useEffect(() => {
     // Fetch property data when component mounts
@@ -87,6 +96,19 @@ export default function DashboardPage() {
     setShowAddForm(false);
   };
 
+  // Search handler
+  const handleSearch = () => {
+    if (searchMode === 'prompt') {
+      // Handle prompt-based search
+      console.log('Prompt search:', promptInput);
+      // Place your prompt search logic here
+    } else {
+      // Handle filter-based search
+      console.log('Filter search:', filterValues);
+      // Place your filter search logic here
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
 
@@ -114,34 +136,34 @@ export default function DashboardPage() {
               <FaRobot className={searchMode === 'prompt' ? 'text-white' : 'text-blue-400'} />
             </span>
           </button>
-          {/* Dropdown Filters */}
+          {/* Prompt or Filter UI */}
           {searchMode === 'prompt' ? (
-            // Prompt Search Input
             <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
               <input
                 className="flex-1 px-4 py-2 rounded bg-white text-black outline-none"
                 placeholder="Search by Specification"
+                value={promptInput}
+                onChange={e => setPromptInput(e.target.value)}
               />
             </div>
           ) : (
-            // Dropdown Filters
             <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.state} onChange={e => setFilterValues(v => ({ ...v, state: e.target.value }))}>
                 <option>State</option>
               </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.city} onChange={e => setFilterValues(v => ({ ...v, city: e.target.value }))}>
                 <option>Ahmedabad</option>
               </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.area} onChange={e => setFilterValues(v => ({ ...v, area: e.target.value }))}>
                 <option>Area</option>
               </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.type} onChange={e => setFilterValues(v => ({ ...v, type: e.target.value }))}>
                 <option>type</option>
               </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.subtype} onChange={e => setFilterValues(v => ({ ...v, subtype: e.target.value }))}>
                 <option>Sub-type</option>
               </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.budget} onChange={e => setFilterValues(v => ({ ...v, budget: e.target.value }))}>
                 <option>Budget</option>
               </select>
             </div>
@@ -149,8 +171,8 @@ export default function DashboardPage() {
           {/* Search Icon */}
           <button
             className="flex items-center border-2 rounded-lg px-2 py-1 ml-2"
-            onClick={() => setSearchMode('prompt')}
-            title="Switch to prompt search"
+            onClick={handleSearch}
+            title="Search"
           >
             <span className="p-2">
               <FaSearch className="text-blue-600" />
