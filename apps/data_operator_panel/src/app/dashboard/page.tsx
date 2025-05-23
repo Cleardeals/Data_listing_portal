@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { FaBell, FaUserCircle, FaFilter, FaImages, FaTrash, FaWrench, FaPlus } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaFilter, FaImages, FaTrash, FaWrench, FaPlus, FaSearch, FaRobot } from "react-icons/fa";
 import BulkUploadButton from "@/components/modals/BulkUploadModal"; 
 import { AddEditPropertyModal } from "@/components/modals/AddEditPropertyModal";
 import { MdAddCall } from "react-icons/md";
@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [propertyData, setPropertyData] = useState<PropertyRow[]>([]);
+  const [searchMode, setSearchMode] = useState<'default' | 'prompt'>('default');
 
   useEffect(() => {
     // Fetch property data when component mounts
@@ -101,37 +102,69 @@ export default function DashboardPage() {
       <div className="px-8 pt-8 pb-2 border-b border-blue-200">
         {/* <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} /> */}
         <div className="flex items-center justify-center mt-6">
-          <div className="flex items-center border-2 rounded-lg px-2 py-1 mr-18">
-
-            <span className="p-2"><FaImages className="text-blue-400" /></span>
-          </div>
-          <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
-            <select className="mx-2 px-2 py-1 rounded bg-white text-black">
-              <option>State</option>
-            </select>
-            <select className="mx-2 px-2 py-1 rounded bg-white text-black">
-              <option>Ahmedabad</option>
-            </select>
-            <select className="mx-2 px-2 py-1 rounded bg-white text-black">
-              <option>Area</option>
-            </select>
-            <select className="mx-2 px-2 py-1 rounded bg-white text-black">
-              <option>type</option>
-            </select>
-            <select className="mx-2 px-2 py-1 rounded bg-white text-black">
-              <option>Sub-type</option>
-            </select>
-            <select className="mx-2 px-2 py-1 rounded bg-white text-black">
-              <option>Budget</option>
-            </select>
-            {/* <span className="p-2"><FaFilter className="text-blue-400" /></span> */}
-          </div>
-          <div className="flex items-center border-2 rounded-lg px-2 py-1 ml-18">
-
-            <span className="p-2"><FaFilter className="text-blue-400" /></span>
-          </div>
-          {/* Bulk and Add Buttons */}
-
+          {/* Robot Toggle Button */}
+          <button
+            className={`flex items-center border-2 rounded-lg px-2 py-1 mr-4 transition-colors duration-200 ${
+              searchMode === 'prompt' ? 'bg-blue-600' : 'bg-white'
+            }`}
+            onClick={() => setSearchMode(searchMode === 'prompt' ? 'default' : 'prompt')}
+            title="Toggle AI Search"
+          >
+            <span className="p-2">
+              <FaRobot className={searchMode === 'prompt' ? 'text-white' : 'text-blue-400'} />
+            </span>
+          </button>
+          {/* Dropdown Filters */}
+          {searchMode === 'prompt' ? (
+            // Prompt Search Input
+            <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
+              <input
+                className="flex-1 px-4 py-2 rounded bg-white text-black outline-none"
+                placeholder="Search by Specification"
+              />
+            </div>
+          ) : (
+            // Dropdown Filters
+            <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+                <option>State</option>
+              </select>
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+                <option>Ahmedabad</option>
+              </select>
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+                <option>Area</option>
+              </select>
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+                <option>type</option>
+              </select>
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+                <option>Sub-type</option>
+              </select>
+              <select className="mx-2 px-2 py-1 rounded bg-white text-black">
+                <option>Budget</option>
+              </select>
+            </div>
+          )}
+          {/* Search Icon */}
+          <button
+            className="flex items-center border-2 rounded-lg px-2 py-1 ml-2"
+            onClick={() => setSearchMode('prompt')}
+            title="Switch to prompt search"
+          >
+            <span className="p-2">
+              <FaSearch className="text-blue-600" />
+            </span>
+          </button>
+          {/* Filter Button */}
+          <button
+            className="flex items-center border-2 rounded-lg px-2 py-1 ml-2"
+            onClick={() => setSearchMode('default')}
+          >
+            <span className="p-2">
+              <FaFilter className="text-blue-400" />
+            </span>
+          </button>
         </div>
         {/* Filter Buttons */}
         <div className="flex items-center justify-center mt-4 gap-2" style={{ minWidth: 900 }}>
