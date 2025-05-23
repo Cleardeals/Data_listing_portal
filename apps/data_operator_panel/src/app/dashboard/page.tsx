@@ -3,13 +3,14 @@ import React, { useState, useEffect } from "react";
 import { FaBell, FaUserCircle, FaFilter, FaImages, FaTrash, FaWrench, FaPlus } from "react-icons/fa";
 import BulkUploadButton from "@/components/modals/BulkUploadModal"; 
 import { AddEditPropertyModal } from "@/components/modals/AddEditPropertyModal";
+import { MdAddCall } from "react-icons/md";
 import { EditConfirmationModal } from "@/components/modals/EditConfirmationModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { fetchPropertyData, PropertyRow } from "@/lib/propertyData";
 
 export default function DashboardPage() {
-
+  const [showProfile, setShowProfile] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
@@ -89,22 +90,16 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-white flex flex-col">
 
       {/* Header Section */}
-      <div className="px-8 pt-8 pb-2 border-b border-blue-200">
-        <div className="flex items-center justify-center">
-          <div className="flex items-center justify-between" style={{ minWidth: 1150 }}>
-            {/* Left: Dashboard Name */}
-            <div className="flex-1 text-blue-600 font-bold text-lg">Data Operator Panel</div>
-            {/* Center: Dashboard Name */}
-            <div className="flex-1 flex justify-center">
-              <span className="text-blue-600 font-bold text-lg">Data Operator Panel</span>
-            </div>
-            {/* Right: Icons */}
-            <div className="flex-1 flex items-center justify-end gap-6">
-              <FaBell className="text-black text-2xl cursor-pointer" />
-              <FaUserCircle className="text-black text-2xl cursor-pointer" />
-            </div>
-          </div>
+      <header className="dashboard-header flex justify-between items-center py-4 px-8 border-b bg-white shadow-sm sticky top-0 z-50 w-full ">
+        <div className="text-xl font-semibold text-blue-600">Data Operator Panel</div>
+        <div className="flex items-center space-x-6">
+          <button title="Add User" className="text-2xl"><MdAddCall className="text-blue-500" /></button>
+          <button title="Notifications" className="text-2xl"><FaBell className="text-blue-500" /></button>
+          <button title="Profile" className="text-2xl" onClick={() => setShowProfile(true)}><FaUserCircle className="text-blue-500" /></button>
         </div>
+      </header>
+      <div className="px-8 pt-8 pb-2 border-b border-blue-200">
+        {/* <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} /> */}
         <div className="flex items-center justify-center mt-6">
           <div className="flex items-center border-2 rounded-lg px-2 py-1 mr-18">
 
