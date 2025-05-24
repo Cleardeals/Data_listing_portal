@@ -50,10 +50,10 @@ export default function Home() {
           </h2>
           <div className="flex justify-center">
             <button
-              onClick={() => router.push("/auth/signup")}
+              onClick={() => router.push("/auth/login")}
               className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Sign up now
+              Login now to your account
             </button>
           </div>
         </div>
