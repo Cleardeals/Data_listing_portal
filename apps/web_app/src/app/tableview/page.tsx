@@ -5,6 +5,7 @@ import { Property } from "@/lib/property";
 import { propertyData } from "@/lib/properties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const Page = () => {
   const [properties, setProperties] = useState<Property[]>(propertyData);
@@ -97,13 +98,14 @@ const Page = () => {
     today: 'bg-[#0b7082] text-white hover:bg-[#0b7082]/75',
     yesterday: 'bg-[#0b7082] text-white hover:bg-[#0b7082]/75',
     all: 'bg-[#fff] text-black hover:bg-[#ccc]',
-  };
+    };
 
   return (
-    <div className='font-sans'>
-      <div>
-        <div className='font-medium text-lg mt-[22px] ml-[22px] block box-header text-[#337ab7] h-4'>Residential Rent Property Listing</div>
-        <div className='box-border block clear-both mb-[40px]'></div>
+    <ProtectedRoute>
+      <div className='font-sans'>
+        <div>
+          <div className='font-medium text-lg mt-[22px] ml-[22px] block box-header text-[#337ab7] h-4'>Residential Rent Property Listing</div>
+          <div className='box-border block clear-both mb-[40px]'></div>
 
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
           <div className='w-full sm:w-full md:w-1/3 lg:w-1/3 text-center lg:text-left mb-4 flex space-x-2'>
@@ -208,6 +210,7 @@ const Page = () => {
         </table>
       </div>
     </div>
+    </ProtectedRoute>
   );
 };
 

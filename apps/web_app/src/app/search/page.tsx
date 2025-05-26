@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // SearchResults component integrated directly
 function SearchResults({ properties }: { properties: Property[] }) {
@@ -463,29 +464,31 @@ export default function SearchPage() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Search Properties
-          </h1>
-          <div className="flex justify-end mb-4">
-            <Button
-              onClick={() => setShowSearch((prev) => !prev)}
-              className="text-black transition duration-300 bg-white hover:bg-gray-300"
-            >
-              {showSearch ? "Hide Search Panel" : "Show Search Panel"}
-            </Button>
-          </div>
-          <div className="border rounded-lg shadow-md p-6 bg-white">
-            {showSearch ? (
-              <FilterForm onSearch={handleSearch} />
-            ) : (
-              <SearchResults properties={searchResult} />
-            )}
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-100">
+        <div className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Search Properties
+            </h1>
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={() => setShowSearch((prev) => !prev)}
+                className="text-black transition duration-300 bg-white hover:bg-gray-300"
+              >
+                {showSearch ? "Hide Search Panel" : "Show Search Panel"}
+              </Button>
+            </div>
+            <div className="border rounded-lg shadow-md p-6 bg-white">
+              {showSearch ? (
+                <FilterForm onSearch={handleSearch} />
+              ) : (
+                <SearchResults properties={searchResult} />
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

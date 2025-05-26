@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { ChartData, ChartOptions } from "chart.js";
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Icon components moved from PropertyStats.tsx
 const HomeIcon = ({ className }: { className?: string }) => (
@@ -388,9 +390,22 @@ const AreaChart = ({ type, className }: AreaChartProps) => {
 
 // Main Dashboard page component
 export default function DashboardPage() {
+  const { user } = useAuth();
+
   return (
-    <div className="flex flex-col w-full gap-4 px-2">
-      <PropertyStats />
+    <ProtectedRoute>
+      <div className="flex flex-col w-full gap-4 px-2">
+        {/* Welcome Message */}
+        {user && (
+          <div className="bg-white shadow-sm p-4 rounded-md mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Welcome back, {user.email}!
+            </h1>
+            <p className="text-gray-600">Role: {user.role}</p>
+          </div>
+        )}
+        
+        <PropertyStats />
 
       <div className="grid grid-cols-2 gap-8">
         <div className="bg-white shadow-sm p-5 rounded-md">
@@ -488,6 +503,7 @@ export default function DashboardPage() {
           <AreaChart type="commercial-sell" />
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

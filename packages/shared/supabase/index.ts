@@ -9,8 +9,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-// Create and export the Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create and export the Supabase client with auth options
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false, // Disable automatic session persistence to prevent magic link auto-login
+    detectSessionInUrl: false, // Disable automatic session detection from URL to prevent magic link issues
+    flowType: 'pkce'
+  }
+});
 
 // Export components
 export { default as SupabaseTestComponent } from './components/SupabaseTestComponent';
