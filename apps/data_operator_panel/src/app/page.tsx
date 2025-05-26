@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { SupabaseTestComponent } from "../../../../packages/shared/supabase";
 
 export default function Home() {
   const router = useRouter();
@@ -39,6 +40,9 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* Supabase Test Component */}
+          <SupabaseTestComponent />
         </div>
       </main>
 

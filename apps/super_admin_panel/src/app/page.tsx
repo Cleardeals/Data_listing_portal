@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { SupabaseTestComponent } from "../../../../packages/shared/supabase";
 
 export default function Home() {
   const router = useRouter();
@@ -24,6 +25,9 @@ export default function Home() {
             Simplify your data organization, access, and analytics with our comprehensive platform. 
             Designed for businesses that value efficiency and insights.
           </p>
+          
+          {/* Supabase Test Component */}
+          <SupabaseTestComponent />
           
           <div className="mt-10 space-y-4 sm:space-y-0 sm:mx-auto sm:inline-grid sm:grid-cols-1 sm:gap-5">
             <button

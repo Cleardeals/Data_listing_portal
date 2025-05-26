@@ -1,7 +1,7 @@
-import type { NextConfig } from "next";
-import * as path from 'path';
-import * as fs from 'fs';
-import * as dotenv from 'dotenv';
+import type { NextConfig } from 'next';
+import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
 
 // Load environment variables from the root .env file
 const rootEnvPath = path.resolve(process.cwd(), '../../.env');
@@ -14,7 +14,9 @@ const env = {
 };
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    domains: ['images.unsplash.com'],
+  },
   env
 };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { SupabaseTestComponent } from '../../../../packages/shared/supabase';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState<number>(0);
@@ -126,6 +127,9 @@ export default function Home() {
         <p className="text-gray-700 mt-2"> 
           Our platform streamlines property transactions with transparent processes and expert guidance.
         </p>
+        
+        {/* Supabase Test Component */}
+        <SupabaseTestComponent />
       </div>
 
       {/* Footer */}
