@@ -507,9 +507,17 @@ export default function SearchPage() {
     }
   };
 
-  // Load properties on component mount
+  // Load properties on component mount and set up auto-refresh
   useEffect(() => {
     fetchProperties();
+    
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchProperties();
+    }, 30000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   // Initialize search results with all properties when properties load
@@ -586,16 +594,9 @@ export default function SearchPage() {
             <div className="flex justify-end mb-4">
               <Button
                 onClick={() => setShowSearch((prev) => !prev)}
-                className="text-black transition duration-300 bg-white hover:bg-gray-300 mr-2"
+                className="text-black transition duration-300 bg-white hover:bg-gray-300"
               >
                 {showSearch ? "Hide Search Panel" : "Show Search Panel"}
-              </Button>
-              <Button
-                onClick={fetchProperties}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white transition duration-300"
-              >
-                {loading ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
             <div className="border rounded-lg shadow-md p-6 bg-white">
