@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from "react";
-import { dummyProperties, Property } from "@/lib/dummyProperties";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { PropertyData } from "@/lib/dummyProperties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { supabase } from "../../../../../packages/shared/supabase";
 
 // Extract rent utility function
 const extractRent = (rentString: string) => {
@@ -17,24 +18,70 @@ const extractRent = (rentString: string) => {
 };
 
 // SearchResults component integrated directly
-function SearchResults({ properties }: { properties: Property[] }) {
+function SearchResults({ 
+  properties, 
+  loading, 
+  error 
+}: { 
+  properties: PropertyData[];
+  loading: boolean;
+  error: string | null;
+}) {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+        <div className="text-lg text-gray-600">Loading properties...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-lg text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="space-y-4">
       {properties.length > 0 ? (
-        properties.map((property) => (
-          <div key={property.id}>
-            <h2>{property.nameContact}</h2>
-            <p>{property.description}</p>
-            <p>{property.rent}</p>
-            <p>{property.availability}</p>
-            <p>{property.condition}</p>
-            <p>{property.sqft}</p>
-            <p>{property.brokerage}</p>
-            <p>{property.status}</p>
+        <>
+          <div className="mb-4 text-sm text-gray-600">
+            Found {properties.length} {properties.length === 1 ? 'property' : 'properties'}
           </div>
-        ))
+          {properties.map((property) => (
+            <div key={property.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">{property.name} {property.contact}</h2>
+                  <p className="text-gray-600 mb-2">{property.specialnote}</p>
+                  <div className="space-y-1">
+                    <p className="text-green-600 font-medium">💰 Rent: {property.rent}</p>
+                    <p className="text-gray-600">🏠 Type: {property.availability}</p>
+                    <p className="text-gray-600">📍 Area: {property.area}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-gray-600">🛋️ Condition: {property.condition}</p>
+                  <p className="text-gray-600">📐 Size: {property.sqft || 'NA'} sqft</p>
+                  <p className="text-gray-600">💼 Brokerage: {property.brokerage}</p>
+                  <p className="text-gray-600">📊 Status: {property.status}</p>
+                  {property.premium && (
+                    <p className="text-gray-600">ℹ️ Details: {property.premium}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </>
       ) : (
-        <p>No properties found</p>
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-4">🏠</div>
+          <p className="text-gray-600 text-lg">No properties found</p>
+          <p className="text-gray-500 text-sm mt-2">Try adjusting your search filters</p>
+        </div>
       )}
     </div>
   );
@@ -48,7 +95,7 @@ function FilterForm({ onSearch }: {
     area: string[];
     availability: string[];
     availabilityType: string[];
-    description1: string[];
+    premium: string[];
     budgetMin: string;
     budgetMax: string;
     sqftFrom: string;
@@ -65,7 +112,7 @@ function FilterForm({ onSearch }: {
     area: [] as string[],
     availability: [] as string[],
     availabilityType: [] as string[],
-    description1: [] as string[],
+    premium: [] as string[],
     budgetMin: "",
     budgetMax: "",
     sqftFrom: "",
@@ -155,7 +202,7 @@ function FilterForm({ onSearch }: {
       | "area"
       | "availability"
       | "availabilityType"
-      | "description1"
+      | "premium"
     >,
     value: string
   ) => {
@@ -312,19 +359,19 @@ function FilterForm({ onSearch }: {
                   ))}
                 </td>
               </tr>
-              {/* description1 */}
+              {/* premium */}
               <tr className="border-b border-gray-300">
                 <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
-                  Description1:
+                  Premium:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
                   {descriptionOptions.map((type) => (
                     <div key={type} className="flex items-center space-x-2">
                       <Checkbox
                         id={type}
-                        checked={filters.description1.includes(type)}
+                        checked={filters.premium.includes(type)}
                         onCheckedChange={() =>
-                          handleCheckboxChange("description1", type)
+                          handleCheckboxChange("premium", type)
                         }
                       />
                       <Label htmlFor={type} className="text-sm">
@@ -431,7 +478,46 @@ function FilterForm({ onSearch }: {
 
 export default function SearchPage() {
   const [showSearch, setShowSearch] = useState(true);
-  const [searchResult, setSearchResult] = useState<Property[]>([]);
+  const [searchResult, setSearchResult] = useState<PropertyData[]>([]);
+  const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch properties from Supabase
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error: supabaseError } = await supabase
+        .from('propertydata')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (supabaseError) {
+        throw supabaseError;
+      }
+
+      setProperties(data || []);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch properties');
+      console.error('Error fetching properties:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load properties on component mount
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  // Initialize search results with all properties when properties load
+  useEffect(() => {
+    if (properties.length > 0) {
+      setSearchResult(properties);
+    }
+  }, [properties]);
   
   const handleSearch = (filters: {
     propertyType: string[];
@@ -439,31 +525,36 @@ export default function SearchPage() {
     area: string[];
     availability: string[];
     availabilityType: string[];
-    description1: string[];
+    premium: string[];
     budgetMin: string;
     budgetMax: string;
     sqftFrom: string;
     sqftTo: string;
-    premise?: string;
+    premise: string;
   }) => {
-    const filtered = dummyProperties.filter((property) => {
+    // Reset error state when performing search
+    setError(null);
+    
+    const filtered = properties.filter((property) => {
       return (
         (filters.propertyType.length === 0 ||
-          filters.propertyType.includes(property.availability)) &&
+          (property.availability && filters.propertyType.includes(property.availability))) &&
         (filters.condition.length === 0 ||
-          filters.condition.includes(property.condition)) &&
+          (property.condition && filters.condition.includes(property.condition))) &&
         (filters.area.length === 0 || 
-          filters.area.includes(property.area)) &&
+          (property.area && filters.area.includes(property.area))) &&
         (filters.availability.length === 0 ||
-          filters.availability.includes(property.availability)) &&
-        (filters.description1.length === 0 ||
-          filters.description1.some((desc) =>
-            property.description1?.toLowerCase().includes(desc.toLowerCase())
+          (property.availability && filters.availability.includes(property.availability))) &&
+        (filters.premium.length === 0 ||
+          filters.premium.some((desc) =>
+            property.premium?.toLowerCase().includes(desc.toLowerCase())
           )) &&
         (!filters.budgetMin ||
           parseInt(filters.budgetMin) <= extractRent(String(property.rent))) &&
         (!filters.budgetMax ||
-          parseInt(filters.budgetMax) >= extractRent(String(property.rent)))
+          parseInt(filters.budgetMax) >= extractRent(String(property.rent))) &&
+        (!filters.premise ||
+          property.premise?.toLowerCase().includes(filters.premise.toLowerCase()))
       );
     });
     setSearchResult(filtered);
@@ -478,19 +569,44 @@ export default function SearchPage() {
             <h1 className="text-2xl font-semibold text-gray-900">
               Search Properties
             </h1>
+            
+            {/* Error display */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                <p>Error loading properties: {error}</p>
+                <Button 
+                  onClick={fetchProperties}
+                  className="mt-2 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
+            
             <div className="flex justify-end mb-4">
               <Button
                 onClick={() => setShowSearch((prev) => !prev)}
-                className="text-black transition duration-300 bg-white hover:bg-gray-300"
+                className="text-black transition duration-300 bg-white hover:bg-gray-300 mr-2"
               >
                 {showSearch ? "Hide Search Panel" : "Show Search Panel"}
+              </Button>
+              <Button
+                onClick={fetchProperties}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white transition duration-300"
+              >
+                {loading ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
             <div className="border rounded-lg shadow-md p-6 bg-white">
               {showSearch ? (
                 <FilterForm onSearch={handleSearch} />
               ) : (
-                <SearchResults properties={searchResult} />
+                <SearchResults 
+                  properties={searchResult} 
+                  loading={loading}
+                  error={error}
+                />
               )}
             </div>
           </div>

@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Property, PropertyData, convertPropertyDataToProperty, supabaseHelpers } from "@/lib/dummyProperties";
+import { PropertyData, supabaseHelpers } from "@/lib/dummyProperties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { supabase } from "../../../../../packages/shared/supabase";
 
 const Page = () => {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<PropertyData[]>([]);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedDescriptionId, setExpandedDescriptionId] = useState<number | null>(null);
@@ -31,12 +31,8 @@ const Page = () => {
         throw supabaseError;
       }
 
-      const convertedProperties = data.map((item: PropertyData) => 
-        convertPropertyDataToProperty(item)
-      );
-      
-      setProperties(convertedProperties);
-      setFilteredProperties(convertedProperties);
+      setProperties(data || []);
+      setFilteredProperties(data || []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
@@ -50,7 +46,8 @@ const Page = () => {
     fetchProperties();
   }, []);
 
-  const parseDate = React.useCallback((ddmmyyyy: string) => {
+  const parseDate = React.useCallback((ddmmyyyy: string | null) => {
+    if (!ddmmyyyy) return '';
     return supabaseHelpers.formatDateForComparison(ddmmyyyy);
   }, []);
 
@@ -63,7 +60,7 @@ const Page = () => {
       const yesterday = supabaseHelpers.getYesterdayDate();
 
       if (tab === 'imp') {
-        filtered = filtered.filter((p) => p.important);
+        filtered = filtered.filter((p) => Boolean(p.important));
       } else if (tab === 'today') {
         filtered = filtered.filter((p) => {
           const propdate = parseDate(p.date);
@@ -95,7 +92,7 @@ const Page = () => {
 
       // Update local state
       const updatedProperties = properties.map((property) =>
-        property.id === id ? { ...property, important: !property.important } : property
+        property.id === id ? { ...property, important: newImportantValue } : property
       );
       setProperties(updatedProperties);
     } catch (err: unknown) {
@@ -109,7 +106,7 @@ const Page = () => {
       const property = properties.find(p => p.id === id);
       if (!property) return;
 
-      const newRentedOutValue = !property.rentedOut;
+      const newRentedOutValue = !property.rentedout;
       
       const { error } = await supabase
         .from('propertydata')
@@ -120,7 +117,7 @@ const Page = () => {
 
       // Update local state
       const updatedProperties = properties.map((property) =>
-        property.id === id ? { ...property, rentedOut: !property.rentedOut } : property
+        property.id === id ? { ...property, rentedout: newRentedOutValue } : property
       );
       setProperties(updatedProperties);
     } catch (err: unknown) {
@@ -137,7 +134,7 @@ const Page = () => {
     const yesterday = supabaseHelpers.getYesterdayDate();
 
     if (tab === 'imp') {
-      filtered = filtered.filter((p) => p.important);
+      filtered = filtered.filter((p) => Boolean(p.important));
     } else if (tab === 'today') {
       filtered = filtered.filter((p) => {
         const propdate = parseDate(p.date);
@@ -153,9 +150,10 @@ const Page = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    const searchedProperties = properties.filter((property) =>
-      property.nameContact.toLowerCase().includes(term) || property.premise.toLowerCase().includes(term)
-    );
+    const searchedProperties = properties.filter((property) => {
+      const nameContact = property.name + (property.contact ? `\n${property.contact}` : '');
+      return nameContact.toLowerCase().includes(term) || (property.premise || '').toLowerCase().includes(term);
+    });
     setFilteredProperties(searchedProperties);
     setActiveTab('all');
   };
@@ -253,27 +251,29 @@ const Page = () => {
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', textAlign: 'center' }}>
                         <input
                           type="checkbox"
-                          checked={property.important}
+                          checked={Boolean(property.important)}
                           onChange={() => handleImportantChange(property.id)}
                         />
                       </td>
-                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.description1}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.premium}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.date}</td>
-                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.nameContact}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>
+                        {property.name}{property.contact ? `\n${property.contact}` : ''}
+                      </td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.address}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.premise}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.area}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.rent}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.availability}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.condition}</td>
-                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.sqftSign}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.sqft || 'NA'}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.key}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.brokerage}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.status}</td>
                       <td style={{ padding: '10px', borderRight: '1px solid #ccc', textAlign: 'center' }}>
                         <input
                           type="checkbox"
-                          checked={property.rentedOut}
+                          checked={Boolean(property.rentedout)}
                           onChange={() => handleRentedOutChange(property.id)}
                         />
                       </td>
@@ -284,16 +284,16 @@ const Page = () => {
                     {expandedDescriptionId === property.id && (
                       <tr>
                         <td colSpan={16} className="px-4 py-3 border-b border-gray-300 bg-gray-100 text-center whitespace-pre-line">
-                          {property.description && (
+                          {property.specialnote && (
                             <div>
                               <span className="font-bold text-sm text-gray-800">Description:</span>{' '}
-                              <span className="text-sm text-gray-700">{property.description}</span>
+                              <span className="text-sm text-gray-700">{property.specialnote}</span>
                             </div>
                           )}
-                          {property.description1 && (
+                          {property.premium && (
                             <div className="mt-1">
                               <span className="font-bold text-sm text-gray-800">Premium Note:</span>{' '}
-                              <span className="text-sm text-gray-700">{property.description1}</span>
+                              <span className="text-sm text-gray-700">{property.premium}</span>
                             </div>
                           )}
                         </td>
