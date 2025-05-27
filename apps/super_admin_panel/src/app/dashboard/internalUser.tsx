@@ -5,18 +5,38 @@ import { useState, useEffect, useRef } from 'react';
 import AddEditInternalUserModal from '../../components/addInternalUser';
 import { EditConfirmationModal } from '../../components/editConfirmationModal';
 import { DeleteConfirmationModal } from '../../components/deleteConfirmationModal';
-import { TableUser, UserFormData, getInternalUsers, availableRoles } from '../../lib/internalUsers';
+import { 
+  InternalUser, 
+  InternalUserFormData, 
+  availableRoles,
+  fetchInternalUsers,
+  addInternalUser,
+  updateInternalUser,
+  deleteInternalUser,
+  updateInternalUserRole
+} from '../../lib/supabaseUsers';
 
 export default function InternalUserTable() {
-  const [users, setUsers] = useState<TableUser[]>([]);
-  const [selectedUser, setSelectedUser] = useState<TableUser | null>(null);
+  const [users, setUsers] = useState<InternalUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<InternalUser | null>(null);
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    // Fetch data from the lib file
-    const internalUsers = getInternalUsers();
-    setUsers(internalUsers);
+    const loadUsers = async () => {
+      try {
+        const internalUsers = await fetchInternalUsers();
+        setUsers(internalUsers);
+      } catch (error) {
+        console.error('Failed to fetch internal users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUsers();
   }, []);
 
   useEffect(() => {
@@ -37,20 +57,32 @@ export default function InternalUserTable() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Handle save function for the UserFormData that AddEditUserModal provides
-  const handleSaveUser = (formData: UserFormData) => {
-    // Here you would typically save the user data to your backend
-    console.log('Saving form data:', formData);
-    // Close the modal after saving
-    setShowAddUser(false);
-    setShowEditUser(false);
+  const handleSaveUser = async (formData: InternalUserFormData) => {
+    try {
+      if (showEditUser && selectedUser) {
+        // Update existing user
+        const updatedUser = await updateInternalUser(selectedUser.id, formData);
+        setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
+        setShowEditUser(false);
+      } else {
+        // Add new user
+        const newUser = await addInternalUser(formData);
+        setUsers([...users, newUser]);
+        setShowAddUser(false);
+      }
+      setSelectedUser(null);
+    } catch (error) {
+      console.error('Failed to save user:', error);
+      // You might want to show an error message to the user here
+    }
   };
   
-  const handleEditClick = (user: TableUser) => {
+  const handleEditClick = (user: InternalUser) => {
     setSelectedUser(user);
     setShowEditConfirm(true);
   };
   
-  const handleDeleteClick = (user: TableUser) => {
+  const handleDeleteClick = (user: InternalUser) => {
     setSelectedUser(user);
     setShowDeleteConfirm(true);
   };
@@ -59,33 +91,46 @@ export default function InternalUserTable() {
     setOpenDropdownIndex(openDropdownIndex === index ? null : index);
   };
 
-  const handleRoleChange = (userIndex: number, newRole: string) => {
-    const updatedUsers = users.map((user, idx) => 
-      idx === userIndex ? { ...user, role: newRole } : user
-    );
-    setUsers(updatedUsers);
-    setOpenDropdownIndex(null);
-    
-    // In a real app, you would save this change to the backend
-    console.log(`Changed role for user ${users[userIndex].name} to ${newRole}`);
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      await updateInternalUserRole(userId, newRole);
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, role: newRole } : user
+      ));
+      setOpenDropdownIndex(null);
+    } catch (error) {
+      console.error('Failed to update user role:', error);
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (selectedUser) {
-      // Filter out the selected user from the users array
-      const updatedUsers = users.filter(user => user.no !== selectedUser.no);
-      setUsers(updatedUsers);
-      
-      // In a real app, you would also delete from the backend
-      console.log(`Deleted user ${selectedUser.name}`);
+      try {
+        await deleteInternalUser(selectedUser.id);
+        setUsers(users.filter(user => user.id !== selectedUser.id));
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+      }
     }
     setShowDeleteConfirm(false);
+    setSelectedUser(null);
   };
+
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   return (
     <div className="p-8">    
       <div className="flex items-center mb-4 border-2 border-blue-400 rounded-lg w-full max-w-3xl mx-auto bg-white px-2 py-1">
-        <input className="flex-1 px-4 py-2 rounded-l-full focus:outline-none placeholder-gray-800 bg-white" placeholder="Search" />
+        <input 
+          className="flex-1 px-4 py-2 rounded-l-full focus:outline-none placeholder-gray-800 bg-white text-black" 
+          placeholder="Search" 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <button className="flex items-center justify-center w-10 h-10"><FaSearch className="text-black text-lg" /></button>    
         <div className="flex items-center space-x-2 ml-2">
           <button className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-blue-400 bg-blue-100 hover:bg-blue-200 transition"><FaFilter className="text-blue-700 text-lg" /></button>
@@ -100,75 +145,82 @@ export default function InternalUserTable() {
       />
       <div className="flex justify-center">
         <div className="overflow-x-auto w-full max-w-6xl">
-          <table className="w-full border text-center rounded-lg shadow-md border-collapse">
-            <thead className="bg-blue-100">
-              <tr>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-16">NO</th>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-48">NAME</th>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-72">Email</th>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-40">Role</th>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-48">Contact</th>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-16">Edit</th>
-                <th className="px-4 py-2 border text-blue-900 font-bold w-16">Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, idx) => (
-                <tr key={idx} className="bg-white text-gray-800 hover:bg-blue-50 transition-colors duration-150">
-                  <td className="border px-4 py-2">{user.no}</td>
-                  <td className="border px-4 py-2 text-left">{user.name}</td>
-                  <td className="border px-4 py-2 text-left">{user.email}</td>
-                  <td className="border px-4 py-2 relative">
-                    <div 
-                      className="bg-gradient-to-r from-blue-50 to-blue-100 px-3 py-1.5 rounded-md text-blue-700 inline-flex items-center justify-between w-32 cursor-pointer hover:shadow-sm transition-all duration-200 border border-blue-200"
-                      onClick={() => toggleDropdown(idx)}
-                    >
-                      <span className="font-medium">{user.role}</span>
-                      <div className={`p-1 rounded-full bg-blue-200 bg-opacity-50 transition-transform duration-200 ${openDropdownIndex === idx ? 'rotate-180' : ''}`}>
-                        <FaChevronDown className="text-blue-600" size={10} />
-                      </div>
-                    </div>
-                    
-                    {openDropdownIndex === idx && (
-                      <div 
-                        ref={dropdownRef}
-                        className="absolute z-10 mt-1 w-36 bg-white border border-blue-200 rounded-md shadow-lg py-1 animate-fadeIn"
-                        style={{
-                          left: '50%',
-                          transform: 'translateX(-50%)'
-                        }}
-                      >
-                        {availableRoles.map((role) => (
-                          <div 
-                            key={role} 
-                            className={`px-4 py-2 text-left hover:bg-blue-50 cursor-pointer transition-colors duration-150 ${
-                              role === user.role ? 'bg-blue-100 text-blue-800 font-medium border-l-4 border-blue-500' : 'text-gray-700 border-l-4 border-transparent'
-                            }`}
-                            onClick={() => handleRoleChange(idx, role)}
-                          >
-                            {role}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="border px-4 py-2">{user.contact}</td>
-                  <td className="border px-4 py-2 text-blue-600 cursor-pointer">
-                    <FaEdit 
-                      className="text-blue-500 text-xl mx-auto hover:text-blue-700 transition-colors duration-200" 
-                      onClick={() => handleEditClick(user)} 
-                    />
-                  </td>
-                  <td className="border px-4 py-2 text-red-600 cursor-pointer">
-                    <FaTrash 
-                      className="text-red-500 text-xl mx-auto hover:text-red-700 transition-colors duration-200" 
-                      onClick={() => handleDeleteClick(user)} 
-                    />
-                  </td>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Loading users...</p>
+            </div>
+          ) : (
+            <table className="w-full border text-center rounded-lg shadow-md border-collapse">
+              <thead className="bg-blue-100">
+                <tr>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-16">NO</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-48">NAME</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-72">Email</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-40">Role</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-48">Contact</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-16">Edit</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-16">Delete</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user, idx) => (
+                  <tr key={user.id} className="bg-white text-gray-800 hover:bg-blue-50 transition-colors duration-150">
+                    <td className="border px-4 py-2">{idx + 1}</td>
+                    <td className="border px-4 py-2 text-left">{user.name}</td>
+                    <td className="border px-4 py-2 text-left">{user.email}</td>
+                    <td className="border px-4 py-2 relative">
+                      <div 
+                        className="bg-gradient-to-r from-blue-50 to-blue-100 px-3 py-1.5 rounded-md text-blue-700 inline-flex items-center justify-between w-32 cursor-pointer hover:shadow-sm transition-all duration-200 border border-blue-200"
+                        onClick={() => toggleDropdown(idx)}
+                      >
+                        <span className="font-medium">{user.role}</span>
+                        <div className={`p-1 rounded-full bg-blue-200 bg-opacity-50 transition-transform duration-200 ${openDropdownIndex === idx ? 'rotate-180' : ''}`}>
+                          <FaChevronDown className="text-blue-600" size={10} />
+                        </div>
+                      </div>
+                      
+                      {openDropdownIndex === idx && (
+                        <div 
+                          ref={dropdownRef}
+                          className="absolute z-10 mt-1 w-36 bg-white border border-blue-200 rounded-md shadow-lg py-1 animate-fadeIn"
+                          style={{
+                            left: '50%',
+                            transform: 'translateX(-50%)'
+                          }}
+                        >
+                          {availableRoles.map((role) => (
+                            <div 
+                              key={role} 
+                              className={`px-4 py-2 text-left hover:bg-blue-50 cursor-pointer transition-colors duration-150 ${
+                                role === user.role ? 'bg-blue-100 text-blue-800 font-medium border-l-4 border-blue-500' : 'text-gray-700 border-l-4 border-transparent'
+                              }`}
+                              onClick={() => handleRoleChange(user.id, role)}
+                            >
+                              {role}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="border px-4 py-2">{user.contact}</td>
+                    <td className="border px-4 py-2 text-blue-600 cursor-pointer">
+                      <FaEdit 
+                        className="text-blue-500 text-xl mx-auto hover:text-blue-700 transition-colors duration-200" 
+                        onClick={() => handleEditClick(user)} 
+                      />
+                    </td>
+                    <td className="border px-4 py-2 text-red-600 cursor-pointer">
+                      <FaTrash 
+                        className="text-red-500 text-xl mx-auto hover:text-red-700 transition-colors duration-200" 
+                        onClick={() => handleDeleteClick(user)} 
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
       {/* Show EditConfirmationModal first, then open AddEditUserModal if confirmed */}
