@@ -2,12 +2,19 @@
 
 import { useState, ChangeEvent, FormEvent } from "react";
 import { dummyProperties, Property } from "@/lib/dummyProperties";
-import { extractRent } from "@/lib/extractRent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+// Extract rent utility function
+const extractRent = (rentString: string) => {
+  const numberPart = parseFloat(rentString.replace(/[^\d.]/g, ""));
+  return rentString.toLowerCase().includes("thd")
+    ? numberPart * 1000
+    : numberPart;
+};
 
 // SearchResults component integrated directly
 function SearchResults({ properties }: { properties: Property[] }) {
@@ -16,7 +23,7 @@ function SearchResults({ properties }: { properties: Property[] }) {
       {properties.length > 0 ? (
         properties.map((property) => (
           <div key={property.id}>
-            <h2>{property.name}</h2>
+            <h2>{property.nameContact}</h2>
             <p>{property.description}</p>
             <p>{property.rent}</p>
             <p>{property.availability}</p>
@@ -451,12 +458,12 @@ export default function SearchPage() {
           filters.availability.includes(property.availability)) &&
         (filters.description1.length === 0 ||
           filters.description1.some((desc) =>
-            property.description1.toLowerCase().includes(desc.toLowerCase())
+            property.description1?.toLowerCase().includes(desc.toLowerCase())
           )) &&
         (!filters.budgetMin ||
-          parseInt(filters.budgetMin) <= extractRent(property.rent)) &&
+          parseInt(filters.budgetMin) <= extractRent(String(property.rent))) &&
         (!filters.budgetMax ||
-          parseInt(filters.budgetMax) >= extractRent(property.rent))
+          parseInt(filters.budgetMax) >= extractRent(String(property.rent)))
       );
     });
     setSearchResult(filtered);

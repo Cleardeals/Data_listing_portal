@@ -17,7 +17,12 @@ export interface AuthSession {
 }
 
 // JWT configuration
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production');
+const getJWTSecret = () => {
+  const secret = process.env.JWT_SECRET || 'SB7z88QZSbo3FNLDF2D4sbITEvbo6c4sO8KtSIwYYKqaDoLutoWrqh3RRKRJMZeNP71H0uOopu/xJc2YvkrM1Q==';
+  return new TextEncoder().encode(secret);
+};
+
+const JWT_SECRET = getJWTSecret();
 const JWT_ISSUER = 'data-listing-portal';
 const JWT_AUDIENCE = 'web-app';
 
@@ -70,14 +75,18 @@ export class AuthService {
 
   // Verify OTP and sign in (OTP only)
   async verifyOTP(email: string, otp: string): Promise<{ success: boolean; session?: AuthSession; message: string }> {
+    console.log('AuthService: Starting verifyOTP...', { email, otp });
     try {
       // Clean the OTP (remove spaces, ensure it's digits)
       const cleanOTP = otp.replace(/\s/g, '').trim();
+      console.log('AuthService: Cleaned OTP:', cleanOTP);
       
       if (cleanOTP.length < 4 || cleanOTP.length > 8 || !/^\d+$/.test(cleanOTP)) {
+        console.log('AuthService: Invalid OTP format');
         return { success: false, message: 'Please enter a valid verification code (4-8 digits)' };
       }
       
+      console.log('AuthService: Calling supabase.auth.verifyOtp...');
       // Only verify email OTP - no magic link support
       const { data, error } = await supabase.auth.verifyOtp({
         email: email,
@@ -85,7 +94,10 @@ export class AuthService {
         type: 'email'
       });
 
+      console.log('AuthService: Supabase response:', { data, error });
+
       if (error) {
+        console.log('AuthService: Supabase error:', error.message);
         // Provide more specific error messages
         if (error.message.includes('expired')) {
           return { success: false, message: 'Verification code has expired. Please request a new one.' };
@@ -99,21 +111,17 @@ export class AuthService {
       }
 
       if (!data.user || !data.session) {
+        console.log('AuthService: No user or session in response');
         return { success: false, message: 'Authentication failed. Please try again.' };
       }
 
+      console.log('AuthService: Successfully got user and session');
+
       // Set user role if not exists
       const userRole = data.user.user_metadata?.role || 'Customer';
+      console.log('AuthService: User role:', userRole);
 
-      // Create custom JWT token with user info
-      const customToken = await this.createCustomToken({
-        id: data.user.id,
-        email: data.user.email!,
-        role: userRole,
-        created_at: data.user.created_at,
-        email_confirmed_at: data.user.email_confirmed_at
-      });
-
+      // Create a simple session object first
       const session: AuthSession = {
         user: {
           id: data.user.id,
@@ -122,13 +130,16 @@ export class AuthService {
           created_at: data.user.created_at,
           email_confirmed_at: data.user.email_confirmed_at
         },
-        access_token: customToken,
+        access_token: data.session.access_token, // Use Supabase token directly for now
         refresh_token: data.session.refresh_token,
         expires_at: data.session.expires_at || 0
       };
 
+      console.log('AuthService: Created session object');
+
       // Store session in localStorage
       this.storeSession(session);
+      console.log('AuthService: Stored session, returning success');
 
       return { success: true, session, message: 'Login successful' };
     } catch (error: unknown) {
@@ -159,6 +170,20 @@ export class AuthService {
   // Verify JWT token
   async verifyToken(token: string): Promise<{ valid: boolean; payload?: Record<string, unknown> }> {
     try {
+      // First try to verify with Supabase
+      const { data, error } = await supabase.auth.getUser(token);
+      if (!error && data.user) {
+        return { 
+          valid: true, 
+          payload: {
+            sub: data.user.id,
+            email: data.user.email,
+            role: data.user.user_metadata?.role || 'Customer'
+          }
+        };
+      }
+      
+      // Fallback to custom JWT verification
       const { payload } = await jwtVerify(token, JWT_SECRET, {
         issuer: JWT_ISSUER,
         audience: JWT_AUDIENCE

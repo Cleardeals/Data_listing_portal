@@ -59,22 +59,39 @@ export default function LoginPage() {
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Additional validation
+    if (!email || !otp) {
+      setError('Please enter both email and verification code.');
+      return;
+    }
+    
+    if (otp.length < 4) {
+      setError('Please enter a complete verification code.');
+      return;
+    }
+    
     setError('');
     setSuccess('');
     setIsLoading(true);
     
+    console.log('Starting OTP verification...', { email, otp: otp.length, otpValue: otp });
+    
     try {
       const result = await verifyOTP(email, otp);
+      console.log('OTP verification result:', result);
       
       if (result.success) {
         setSuccess('Login successful! Redirecting...');
-        router.push('/dashboard');
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1000); // Add a small delay to show success message
       } else {
-        setError(result.message);
+        setError(result.message || 'Verification failed. Please try again.');
       }
     } catch (err) {
-      setError('An error occurred during verification. Please try again.');
       console.error('Verify OTP error:', err);
+      setError('An error occurred during verification. Please try again.');
     } finally {
       setIsLoading(false);
     }

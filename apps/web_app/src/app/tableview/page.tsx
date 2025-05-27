@@ -1,22 +1,57 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Property } from "@/lib/property";
-import { propertyData } from "@/lib/properties";
+import { Property, PropertyData, convertPropertyDataToProperty, supabaseHelpers } from "@/lib/dummyProperties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { supabase } from "../../../../../packages/shared/supabase";
 
 const Page = () => {
-  const [properties, setProperties] = useState<Property[]>(propertyData);
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>(propertyData);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedDescriptionId, setExpandedDescriptionId] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch properties from Supabase
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error: supabaseError } = await supabase
+        .from('propertydata')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (supabaseError) {
+        throw supabaseError;
+      }
+
+      const convertedProperties = data.map((item: PropertyData) => 
+        convertPropertyDataToProperty(item)
+      );
+      
+      setProperties(convertedProperties);
+      setFilteredProperties(convertedProperties);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch properties');
+      console.error('Error fetching properties:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load properties on component mount
+  useEffect(() => {
+    fetchProperties();
+  }, []);
 
   const parseDate = React.useCallback((ddmmyyyy: string) => {
-    const [day, month, year] = ddmmyyyy.split('/');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    return supabaseHelpers.formatDateForComparison(ddmmyyyy);
   }, []);
 
   useEffect(() => {
@@ -24,8 +59,8 @@ const Page = () => {
     const applyFilters = (tab: string) => {
       let filtered = [...properties];
       
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const today = supabaseHelpers.getTodayDate();
+      const yesterday = supabaseHelpers.getYesterdayDate();
 
       if (tab === 'imp') {
         filtered = filtered.filter((p) => p.important);
@@ -44,26 +79,62 @@ const Page = () => {
     applyFilters(activeTab);
   }, [properties, activeTab, parseDate]);
 
-  const handleImportantChange = (id: number) => {
-    const updatedProperties = properties.map((property) =>
-      property.id === id ? { ...property, important: !property.important } : property
-    );
-    setProperties(updatedProperties);
+  const handleImportantChange = async (id: number) => {
+    try {
+      const property = properties.find(p => p.id === id);
+      if (!property) return;
+
+      const newImportantValue = property.important ? 0 : 1;
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ important: newImportantValue })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      const updatedProperties = properties.map((property) =>
+        property.id === id ? { ...property, important: !property.important } : property
+      );
+      setProperties(updatedProperties);
+    } catch (err: unknown) {
+      console.error('Error updating important status:', err);
+      setError('Failed to update important status');
+    }
   };
 
-  const handleRentedOutChange = (id: number) => {
-    const updatedProperties = properties.map((property) =>
-      property.id === id ? { ...property, rentedOut: !property.rentedOut } : property
-    );
-    setProperties(updatedProperties);
+  const handleRentedOutChange = async (id: number) => {
+    try {
+      const property = properties.find(p => p.id === id);
+      if (!property) return;
+
+      const newRentedOutValue = !property.rentedOut;
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ rentedout: newRentedOutValue })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      const updatedProperties = properties.map((property) =>
+        property.id === id ? { ...property, rentedOut: !property.rentedOut } : property
+      );
+      setProperties(updatedProperties);
+    } catch (err: unknown) {
+      console.error('Error updating rented out status:', err);
+      setError('Failed to update rented out status');
+    }
   };
 
   const filterProperties = (tab: string) => {
     setActiveTab(tab);
     let filtered = [...properties];
 
-    const today = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const today = supabaseHelpers.getTodayDate();
+    const yesterday = supabaseHelpers.getYesterdayDate();
 
     if (tab === 'imp') {
       filtered = filtered.filter((p) => p.important);
@@ -137,78 +208,104 @@ const Page = () => {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mx-6 mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+          <Button 
+            onClick={fetchProperties} 
+            className="ml-4 bg-red-600 hover:bg-red-700 text-white"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-lg text-gray-600">Loading properties...</div>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="relative overflow-x-auto px-6 py-4">
-        <table className="w-full border-collapse mt-5 border-[#024457] border-1 border-double">
-          <thead>
-            <tr className="bg-[#167F92] text-white">
-              {['Imp', 'Special Note', 'Date', 'Name & Contact', 'Address', 'Premise', 'Area', 'Rent', 'Availability', 'Condition', 'SqFt/Sign', 'Key', 'Brokerage', 'Status', 'Rented Out?', '...'].map((heading) => (
-                <th key={heading} style={{ padding: '10px', border: '1px solid #ccc', fontWeight: 'bold', }}>{heading}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProperties.map((property) => (
-              <React.Fragment key={property.id}>
-                <tr style={{ borderBottom: '1px solid #ccc' }}>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={property.important}
-                      onChange={() => handleImportantChange(property.id)}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}></td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.date}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.nameContact}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.address}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.premise}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.area}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.rent}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.availability}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.condition}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.sqftSign}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.key}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.brokerage}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.status}</td>
-                  <td style={{ padding: '10px', borderRight: '1px solid #ccc', textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={property.rentedOut}
-                      onChange={() => handleRentedOutChange(property.id)}
-                    />
-                  </td>
-                  <td style={{ padding: '10px', textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleDescription(property.id)}>
-                    {expandedDescriptionId === property.id ? '▲' : '▼'}
+      {!loading && (
+        <div className="relative overflow-x-auto px-6 py-4">
+          <table className="w-full border-collapse mt-5 border-[#024457] border-1 border-double">
+            <thead>
+              <tr className="bg-[#167F92] text-white">
+                {['Imp', 'Special Note', 'Date', 'Name & Contact', 'Address', 'Premise', 'Area', 'Rent', 'Availability', 'Condition', 'SqFt/Sign', 'Key', 'Brokerage', 'Status', 'Rented Out?', '...'].map((heading) => (
+                  <th key={heading} style={{ padding: '10px', border: '1px solid #ccc', fontWeight: 'bold', }}>{heading}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProperties.length === 0 ? (
+                <tr>
+                  <td colSpan={16} className="text-center py-8 text-gray-500">
+                    No properties found
                   </td>
                 </tr>
-                {expandedDescriptionId === property.id && (() => {
-                  const [descMain, descExtra] = property.description.split(/Description 1:/i);
-
-                  return (
-                    <tr>
-                      <td colSpan={16} className="px-4 py-3 border-b border-gray-300 bg-gray-100 text-center whitespace-pre-line">
-                        {descMain && (
-                          <div>
-                            <span className="font-bold text-sm text-gray-800">Description :</span>{' '}
-                            <span className="text-sm text-gray-700">{descMain.trim()}</span>
-                          </div>
-                        )}
-                        {descExtra && (
-                          <div className="mt-1">
-                            <span className="font-bold text-sm text-gray-800">Description1 :</span>{' '}
-                            <span className="text-sm text-gray-700">{descExtra.trim()}</span>
-                          </div>
-                        )}
+              ) : (
+                filteredProperties.map((property) => (
+                  <React.Fragment key={property.id}>
+                    <tr style={{ borderBottom: '1px solid #ccc' }}>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={property.important}
+                          onChange={() => handleImportantChange(property.id)}
+                        />
+                      </td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.description1}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.date}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.nameContact}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.address}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.premise}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.area}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.rent}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.availability}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.condition}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.sqftSign}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.key}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', whiteSpace: 'pre-line' }}>{property.brokerage}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc' }}>{property.status}</td>
+                      <td style={{ padding: '10px', borderRight: '1px solid #ccc', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={property.rentedOut}
+                          onChange={() => handleRentedOutChange(property.id)}
+                        />
+                      </td>
+                      <td style={{ padding: '10px', textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleDescription(property.id)}>
+                        {expandedDescriptionId === property.id ? '▲' : '▼'}
                       </td>
                     </tr>
-                  );
-                })()}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    {expandedDescriptionId === property.id && (
+                      <tr>
+                        <td colSpan={16} className="px-4 py-3 border-b border-gray-300 bg-gray-100 text-center whitespace-pre-line">
+                          {property.description && (
+                            <div>
+                              <span className="font-bold text-sm text-gray-800">Description:</span>{' '}
+                              <span className="text-sm text-gray-700">{property.description}</span>
+                            </div>
+                          )}
+                          {property.description1 && (
+                            <div className="mt-1">
+                              <span className="font-bold text-sm text-gray-800">Premium Note:</span>{' '}
+                              <span className="text-sm text-gray-700">{property.description1}</span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
     </ProtectedRoute>
   );

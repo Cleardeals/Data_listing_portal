@@ -62,16 +62,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const verifyOTP = async (email: string, otp: string) => {
+    console.log('AuthContext: Starting verifyOTP...', { email, otpLength: otp.length });
     try {
       // Only set loading during verification since this changes auth state
       setLoading(true);
       const result = await authService.verifyOTP(email, otp);
+      console.log('AuthContext: AuthService result:', result);
+      
       if (result.success && result.session) {
+        console.log('AuthContext: Setting user...', result.session.user);
         setUser(result.session.user);
         return { success: true, message: result.message, user: result.session.user };
       }
+      console.log('AuthContext: Verification failed:', result.message);
       return { success: false, message: result.message };
-    } catch {
+    } catch (error) {
+      console.error('AuthContext: verifyOTP error:', error);
       return { success: false, message: 'Failed to verify OTP' };
     } finally {
       setLoading(false);
