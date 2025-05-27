@@ -1,6 +1,9 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { FaBell, FaUserCircle, FaFilter, FaImages, FaTrash, FaWrench, FaPlus, FaSearch, FaRobot } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaFilter, FaTrash, FaWrench, FaPlus, FaSearch, FaRobot, FaSignOutAlt } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import BulkUploadButton from "@/components/modals/BulkUploadModal"; 
 import { AddEditPropertyModal } from "@/components/modals/AddEditPropertyModal";
 import { MdAddCall } from "react-icons/md";
@@ -9,8 +12,9 @@ import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationM
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { fetchPropertyData, PropertyRow } from "@/lib/propertyData";
 
-export default function DashboardPage() {
-  const [showProfile, setShowProfile] = useState(false);
+function DashboardContent() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
@@ -109,6 +113,15 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
 
@@ -116,9 +129,21 @@ export default function DashboardPage() {
       <header className="dashboard-header flex justify-between items-center py-4 px-8 border-b bg-white shadow-sm sticky top-0 z-50 w-full ">
         <div className="text-xl font-semibold text-blue-600">Data Operator Panel</div>
         <div className="flex items-center space-x-6">
+          {user && (
+            <div className="text-sm text-gray-600">
+              Welcome, {user.email}
+            </div>
+          )}
           <button title="Add User" className="text-2xl"><MdAddCall className="text-blue-500" /></button>
           <button title="Notifications" className="text-2xl"><FaBell className="text-blue-500" /></button>
-          <button title="Profile" className="text-2xl" onClick={() => setShowProfile(true)}><FaUserCircle className="text-blue-500" /></button>
+          <button title="Profile" className="text-2xl"><FaUserCircle className="text-blue-500" /></button>
+          <button 
+            title="Logout" 
+            className="text-2xl text-red-500 hover:text-red-700 transition-colors" 
+            onClick={handleLogout}
+          >
+            <FaSignOutAlt />
+          </button>
         </div>
       </header>
       <div className="px-8 pt-8 pb-2 border-b border-blue-200">
@@ -316,5 +341,13 @@ export default function DashboardPage() {
       {/* Main Content Placeholder */}
       <div className="flex-1 p-8">{/* Dashboard content goes here */}</div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }

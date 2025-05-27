@@ -1,48 +1,58 @@
-'use client';
+'use client'
 
-import React, { useState, createContext, useContext } from 'react';
-import { MdAddCall } from 'react-icons/md';
-import { FaBell, FaUserCircle } from 'react-icons/fa';
-import ProfileModal from '../../components/ProfileModal';
-import DashboardCharts from './DashboardCharts';
-import GeneralUserTable from './generalUser';
-import InternalUserTable from './internalUser';
-
-// Create context for sharing the active tab state across components
-interface DashboardContextType {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
-
-const DashboardContext = createContext<DashboardContextType>({
-  activeTab: 'dashboard',
-  setActiveTab: () => {},
-});
-
-// Export hook for using the dashboard context in any component
-export const useDashboardContext = () => useContext(DashboardContext);
+import React, { useState } from 'react'
+import { MdAddCall } from 'react-icons/md'
+import { FaBell, FaUserCircle, FaSignOutAlt } from 'react-icons/fa'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { DashboardContext, useDashboardContext } from '@/contexts/DashboardContext'
+import ProfileModal from '../../components/ProfileModal'
+import DashboardCharts from './DashboardCharts'
+import GeneralUserTable from './generalUser'
+import InternalUserTable from './internalUser'
 
 // Header Component
 function DashboardHeader() {
-  const [showProfile, setShowProfile] = useState(false);
+  const [showProfile, setShowProfile] = useState(false)
+  const { logout, session } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/')
+  }
+
   return (
     <>
       <header className="dashboard-header flex justify-between items-center py-4 px-8 border-b bg-white shadow-sm">
         <div className="text-xl font-semibold text-blue-600">Super Admin Panel</div>
         <div className="flex items-center space-x-6">
+          {session && (
+            <div className="text-sm text-gray-600">
+              Welcome, {session.user.email}
+            </div>
+          )}
           <button title="Add User" className="text-2xl"><MdAddCall className="text-blue-500" /></button>
           <button title="Notifications" className="text-2xl"><FaBell className="text-blue-500" /></button>
           <button title="Profile" className="text-2xl" onClick={() => setShowProfile(true)}><FaUserCircle className="text-blue-500" /></button>
+          <button 
+            title="Logout" 
+            className="text-2xl text-red-500 hover:text-red-700 transition-colors" 
+            onClick={handleLogout}
+          >
+            <FaSignOutAlt />
+          </button>
         </div>
       </header>
       <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
     </>
-  );
+  )
 }
 
 // Navigation Component
 function DashboardNav() {
-  const { activeTab, setActiveTab } = useDashboardContext();
+  const { activeTab, setActiveTab } = useDashboardContext()
   
   return (
     <nav className="dashboard-nav flex justify-center space-x-4 my-6 bg-gray-50 py-3">
@@ -65,12 +75,12 @@ function DashboardNav() {
         Internal User
       </button>
     </nav>
-  );
+  )
 }
 
 // Dashboard content component
 function DashboardContent() {
-  const { activeTab } = useDashboardContext();
+  const { activeTab } = useDashboardContext()
   
   return (
     <div className="dashboard-content px-8 py-6 bg-white">
@@ -78,22 +88,24 @@ function DashboardContent() {
       {activeTab === 'generalUser' && <GeneralUserTable />}
       {activeTab === 'internalUser' && <InternalUserTable />}
     </div>
-  );
+  )
 }
 
 // Main Dashboard Page Component
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard')
   
   return (
-    <DashboardContext.Provider value={{ activeTab, setActiveTab }}>
-      <div className="dashboard-container min-h-screen bg-gray-50">
-        <DashboardHeader />
-        <DashboardNav />
-        <main className="px-4">
-          <DashboardContent />
-        </main>
-      </div>
-    </DashboardContext.Provider>
-  );
+    <ProtectedRoute requiredRole="super_admin">
+      <DashboardContext.Provider value={{ activeTab, setActiveTab }}>
+        <div className="dashboard-container min-h-screen bg-gray-50">
+          <DashboardHeader />
+          <DashboardNav />
+          <main className="px-4">
+            <DashboardContent />
+          </main>
+        </div>
+      </DashboardContext.Provider>
+    </ProtectedRoute>
+  )
 }
