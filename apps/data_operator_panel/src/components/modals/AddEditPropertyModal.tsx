@@ -4,7 +4,12 @@ import React, { useState, useEffect } from 'react';
 
 // Define PropertyData type at the top of the file for better accessibility
 type PropertyData = {
-  nameContact: string;
+  important: number;
+  premium: string;
+  specialNote: string;
+  date: string;
+  name: string;
+  contact: string;
   address: string;
   premise: string;
   area: string;
@@ -32,7 +37,12 @@ export const AddEditPropertyModal = ({
   onSubmit: (data: PropertyData) => void;
 }) => {
   const [data, setData] = useState<PropertyData>(initialData || {
-    nameContact: '',
+    important: 0,
+    premium: '',
+    specialNote: '',
+    date: '',
+    name: '',
+    contact: '',
     address: '',
     premise: '',
     area: '',
@@ -48,7 +58,12 @@ export const AddEditPropertyModal = ({
   // Update form fields if initialData changes (for editing different rows)
   useEffect(() => {
     setData(initialData || {
-      nameContact: '',
+      important: 0,
+      premium: '',
+      specialNote: '',
+      date: '',
+      name: '',
+      contact: '',
       address: '',
       premise: '',
       area: '',
@@ -83,12 +98,22 @@ export const AddEditPropertyModal = ({
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4">
             {/* Name & Contact */}
-            <div className="col-span-2">
-              <label className="block mb-2 text-gray-800 font-medium">Name & Contact</label>
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Name</label>
               <input
                 type="text"
-                name="nameContact"
-                value={data.nameContact}
+                name="name"
+                value={data.name}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Contact</label>
+              <input
+                type="text"
+                name="contact"
+                value={data.contact}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
               />
@@ -101,6 +126,48 @@ export const AddEditPropertyModal = ({
                 type="text"
                 name="address"
                 value={data.address}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+              />
+            </div>
+
+            {/* Important, Premium, Special Note, Date */}
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Important</label>
+              <input
+                type="number"
+                name="important"
+                value={data.important}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Premium</label>
+              <input
+                type="text"
+                name="premium"
+                value={data.premium}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Special Note</label>
+              <input
+                type="text"
+                name="specialNote"
+                value={data.specialNote}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Date</label>
+              <input
+                type="text"
+                name="date"
+                value={data.date}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
               />

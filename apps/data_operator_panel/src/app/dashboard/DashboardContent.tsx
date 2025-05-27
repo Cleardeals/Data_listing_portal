@@ -10,6 +10,7 @@ import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { fetchPropertyData, PropertyRow } from "@/lib/propertyData";
 import { User } from '@supabase/supabase-js';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from "@/lib/types";
 
 interface DashboardContentProps {
   user: User;
@@ -26,6 +27,9 @@ export default function DashboardContent({ user }: DashboardContentProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [propertyData, setPropertyData] = useState<PropertyRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const supabase = createClientComponentClient<Database>();
 
   const loadData = async () => {
     try {
@@ -51,8 +55,12 @@ export default function DashboardContent({ user }: DashboardContentProps) {
       const rowData = propertyData.find(item => item.id === selectedRow);
       if (rowData) {
         const formattedData: PropertyData = {
-          key: rowData.key ?? `${rowData.id}`,
-          nameContact: rowData.nameContact,
+          important: rowData.important,
+          premium: rowData.premium,
+          specialNote: rowData.specialNote,
+          date: rowData.date,
+          name: rowData.name,
+          contact: rowData.contact,
           address: rowData.address,
           premise: rowData.premise,
           area: rowData.area,
@@ -60,6 +68,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
           availability: rowData.availability,
           condition: rowData.condition,
           sqft: rowData.sqft,
+          key: rowData.key,
           brokerage: rowData.brokerage,
           status: rowData.status
         };
@@ -68,6 +77,20 @@ export default function DashboardContent({ user }: DashboardContentProps) {
       }
     }
     setShowEditModal(false);
+  };
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      loadData(); // Reset to show all data if search is empty
+      return;
+    }
+
+    const lowercaseQuery = searchQuery.toLowerCase();
+    const filteredData = propertyData.filter(property => 
+      property.name?.toLowerCase().includes(lowercaseQuery) || 
+      property.premise?.toLowerCase().includes(lowercaseQuery)
+    );
+    setPropertyData(filteredData);
   };
 
   return (
@@ -94,7 +117,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* Search and Filters */}
-        <div className="mb-6 grid grid-cols-7 gap-4">
+        <div className="mb-6 grid grid-cols-8 gap-4">
           <div className="flex items-center space-x-2">
             <select className="form-select rounded-md border-gray-300 shadow-sm w-full text-black">
               <option className="text-black">State</option>
@@ -126,7 +149,24 @@ export default function DashboardContent({ user }: DashboardContentProps) {
             </select>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 w-full flex items-center justify-center">
+            <input
+              type="text"
+              placeholder="Search properties by using name and premise"
+              className="form-input rounded-md border-gray-300 shadow-sm w-full text-black"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handleSearch}
+              className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 w-full flex items-center justify-center"
+            >
               <FaSearch className="w-5 h-5" />
             </button>
           </div>
@@ -176,7 +216,8 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Special Note</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name & Contact</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premise</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
@@ -200,7 +241,8 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                     <td className="px-3 py-4 whitespace-nowrap text-black">{property.premium}</td>
                     <td className="px-3 py-4 whitespace-nowrap text-black">{property.specialNote}</td>
                     <td className="px-3 py-4 whitespace-nowrap text-black">{property.date}</td>
-                    <td className="px-3 py-4 whitespace-nowrap text-black">{property.nameContact}</td>
+                    <td className="px-3 py-4 whitespace-nowrap text-black">{property.name}</td>
+                    <td className="px-3 py-4 whitespace-nowrap text-black">{property.contact}</td>
                     <td className="px-3 py-4 text-black">{property.address}</td>
                     <td className="px-3 py-4 text-black">{property.premise}</td>
                     <td className="px-3 py-4 text-black">{property.area}</td>
@@ -245,9 +287,40 @@ export default function DashboardContent({ user }: DashboardContentProps) {
         onClose={() => setShowAddForm(false)}
         mode="add"
         initialData={null}
-        onSubmit={(data) => {
-          setShowAddForm(false);
-          loadData(); // Reload data after adding
+        onSubmit={async (data) => {
+          // Map data from PropertyData type to Supabase insert type
+          const dataToInsert = {
+            important: data.important,
+            premium: data.premium,
+            specialnote: data.specialNote, // Note the casing difference
+            date: data.date,
+            name: data.name,
+            contact: data.contact,
+            address: data.address,
+            premise: data.premise,
+            area: data.area,
+            rent: data.rent,
+            availability: data.availability,
+            condition: data.condition,
+            sqft: data.sqft,
+            key: data.key,
+            brokerage: data.brokerage,
+            status: data.status,
+            // rentedOut might need a default or handling if it's required and not in the form
+            // created_at is likely auto-generated by Supabase, so no need to include it here
+          };
+
+          const { error } = await supabase
+            .from('propertydata')
+            .insert([dataToInsert]);
+
+          if (error) {
+            console.error('Error adding property:', error);
+            setError(`Failed to add property: ${error.message}`);
+          } else {
+            setShowAddForm(false);
+            loadData(); // Reload data after adding
+          }
         }}
       />
 
@@ -263,18 +336,61 @@ export default function DashboardContent({ user }: DashboardContentProps) {
           onClose={() => setShowEditForm(false)}
           mode="edit"
           initialData={editData}
-          onSubmit={(data) => {
-            setShowEditForm(false);
-            loadData(); // Reload data after editing
+          onSubmit={async (data) => {
+            // Map data from PropertyData type to Supabase update type
+            const dataToUpdate = {
+              important: data.important,
+              premium: data.premium,
+              specialnote: data.specialNote, // Note the casing difference
+              date: data.date,
+              name: data.name,
+              contact: data.contact,
+              address: data.address,
+              premise: data.premise,
+              area: data.area,
+              rent: data.rent,
+              availability: data.availability,
+              condition: data.condition,
+              sqft: data.sqft,
+              key: data.key,
+              brokerage: data.brokerage,
+              status: data.status,
+              // rentedOut might need handling if it's part of the update
+              // created_at should not be updated here
+            };
+
+            const { error } = await supabase
+              .from('propertydata')
+              .update(dataToUpdate)
+              .eq('id', selectedRow); // Identify the row to update by its ID
+
+            if (error) {
+              console.error('Error updating property:', error);
+              setError(`Failed to update property: ${error.message}`);
+            } else {
+              setShowEditForm(false);
+              loadData(); // Reload data after editing
+            }
           }}
         />
       )}
 
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (selectedRow !== null) {
-            setPropertyData(propertyData.filter(item => item.id !== selectedRow));
+            const { error } = await supabase
+              .from('propertydata')
+              .delete()
+              .eq('id', selectedRow); // Identify the row to delete by its ID
+
+            if (error) {
+              console.error('Error deleting property:', error);
+              setError(`Failed to delete property: ${error.message}`);
+            } else {
+              // Optimistically remove the row from the local state if deletion is successful
+              setPropertyData(propertyData.filter(item => item.id !== selectedRow));
+            }
           }
           setShowDeleteModal(false);
         }}

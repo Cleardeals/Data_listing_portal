@@ -6,7 +6,8 @@ import { AddEditPropertyModal } from './AddEditPropertyModal';
 const AddEntryModal = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    nameContact: '',
+    name: '',
+    contact: '',
     address: '',
     premise: '',
     area: '',
@@ -60,8 +61,18 @@ const AddEntryModal = () => {
                   <label className="block mb-2 text-gray-800 font-medium">Name & Contact</label>
                   <input
                     type="text"
-                    name="nameContact"
-                    value={formData.nameContact}
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border rounded text-gray-900"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block mb-2 text-gray-800 font-medium">Name & Contact</label>
+                  <input
+                    type="text"
+                    name="contact"
+                    value={formData.contact}
                     onChange={handleInputChange}
                     className="w-full p-2 border rounded text-gray-900"
                   />
