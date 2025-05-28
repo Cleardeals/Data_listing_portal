@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { User, UserFormData, getSubscriptionTypes } from '../lib/userData';
+import { ExternalUser, ExternalUserFormData, getSubscriptionTypes } from '../lib/supabaseUsers';
 
 interface AddEditExternalUserModalProps {
   open: boolean;
   onClose: () => void;
   mode?: 'add' | 'edit';
-  userData?: User | null;
-  onSave: (data: UserFormData) => void;
+  userData?: ExternalUser | null;
+  onSave: (data: ExternalUserFormData) => void;
 }
 
 // Define an interface for the errors object
@@ -38,7 +38,7 @@ const AddEditExternalUserModal: React.FC<AddEditExternalUserModalProps> = ({
     subscription: ''
   };
 
-  const [formData, setFormData] = useState<UserFormData>(initialData);
+  const [formData, setFormData] = useState<ExternalUserFormData>(initialData);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

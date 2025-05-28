@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { UserFormData, TableUser, availableRoles } from '../lib/internalUsers';
+import { InternalUserFormData, InternalUser, availableRoles } from '../lib/supabaseUsers';
 
 interface AddEditInternalUserModalProps {
   open: boolean;
   onClose: () => void;
   mode?: 'add' | 'edit';
-  userData?: TableUser | null;
-  onSave: (data: UserFormData) => void;
+  userData?: InternalUser | null;
+  onSave: (data: InternalUserFormData) => void;
 }
 
 // Define an interface for the errors object
@@ -34,7 +34,7 @@ const AddEditInternalUserModal: React.FC<AddEditInternalUserModalProps> = ({
     contact: ''
   };
 
-  const [formData, setFormData] = useState<UserFormData>(initialData);
+  const [formData, setFormData] = useState<InternalUserFormData>(initialData);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

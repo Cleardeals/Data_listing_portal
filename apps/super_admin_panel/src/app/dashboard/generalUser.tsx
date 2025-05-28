@@ -5,24 +5,33 @@ import { useState, useEffect } from 'react';
 import AddEditExternalUserModal from '../../components/addExternalUser';
 import { EditConfirmationModal } from '../../components/editConfirmationModal';
 import { DeleteConfirmationModal } from '../../components/deleteConfirmationModal';
-import { User, UserFormData, fetchUsers, deleteUser, addUser, updateUser, getSubscriptionTypes, updateSubscription } from '../../lib/userData';
+import { 
+  ExternalUser, 
+  ExternalUserFormData, 
+  fetchExternalUsers, 
+  deleteExternalUser, 
+  addExternalUser, 
+  updateExternalUser, 
+  getSubscriptionTypes, 
+  updateExternalUserSubscription 
+} from '../../lib/supabaseUsers';
 
 export default function GeneralUserTable() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<ExternalUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<ExternalUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const subscriptionTypes = getSubscriptionTypes();
-  const [updatingSubscription, setUpdatingSubscription] = useState<number | null>(null);
+  const [updatingSubscription, setUpdatingSubscription] = useState<string | null>(null);
   
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const data = await fetchUsers();
+        const data = await fetchExternalUsers();
         setUsers(data);
       } catch (error) {
         console.error('Failed to fetch users:', error);
@@ -38,7 +47,7 @@ export default function GeneralUserTable() {
   const handleDeleteConfirm = async () => {
     if (selectedUser) {
       try {
-        await deleteUser(selectedUser.id);
+        await deleteExternalUser(selectedUser.id);
         setUsers(users.filter(user => user.id !== selectedUser.id));
       } catch (error) {
         console.error('Failed to delete user:', error);
@@ -54,9 +63,9 @@ export default function GeneralUserTable() {
   );
   
   // Handle adding a new user
-  const handleAddUser = async (userData: UserFormData) => {
+  const handleAddUser = async (userData: ExternalUserFormData) => {
     try {
-      const newUser = await addUser(userData);
+      const newUser = await addExternalUser(userData);
       setUsers([...users, newUser]);
       setShowAddUser(false);
     } catch (error) {
@@ -65,10 +74,10 @@ export default function GeneralUserTable() {
   };
   
   // Handle updating an existing user
-  const handleUpdateUser = async (userData: UserFormData) => {
+  const handleUpdateUser = async (userData: ExternalUserFormData) => {
     if (selectedUser) {
       try {
-        const updatedUser = await updateUser(selectedUser.id, userData);
+        const updatedUser = await updateExternalUser(selectedUser.id, userData);
         setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
         setShowEditUser(false);
         setSelectedUser(null);
@@ -79,11 +88,13 @@ export default function GeneralUserTable() {
   };
   
   // Handle subscription change
-  const handleSubscriptionChange = async (userId: number, newSubscription: string) => {
+  const handleSubscriptionChange = async (userId: string, newSubscription: string) => {
     setUpdatingSubscription(userId);
     try {
-      const updatedUser = await updateSubscription(userId, newSubscription);
-      setUsers(users.map(user => user.id === userId ? updatedUser : user));
+      await updateExternalUserSubscription(userId, newSubscription);
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, subscription: newSubscription } : user
+      ));
     } catch (error) {
       console.error('Failed to update subscription:', error);
     } finally {
@@ -95,7 +106,7 @@ export default function GeneralUserTable() {
     <div className="p-8">    
       <div className="flex items-center mb-4 border-2 border-blue-400 rounded-lg w-full max-w-3xl mx-auto bg-white px-2 py-1">
         <input 
-          className="flex-1 px-4 py-2 rounded-l-full focus:outline-none placeholder-gray-800 bg-white" 
+          className="flex-1 px-4 py-2 rounded-l-full focus:outline-none placeholder-gray-800 bg-white text-black" 
           placeholder="Search" 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -130,9 +141,9 @@ export default function GeneralUserTable() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user, index) => (
                 <tr key={user.id} className="bg-white text-gray-800">
-                  <td className="border px-2 py-1">{user.id}</td>
+                  <td className="border px-2 py-1">{index + 1}</td>
                   <td className="border px-2 py-1">{user.name}</td>
                   <td className="border px-2 py-1">{user.email}</td>
                   <td className="border px-2 py-1">{user.business}</td>
