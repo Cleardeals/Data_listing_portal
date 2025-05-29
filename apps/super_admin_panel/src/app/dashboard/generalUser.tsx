@@ -13,7 +13,9 @@ import {
   addExternalUser, 
   updateExternalUser, 
   getSubscriptionTypes, 
-  updateExternalUserSubscription 
+  updateExternalUserSubscription,
+  verifyUser,
+  unverifyUser
 } from '../../lib/supabaseUsers';
 
 export default function GeneralUserTable() {
@@ -27,6 +29,7 @@ export default function GeneralUserTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const subscriptionTypes = getSubscriptionTypes();
   const [updatingSubscription, setUpdatingSubscription] = useState<string | null>(null);
+  const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
   
   useEffect(() => {
     const loadUsers = async () => {
@@ -101,6 +104,29 @@ export default function GeneralUserTable() {
       setUpdatingSubscription(null);
     }
   };
+
+  // Handle verification status change
+  const handleVerificationChange = async (userId: string, verify: boolean) => {
+    setUpdatingVerification(userId);
+    try {
+      if (verify) {
+        await verifyUser(userId);
+      } else {
+        await unverifyUser(userId);
+      }
+      setUsers(users.map(user => 
+        user.id === userId ? { 
+          ...user, 
+          is_verified: verify, 
+          role: verify ? 'Verified Customer' : 'Unverified Customer' 
+        } : user
+      ));
+    } catch (error) {
+      console.error('Failed to update verification status:', error);
+    } finally {
+      setUpdatingVerification(null);
+    }
+  };
   
   return (
     <div className="p-8">    
@@ -133,9 +159,12 @@ export default function GeneralUserTable() {
                 <th className="px-2 py-1 border text-blue-900 font-bold">NO</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">NAME</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Email</th>
+                <th className="px-2 py-1 border text-blue-900 font-bold">Role</th>
+                <th className="px-2 py-1 border text-blue-900 font-bold">Status</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Business</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Contact</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Subscription</th>
+                <th className="px-2 py-1 border text-blue-900 font-bold">Verify</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Edit</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Delete</th>
               </tr>
@@ -146,6 +175,24 @@ export default function GeneralUserTable() {
                   <td className="border px-2 py-1">{index + 1}</td>
                   <td className="border px-2 py-1">{user.name}</td>
                   <td className="border px-2 py-1">{user.email}</td>
+                  <td className="border px-2 py-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      user.role === 'Verified Customer' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {user.role || 'Unverified Customer'}
+                    </span>
+                  </td>
+                  <td className="border px-2 py-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      user.is_verified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.is_verified ? 'Verified' : 'Unverified'}
+                    </span>
+                  </td>
                   <td className="border px-2 py-1">{user.business}</td>
                   <td className="border px-2 py-1">{user.contact}</td>
                   <td className="border px-2 py-1">
@@ -187,6 +234,24 @@ export default function GeneralUserTable() {
                           'bg-green-500'
                         }`}></div>
                       </div>
+                    )}
+                  </td>
+                  <td className="border px-2 py-1">
+                    {updatingVerification === user.id ? (
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleVerificationChange(user.id, !user.is_verified)}
+                        className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                          user.is_verified
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                      >
+                        {user.is_verified ? 'Unverify' : 'Verify'}
+                      </button>
                     )}
                   </td>
                   <td className="border px-2 py-1 text-blue-600 cursor-pointer">

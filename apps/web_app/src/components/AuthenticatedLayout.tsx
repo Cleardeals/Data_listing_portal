@@ -27,10 +27,14 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
     if (!loading && !isAuthenticated && pathname !== "/login" && pathname !== "/") {
       router.push("/login");
     }
-  }, [loading, isAuthenticated, pathname, router]);
+    // Redirect unverified users to unverified page (except if already on unverified page)
+    else if (!loading && isAuthenticated && user && !user.is_verified && pathname !== "/unverified") {
+      router.push("/unverified");
+    }
+  }, [loading, isAuthenticated, user, pathname, router]);
 
-  // Don't show navbar on login page or homepage
-  const showNavBar = pathname !== "/login" && pathname !== "/";
+  // Don't show navbar on login page, homepage, or unverified page
+  const showNavBar = pathname !== "/login" && pathname !== "/" && pathname !== "/unverified";
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -43,7 +47,7 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
 
   return (
     <>
-      {showNavBar && isAuthenticated && (
+      {showNavBar && isAuthenticated && user?.is_verified && (
         <nav className="bg-white shadow-md sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">

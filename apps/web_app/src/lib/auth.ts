@@ -1,4 +1,4 @@
-import { supabase } from '../../../../packages/shared/supabase';
+import { supabase, supabaseAdmin } from '../../../../packages/shared/supabase';
 import { SignJWT, jwtVerify } from 'jose';
 
 export interface User {
@@ -7,6 +7,8 @@ export interface User {
   role: string;
   created_at?: string;
   email_confirmed_at?: string;
+  is_verified?: boolean;
+  group?: string;
 }
 
 export interface AuthSession {
@@ -41,13 +43,18 @@ export class AuthService {
   // Send OTP to email (OTP only, no magic links)
   async sendOTP(email: string): Promise<{ success: boolean; message: string }> {
     try {
+      // Check if user already exists in the database
+      const existingUser = await this.checkUserExists(email);
+      
       // Use signInWithOtp for email OTP without redirect URL
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
           shouldCreateUser: true,
           data: {
-            role: 'Customer' // Default role for new users
+            role: existingUser ? existingUser.role : 'Unverified Customer', // Default role for new users
+            group: existingUser ? existingUser.group : 'customers',
+            is_verified: existingUser ? existingUser.is_verified : false
           }
         }
       });
@@ -70,6 +77,39 @@ export class AuthService {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send OTP';
       return { success: false, message: errorMessage };
+    }
+  }
+
+  // Check if user exists in the database and get their current role/metadata
+  private async checkUserExists(email: string): Promise<{ role: string; group: string; is_verified: boolean } | null> {
+    try {
+      // Use admin client to check if user exists - only on server side
+      if (!supabaseAdmin) {
+        console.log('Admin client not available, treating as new user');
+        return null;
+      }
+
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (error) {
+        console.error('Error checking user existence:', error);
+        return null;
+      }
+
+      const existingUser = data.users.find(user => user.email === email);
+      
+      if (existingUser) {
+        return {
+          role: existingUser.user_metadata?.role || 'Unverified Customer',
+          group: existingUser.user_metadata?.group || 'customers',
+          is_verified: existingUser.user_metadata?.is_verified || false
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking user existence:', error);
+      return null;
     }
   }
 
@@ -117,9 +157,31 @@ export class AuthService {
 
       console.log('AuthService: Successfully got user and session');
 
-      // Set user role if not exists
-      const userRole = data.user.user_metadata?.role || 'Customer';
-      console.log('AuthService: User role:', userRole);
+      // Set user role and metadata from user_metadata
+      const userRole = data.user.user_metadata?.role || 'Unverified Customer';
+      const userGroup = data.user.user_metadata?.group || 'customers';
+      const isVerified = data.user.user_metadata?.is_verified || false;
+      
+      console.log('AuthService: User metadata:', { userRole, userGroup, isVerified });
+
+      // If this is a new user (no role set), update their metadata with default values
+      if (!data.user.user_metadata?.role) {
+        try {
+          const { error: updateError } = await supabase.auth.updateUser({
+            data: {
+              role: 'Unverified Customer',
+              group: 'customers',
+              is_verified: false
+            }
+          });
+          
+          if (updateError) {
+            console.error('Error updating new user metadata:', updateError);
+          }
+        } catch (updateErr) {
+          console.error('Error updating new user metadata:', updateErr);
+        }
+      }
 
       // Create a simple session object first
       const session: AuthSession = {
@@ -127,6 +189,8 @@ export class AuthService {
           id: data.user.id,
           email: data.user.email!,
           role: userRole,
+          group: userGroup,
+          is_verified: isVerified,
           created_at: data.user.created_at,
           email_confirmed_at: data.user.email_confirmed_at
         },
@@ -154,6 +218,8 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      group: user.group,
+      is_verified: user.is_verified,
       created_at: user.created_at,
       email_confirmed_at: user.email_confirmed_at
     })
@@ -244,12 +310,16 @@ export class AuthService {
         return { success: false };
       }
 
-      const userRole = data.user?.user_metadata?.role || 'Customer';
+      const userRole = data.user?.user_metadata?.role || 'Unverified Customer';
+      const userGroup = data.user?.user_metadata?.group || 'customers';
+      const isVerified = data.user?.user_metadata?.is_verified || false;
       
       const customToken = await this.createCustomToken({
         id: data.user!.id,
         email: data.user!.email!,
         role: userRole,
+        group: userGroup,
+        is_verified: isVerified,
         created_at: data.user!.created_at,
         email_confirmed_at: data.user!.email_confirmed_at
       });
@@ -259,6 +329,8 @@ export class AuthService {
           id: data.user!.id,
           email: data.user!.email!,
           role: userRole,
+          group: userGroup,
+          is_verified: isVerified,
           created_at: data.user!.created_at,
           email_confirmed_at: data.user!.email_confirmed_at
         },

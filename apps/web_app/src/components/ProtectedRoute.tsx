@@ -20,6 +20,12 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         return;
       }
 
+      // Check if user is unverified and redirect to unverified page
+      if (user && !user.is_verified) {
+        router.push("/unverified");
+        return;
+      }
+
       if (requiredRole && user?.role !== requiredRole) {
         // Redirect to unauthorized page or dashboard based on user role
         router.push("/dashboard");
@@ -38,6 +44,11 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   if (!isAuthenticated) {
     return null; // Will redirect to login
+  }
+
+  // Check if user is unverified
+  if (user && !user.is_verified) {
+    return null; // Will redirect to unverified page
   }
 
   if (requiredRole && user?.role !== requiredRole) {

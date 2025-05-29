@@ -49,6 +49,9 @@ export interface ExternalUser {
   id: string;
   name: string;
   email: string;
+  role?: string;
+  group?: string;
+  is_verified?: boolean;
   business: string;
   contact: string;
   subscription: string;
@@ -234,6 +237,37 @@ export const updateExternalUserSubscription = async (userId: string, newSubscrip
     if (!response.ok) throw new Error('Failed to update user subscription');
   } catch (error) {
     console.error('Error updating user subscription:', error);
+    throw error;
+  }
+};
+
+// User verification functions
+export const verifyUser = async (userId: string): Promise<void> => {
+  try {
+    const response = await fetch('/api/external-users/verify', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, action: 'verify' })
+    });
+    
+    if (!response.ok) throw new Error('Failed to verify user');
+  } catch (error) {
+    console.error('Error verifying user:', error);
+    throw error;
+  }
+};
+
+export const unverifyUser = async (userId: string): Promise<void> => {
+  try {
+    const response = await fetch('/api/external-users/verify', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, action: 'unverify' })
+    });
+    
+    if (!response.ok) throw new Error('Failed to unverify user');
+  } catch (error) {
+    console.error('Error unverifying user:', error);
     throw error;
   }
 };
