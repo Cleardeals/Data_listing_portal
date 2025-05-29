@@ -1,9 +1,26 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function UnauthorizedPage() {
   const router = useRouter()
+  const { logout } = useAuth()
+
+  const handleGoToLogin = async () => {
+    try {
+      await logout()
+      router.push('/auth/login')
+    } catch (error) {
+      console.error('Error during logout:', error)
+      // Force navigation even if logout fails
+      router.push('/auth/login')
+    }
+  }
+
+  const handleGoToHome = () => {
+    router.push('/')
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
@@ -14,13 +31,13 @@ export default function UnauthorizedPage() {
           You don&apos;t have permission to access this page.
         </p>
         <button
-          onClick={() => router.push('/auth/login')}
+          onClick={handleGoToLogin}
           className="w-full bg-blue-600 text-white py-3 rounded-md shadow-md font-semibold text-lg hover:bg-blue-700 transition mb-4"
         >
           Go to Login
         </button>
         <button
-          onClick={() => router.push('/')}
+          onClick={handleGoToHome}
           className="text-blue-600 text-sm hover:underline"
         >
           Go to Home

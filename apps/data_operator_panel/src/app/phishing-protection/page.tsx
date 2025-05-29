@@ -1,22 +1,35 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function PhishingProtectionPage() {
   const router = useRouter()
   const { logout } = useAuth()
+  const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
-    // Auto-logout and redirect to login after 3 seconds
-    const timer = setTimeout(() => {
-      logout()
-      router.push('/auth/login')
-    }, 3000)
+    // Countdown timer
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          logout()
+          router.push('/auth/login')
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
 
-    return () => clearTimeout(timer)
+    return () => clearInterval(timer)
   }, [logout, router])
+
+  const handleManualLogout = async () => {
+    await logout()
+    router.push('/auth/login')
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50">
@@ -45,11 +58,18 @@ export default function PhishingProtectionPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-800">
-                You will be automatically logged out and redirected to the login page in a few seconds.
+                You will be automatically logged out and redirected to the login page in {countdown} seconds.
               </p>
             </div>
           </div>
         </div>
+
+        <button
+          onClick={handleManualLogout}
+          className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition mb-4"
+        >
+          Logout Now
+        </button>
 
         <div className="text-xs text-gray-400">
           If you believe this is an error, please contact your system administrator.

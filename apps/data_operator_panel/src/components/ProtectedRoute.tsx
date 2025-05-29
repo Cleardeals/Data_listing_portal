@@ -20,22 +20,37 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         return;
       }
 
-      // Check if user belongs to "internalusers" group - block all "customer" group users
+      // Validate user has proper metadata structure
+      if (!user) {
+        console.warn('Access denied: No user data available');
+        router.push('/auth/login');
+        return;
+      }
+
+      // Check if user belongs to "customers" group - block all customer users
       if (user?.group === 'customers') {
-        console.warn('Access denied: Customer group users cannot access data operator panel')
-        router.push('/phishing-protection')
-        return
+        console.warn('Access denied: Customer group users cannot access data operator panel');
+        router.push('/phishing-protection');
+        return;
       }
 
       // Only allow "internalusers" group to access data operator panel
       if (user?.group !== 'internalusers') {
-        console.warn('Access denied: Only internal users can access data operator panel')
-        router.push('/phishing-protection')
-        return
+        console.warn('Access denied: Only internal users can access data operator panel. User group:', user?.group);
+        router.push('/phishing-protection');
+        return;
       }
 
+      // Verify user has data_operator role
+      if (user?.role !== 'data_operator') {
+        console.warn('Access denied: Only data operators can access this panel. User role:', user?.role);
+        router.push('/auth/denied');
+        return;
+      }
+
+      // Check for required role if specified
       if (requiredRole && user?.role !== requiredRole) {
-        // Redirect to unauthorized page or dashboard based on user role
+        console.warn('Access denied: Required role not met. Required:', requiredRole, 'User:', user?.role);
         router.push("/dashboard");
         return;
       }
@@ -56,12 +71,17 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   // Block customers group from accessing data operator panel
   if (user?.group === 'customers') {
-    return null
+    return null; // Will redirect to phishing protection
   }
 
   // Only allow internalusers group
   if (user?.group !== 'internalusers') {
-    return null
+    return null; // Will redirect to phishing protection
+  }
+
+  // Only allow data_operator role
+  if (user?.role !== 'data_operator') {
+    return null; // Will redirect to access denied
   }
 
   if (requiredRole && user?.role !== requiredRole) {

@@ -29,10 +29,10 @@ export default function AccessDeniedPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">
-            This customer portal is restricted to verified customer accounts only.
+            Access to this portal is restricted.
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            Internal user accounts should use the admin panel instead.
+            Please contact your administrator if you believe this is an error.
           </p>
         </div>
         

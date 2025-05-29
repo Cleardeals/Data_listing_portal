@@ -5,8 +5,11 @@ export interface User {
   id: string;
   email: string;
   role: string;
+  name?: string;
   group?: string;
+  contact?: string;
   is_verified?: boolean;
+  email_verified?: boolean;
   created_at?: string;
   email_confirmed_at?: string;
 }
@@ -40,15 +43,15 @@ export class AuthService {
     return AuthService.instance;
   }
 
-  // Send OTP to email
+  // Send OTP to email - Only for existing users, no new signups allowed
   async sendOTP(email: string): Promise<{ success: boolean; message: string }> {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
-          shouldCreateUser: true,
+          shouldCreateUser: false, // Prevent new user creation
           data: {
-            role: 'data_operator' // Data operator role for this panel
+            role: 'data_operator'
           }
         }
       });
@@ -58,6 +61,8 @@ export class AuthService {
           return { success: false, message: 'Too many requests. Please wait a moment before trying again.' };
         } else if (error.message.includes('invalid email')) {
           return { success: false, message: 'Please enter a valid email address.' };
+        } else if (error.message.includes('User not found') || error.message.includes('signup')) {
+          return { success: false, message: 'Access denied. Only pre-authorized data operators can login. Please contact your administrator.' };
         }
         
         return { success: false, message: error.message };
@@ -114,17 +119,40 @@ export class AuthService {
 
       console.log('AuthService: Successfully got user and session');
 
-      // Set user role as data_operator
-      const userRole = 'data_operator';
-      console.log('AuthService: User role:', userRole);
+      // Get user metadata - ensure it matches required structure
+      const userMetadata = data.session.user.user_metadata || {};
+      const userRole = userMetadata.role || 'data_operator';
+      const userGroup = userMetadata.group || 'internalusers';
+      const userName = userMetadata.name;
+      const userContact = userMetadata.contact;
+      const isVerified = userMetadata.is_verified !== undefined ? userMetadata.is_verified : true;
+      const emailVerified = userMetadata.email_verified !== undefined ? userMetadata.email_verified : true;
 
-      // Update user metadata with role
+      console.log('AuthService: User metadata:', { userRole, userGroup, userName, userContact, isVerified, emailVerified });
+
+      // Verify user has proper metadata structure for data operator panel
+      if (userGroup !== 'internalusers') {
+        console.warn('AuthService: User is not in internalusers group:', userGroup);
+        return { success: false, message: 'Access denied. Only internal users can access the data operator panel.' };
+      }
+
+      if (userRole !== 'data_operator') {
+        console.warn('AuthService: User does not have data_operator role:', userRole);
+        return { success: false, message: 'Access denied. Only data operators can access this panel.' };
+      }
+
+      // Update user metadata with role if needed
       const { error: updateError } = await supabase.auth.updateUser({
-        data: { role: userRole }
+        data: { 
+          role: userRole,
+          group: userGroup,
+          is_verified: isVerified,
+          email_verified: emailVerified
+        }
       });
 
       if (updateError) {
-        console.warn('Failed to update user role:', updateError.message);
+        console.warn('Failed to update user metadata:', updateError.message);
       }
 
       const session: AuthSession = {
@@ -132,8 +160,11 @@ export class AuthService {
           id: data.user.id,
           email: data.user.email!,
           role: userRole,
-          group: data.session.user.user_metadata?.group || 'internalusers',
-          is_verified: data.session.user.user_metadata?.is_verified || true,
+          name: userName,
+          group: userGroup,
+          contact: userContact,
+          is_verified: isVerified,
+          email_verified: emailVerified,
           created_at: data.user.created_at,
           email_confirmed_at: data.user.email_confirmed_at
         },
@@ -249,12 +280,22 @@ export class AuthService {
         return { success: false };
       }
 
-      const userRole = 'data_operator';
+      const userRole = data.session.user.user_metadata?.role || 'data_operator';
+      const userGroup = data.session.user.user_metadata?.group || 'internalusers';
+      const userName = data.session.user.user_metadata?.name;
+      const userContact = data.session.user.user_metadata?.contact;
+      const isVerified = data.session.user.user_metadata?.is_verified !== undefined ? data.session.user.user_metadata?.is_verified : true;
+      const emailVerified = data.session.user.user_metadata?.email_verified !== undefined ? data.session.user.user_metadata?.email_verified : true;
       
       const customToken = await this.createCustomToken({
         id: data.user!.id,
         email: data.user!.email!,
         role: userRole,
+        name: userName,
+        group: userGroup,
+        contact: userContact,
+        is_verified: isVerified,
+        email_verified: emailVerified,
         created_at: data.user!.created_at,
         email_confirmed_at: data.user!.email_confirmed_at
       });
@@ -264,8 +305,11 @@ export class AuthService {
           id: data.user!.id,
           email: data.user!.email!,
           role: userRole,
-          group: data.session.user.user_metadata?.group || 'internalusers',
-          is_verified: data.session.user.user_metadata?.is_verified || true,
+          name: userName,
+          group: userGroup,
+          contact: userContact,
+          is_verified: isVerified,
+          email_verified: emailVerified,
           created_at: data.user!.created_at,
           email_confirmed_at: data.user!.email_confirmed_at
         },

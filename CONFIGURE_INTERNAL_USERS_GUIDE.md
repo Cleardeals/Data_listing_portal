@@ -1,6 +1,16 @@
 # 🔧 Configure Internal Users via Supabase Dashboard
 
-## 📋 How to Make User Accounts Accessible as Internal Users
+##### For Data Operator (Limited Admin Access)
+```json
+{
+  "name": "Jane Smith", 
+  "group": "internalusers",
+  "role": "data_operator",
+  "contact": "+1-555-0456",
+  "is_verified": true,
+  "email_verified": true
+}
+``` Make User Accounts Accessible as Internal Users
 
 Based on your current implementation, here's exactly how to configure user accounts to access the Super Admin Panel and Data Operator Panel through the Supabase dashboard.
 
@@ -50,7 +60,9 @@ Your access control system checks for these specific metadata fields:
   "group": "internalusers",
   "role": "super_admin",
   "contact": "+1-555-0123",
-  "is_verified": true
+  "is_verified": true,
+  "email_verified": true
+}
 }
 ```
 
@@ -61,7 +73,8 @@ Your access control system checks for these specific metadata fields:
   "group": "internalusers",
   "role": "data_operator",
   "contact": "+1-555-0456",
-  "is_verified": true
+  "is_verified": true,
+  "email_verified": true
 }
 ```
 

@@ -20,16 +20,20 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         return;
       }
 
-      // Check if user belongs to "internalusers" group - block internal users from web app
+      // Allow internal users with admin roles (super_admin or data_operator) to access web app
       if (user?.group === 'internalusers') {
-        console.warn('Access denied: Internal users cannot access customer web app')
-        router.push('/access-denied')
-        return
-      }
-
-      // Only allow "customers" group to access web app
-      if (user?.group && user.group !== 'customers') {
-        console.warn('Access denied: Only customer group users can access web app')
+        // Allow super_admin and data_operator roles from internalusers group
+        if (user?.role !== 'super_admin' && user?.role !== 'data_operator') {
+          console.warn('Access denied: Internal users must have super_admin or data_operator role to access web app')
+          router.push('/access-denied')
+          return
+        }
+        // Internal users with proper roles can continue
+      } else if (user?.group === 'customers') {
+        // Customers can access (existing logic)
+      } else {
+        // Block any other groups
+        console.warn('Access denied: Only customer group or internal admin users can access web app')
         router.push('/access-denied')
         return
       }
@@ -60,13 +64,17 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return null; // Will redirect to login
   }
 
-  // Block internalusers group from accessing web app
+  // Allow internal users with admin roles (super_admin or data_operator)
   if (user?.group === 'internalusers') {
-    return null
-  }
-
-  // Only allow customers group
-  if (user?.group && user.group !== 'customers') {
+    // Block internal users without proper admin roles
+    if (user?.role !== 'super_admin' && user?.role !== 'data_operator') {
+      return null // Will redirect to access denied
+    }
+    // Internal users with proper roles can continue
+  } else if (user?.group === 'customers') {
+    // Customers can access (existing logic)
+  } else {
+    // Block any other groups
     return null
   }
 
