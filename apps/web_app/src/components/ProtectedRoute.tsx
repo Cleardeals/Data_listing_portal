@@ -20,6 +20,20 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         return;
       }
 
+      // Check if user belongs to "internalusers" group - block internal users from web app
+      if (user?.group === 'internalusers') {
+        console.warn('Access denied: Internal users cannot access customer web app')
+        router.push('/access-denied')
+        return
+      }
+
+      // Only allow "customers" group to access web app
+      if (user?.group && user.group !== 'customers') {
+        console.warn('Access denied: Only customer group users can access web app')
+        router.push('/access-denied')
+        return
+      }
+
       // Check if user is unverified and redirect to unverified page
       if (user && !user.is_verified) {
         router.push("/unverified");
@@ -44,6 +58,16 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   if (!isAuthenticated) {
     return null; // Will redirect to login
+  }
+
+  // Block internalusers group from accessing web app
+  if (user?.group === 'internalusers') {
+    return null
+  }
+
+  // Only allow customers group
+  if (user?.group && user.group !== 'customers') {
+    return null
   }
 
   // Check if user is unverified

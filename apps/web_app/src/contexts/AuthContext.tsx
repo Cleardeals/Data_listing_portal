@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (email: string) => Promise<{ success: boolean; message: string }>;
   verifyOTP: (email: string, otp: string) => Promise<{ success: boolean; message: string; user?: User }>;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -96,12 +97,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshSession = async () => {
+    try {
+      const result = await authService.refreshSession();
+      if (result.success && result.session) {
+        setUser(result.session.user);
+      } else {
+        // Session refresh failed, logout user
+        await logout();
+      }
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+      await logout();
+    }
+  };
+
   const value: AuthContextType = {
     user,
     loading,
     login,
     verifyOTP,
     logout,
+    refreshSession,
     isAuthenticated: !!user,
   };
 

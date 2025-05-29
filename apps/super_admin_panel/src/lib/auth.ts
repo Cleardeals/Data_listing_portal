@@ -20,6 +20,8 @@ export interface AuthSession {
     id: string
     email: string
     role: string
+    group?: string
+    is_verified?: boolean
   }
 }
 
@@ -65,6 +67,11 @@ export class AuthService {
         return { error: 'No session created' }
       }
 
+      // Get user metadata from the authenticated user
+      const userGroup = data.session.user.user_metadata?.group || 'customer';
+      const userRole = data.session.user.user_metadata?.role || 'customer';
+      const isVerified = data.session.user.user_metadata?.is_verified || false;
+
       const session: AuthSession = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -72,7 +79,9 @@ export class AuthService {
         user: {
           id: data.session.user.id,
           email: data.session.user.email || '',
-          role: 'super_admin',
+          role: userRole,
+          group: userGroup,
+          is_verified: isVerified,
         },
       }
 
@@ -128,6 +137,11 @@ export class AuthService {
         return null
       }
 
+      // Get user metadata from the refreshed session
+      const userGroup = data.session.user.user_metadata?.group || 'customer';
+      const userRole = data.session.user.user_metadata?.role || 'customer';
+      const isVerified = data.session.user.user_metadata?.is_verified || false;
+
       const session: AuthSession = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -135,7 +149,9 @@ export class AuthService {
         user: {
           id: data.session.user.id,
           email: data.session.user.email || '',
-          role: 'super_admin',
+          role: userRole,
+          group: userGroup,
+          is_verified: isVerified,
         },
       }
 

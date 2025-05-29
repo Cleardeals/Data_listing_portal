@@ -24,7 +24,9 @@
   "packageManager": "npm@8.19.4",
   "dependencies": {
     "@radix-ui/themes": "^3.2.1",
+    "@supabase/supabase-js": "^2.49.8",
     "@types/recharts": "^1.8.29",
+    "dotenv": "^16.5.0",
     "recharts": "^2.15.3"
   }
 }

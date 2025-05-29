@@ -10,9 +10,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { supabase } from "../../../../../packages/shared/supabase";
 
 
 
@@ -25,8 +26,41 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 function ProfilePageContent() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshSession } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Setup real-time subscription to monitor user verification status changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const subscription = supabase
+      .channel(`user_verification_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'auth',
+          table: 'users',
+          filter: `id=eq.${user.id}`
+        },
+        (payload: Record<string, unknown>) => {
+          console.log('User verification status changed:', payload);
+          
+          // Refresh the auth session to get latest user data
+          if (refreshSession) {
+            refreshSession();
+          } else {
+            // If refreshSession is not available, force a page reload
+            window.location.reload();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.id, refreshSession]);
 
 
 

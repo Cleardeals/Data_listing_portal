@@ -5,6 +5,8 @@ export interface User {
   id: string;
   email: string;
   role: string;
+  group?: string;
+  is_verified?: boolean;
   created_at?: string;
   email_confirmed_at?: string;
 }
@@ -130,6 +132,8 @@ export class AuthService {
           id: data.user.id,
           email: data.user.email!,
           role: userRole,
+          group: data.session.user.user_metadata?.group || 'internalusers',
+          is_verified: data.session.user.user_metadata?.is_verified || true,
           created_at: data.user.created_at,
           email_confirmed_at: data.user.email_confirmed_at
         },
@@ -260,6 +264,8 @@ export class AuthService {
           id: data.user!.id,
           email: data.user!.email!,
           role: userRole,
+          group: data.session.user.user_metadata?.group || 'internalusers',
+          is_verified: data.session.user.user_metadata?.is_verified || true,
           created_at: data.user!.created_at,
           email_confirmed_at: data.user!.email_confirmed_at
         },

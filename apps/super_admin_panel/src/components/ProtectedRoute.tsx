@@ -20,12 +20,26 @@ export default function ProtectedRoute({ children, requiredRole = 'super_admin' 
         return
       }
 
+      // Check if user belongs to "internalusers" group - block all "customer" group users
+      if (session?.user.group === 'customers') {
+        console.warn('Access denied: Customer group users cannot access admin panel')
+        router.push('/phishing-protection')
+        return
+      }
+
+      // Only allow "internalusers" group to access super admin panel
+      if (session?.user.group !== 'internalusers') {
+        console.warn('Access denied: Only internal users can access admin panel')
+        router.push('/phishing-protection')
+        return
+      }
+
       if (requiredRole && session?.user.role !== requiredRole) {
         router.push('/unauthorized')
         return
       }
     }
-  }, [loading, isAuthenticated, session?.user.role, router, requiredRole])
+  }, [loading, isAuthenticated, session?.user.role, session?.user.group, router, requiredRole])
 
   if (loading) {
     return (
@@ -36,6 +50,16 @@ export default function ProtectedRoute({ children, requiredRole = 'super_admin' 
   }
 
   if (!isAuthenticated) {
+    return null
+  }
+
+  // Block customers group from accessing admin panel
+  if (session?.user.group === 'customers') {
+    return null
+  }
+
+  // Only allow internalusers group
+  if (session?.user.group !== 'internalusers') {
     return null
   }
 

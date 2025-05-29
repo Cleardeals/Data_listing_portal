@@ -1,5 +1,24 @@
 // Types and API functions for Supabase user management
 
+// Utility function to get auth headers
+const getAuthHeaders = () => {
+  const session = localStorage.getItem('super_admin_auth_session');
+  if (!session) {
+    throw new Error('No authentication session found');
+  }
+  
+  try {
+    const parsedSession = JSON.parse(session);
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${parsedSession.access_token}`
+    };
+  } catch (error) {
+    console.error('Error parsing authentication session:', error);
+    throw new Error('Invalid authentication session');
+  }
+};
+
 // Define types for metadata objects
 export interface UserMetadata {
   name?: string;
@@ -100,8 +119,15 @@ export const getSubscriptionTypes = (): string[] => {
 // Internal Users API Functions
 export const fetchInternalUsers = async (): Promise<InternalUser[]> => {
   try {
-    const response = await fetch('/api/internal-users');
-    if (!response.ok) throw new Error('Failed to fetch internal users');
+    const response = await fetch('/api/internal-users', {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to fetch internal users');
+    }
     return await response.json();
   } catch (error) {
     console.error('Error fetching internal users:', error);
@@ -113,11 +139,16 @@ export const addInternalUser = async (userData: InternalUserFormData): Promise<I
   try {
     const response = await fetch('/api/internal-users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(userData)
     });
     
-    if (!response.ok) throw new Error('Failed to add internal user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to add internal user');
+    }
     return await response.json();
   } catch (error) {
     console.error('Error adding internal user:', error);
@@ -129,11 +160,16 @@ export const updateInternalUser = async (userId: string, userData: InternalUserF
   try {
     const response = await fetch('/api/internal-users', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, userData })
     });
     
-    if (!response.ok) throw new Error('Failed to update internal user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to update internal user');
+    }
     return await response.json();
   } catch (error) {
     console.error('Error updating internal user:', error);
@@ -144,10 +180,16 @@ export const updateInternalUser = async (userId: string, userData: InternalUserF
 export const deleteInternalUser = async (userId: string): Promise<void> => {
   try {
     const response = await fetch(`/api/internal-users?userId=${userId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     
-    if (!response.ok) throw new Error('Failed to delete internal user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to delete internal user');
+    }
   } catch (error) {
     console.error('Error deleting internal user:', error);
     throw error;
@@ -158,11 +200,16 @@ export const updateInternalUserRole = async (userId: string, newRole: string): P
   try {
     const response = await fetch('/api/internal-users/role', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, role: newRole })
     });
     
-    if (!response.ok) throw new Error('Failed to update user role');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to update user role');
+    }
   } catch (error) {
     console.error('Error updating user role:', error);
     throw error;
@@ -172,8 +219,15 @@ export const updateInternalUserRole = async (userId: string, newRole: string): P
 // External Users API Functions
 export const fetchExternalUsers = async (): Promise<ExternalUser[]> => {
   try {
-    const response = await fetch('/api/external-users');
-    if (!response.ok) throw new Error('Failed to fetch external users');
+    const response = await fetch('/api/external-users', {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to fetch external users');
+    }
     return await response.json();
   } catch (error) {
     console.error('Error fetching external users:', error);
@@ -185,11 +239,16 @@ export const addExternalUser = async (userData: ExternalUserFormData): Promise<E
   try {
     const response = await fetch('/api/external-users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(userData)
     });
     
-    if (!response.ok) throw new Error('Failed to add external user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to add external user');
+    }
     return await response.json();
   } catch (error) {
     console.error('Error adding external user:', error);
@@ -201,11 +260,16 @@ export const updateExternalUser = async (userId: string, userData: ExternalUserF
   try {
     const response = await fetch('/api/external-users', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, userData })
     });
     
-    if (!response.ok) throw new Error('Failed to update external user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to update external user');
+    }
     return await response.json();
   } catch (error) {
     console.error('Error updating external user:', error);
@@ -216,10 +280,16 @@ export const updateExternalUser = async (userId: string, userData: ExternalUserF
 export const deleteExternalUser = async (userId: string): Promise<void> => {
   try {
     const response = await fetch(`/api/external-users?userId=${userId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     
-    if (!response.ok) throw new Error('Failed to delete external user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to delete external user');
+    }
   } catch (error) {
     console.error('Error deleting external user:', error);
     throw error;
@@ -230,11 +300,16 @@ export const updateExternalUserSubscription = async (userId: string, newSubscrip
   try {
     const response = await fetch('/api/external-users/subscription', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, subscription: newSubscription })
     });
     
-    if (!response.ok) throw new Error('Failed to update user subscription');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to update user subscription');
+    }
   } catch (error) {
     console.error('Error updating user subscription:', error);
     throw error;
@@ -246,11 +321,16 @@ export const verifyUser = async (userId: string): Promise<void> => {
   try {
     const response = await fetch('/api/external-users/verify', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, action: 'verify' })
     });
     
-    if (!response.ok) throw new Error('Failed to verify user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to verify user');
+    }
   } catch (error) {
     console.error('Error verifying user:', error);
     throw error;
@@ -261,11 +341,16 @@ export const unverifyUser = async (userId: string): Promise<void> => {
   try {
     const response = await fetch('/api/external-users/verify', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ userId, action: 'unverify' })
     });
     
-    if (!response.ok) throw new Error('Failed to unverify user');
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Access denied: Insufficient permissions');
+      }
+      throw new Error('Failed to unverify user');
+    }
   } catch (error) {
     console.error('Error unverifying user:', error);
     throw error;

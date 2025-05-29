@@ -11,7 +11,53 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
   }
 });
 
-export async function GET() {
+async function verifyAccess(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return { authorized: false, error: 'Missing or invalid authorization header' };
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Verify the Supabase JWT token and get user data
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    
+    if (error || !user) {
+      return { authorized: false, error: 'Invalid or expired token' };
+    }
+
+    // Get user metadata from Supabase user record
+    const userGroup = user.user_metadata?.group || 'customer';
+    const userRole = user.user_metadata?.role || 'customer';
+    
+    // Check if user belongs to "internalusers" group
+    if (userGroup !== 'internalusers') {
+      return { authorized: false, error: 'Access denied: Only internal users can access this endpoint' };
+    }
+
+    // Only super_admin can manage internal users
+    if (userRole !== 'super_admin') {
+      return { authorized: false, error: 'Access denied: Only super admins can manage internal users' };
+    }
+
+    return { authorized: true, user: { id: user.id, email: user.email, role: userRole, group: userGroup } };
+  } catch (error) {
+    console.error('JWT verification error:', error);
+    return { authorized: false, error: 'Invalid or expired token' };
+  }
+}
+
+export async function GET(request: NextRequest) {
+  // Enforce DAL-based access control - only super_admin can view internal users
+  const accessCheck = await verifyAccess(request);
+  if (!accessCheck.authorized) {
+    return NextResponse.json(
+      { error: accessCheck.error },
+      { status: 403 }
+    );
+  }
+
   try {
     // Fetch internal users (super admins)
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
@@ -41,6 +87,15 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Enforce DAL-based access control - only super_admin can create internal users
+  const accessCheck = await verifyAccess(request);
+  if (!accessCheck.authorized) {
+    return NextResponse.json(
+      { error: accessCheck.error },
+      { status: 403 }
+    );
+  }
+
   try {
     const userData = await request.json();
     
@@ -81,6 +136,15 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  // Enforce DAL-based access control
+  const accessCheck = await verifyAccess(request);
+  if (!accessCheck.authorized) {
+    return NextResponse.json(
+      { error: accessCheck.error },
+      { status: 403 }
+    );
+  }
+
   try {
     const { userId, userData } = await request.json();
     
@@ -117,6 +181,15 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // Enforce DAL-based access control
+  const accessCheck = await verifyAccess(request);
+  if (!accessCheck.authorized) {
+    return NextResponse.json(
+      { error: accessCheck.error },
+      { status: 403 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');

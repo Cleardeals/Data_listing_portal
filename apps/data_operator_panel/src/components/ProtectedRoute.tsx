@@ -20,6 +20,20 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         return;
       }
 
+      // Check if user belongs to "internalusers" group - block all "customer" group users
+      if (user?.group === 'customers') {
+        console.warn('Access denied: Customer group users cannot access data operator panel')
+        router.push('/phishing-protection')
+        return
+      }
+
+      // Only allow "internalusers" group to access data operator panel
+      if (user?.group !== 'internalusers') {
+        console.warn('Access denied: Only internal users can access data operator panel')
+        router.push('/phishing-protection')
+        return
+      }
+
       if (requiredRole && user?.role !== requiredRole) {
         // Redirect to unauthorized page or dashboard based on user role
         router.push("/dashboard");
@@ -38,6 +52,16 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   if (!isAuthenticated) {
     return null; // Will redirect to login
+  }
+
+  // Block customers group from accessing data operator panel
+  if (user?.group === 'customers') {
+    return null
+  }
+
+  // Only allow internalusers group
+  if (user?.group !== 'internalusers') {
+    return null
   }
 
   if (requiredRole && user?.role !== requiredRole) {

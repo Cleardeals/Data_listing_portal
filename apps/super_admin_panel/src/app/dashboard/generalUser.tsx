@@ -12,11 +12,10 @@ import {
   deleteExternalUser, 
   addExternalUser, 
   updateExternalUser, 
-  getSubscriptionTypes, 
-  updateExternalUserSubscription,
   verifyUser,
   unverifyUser
 } from '../../lib/supabaseUsers';
+import { supabase } from '../../../../../packages/shared/supabase';
 
 export default function GeneralUserTable() {
   const [users, setUsers] = useState<ExternalUser[]>([]);
@@ -27,8 +26,6 @@ export default function GeneralUserTable() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ExternalUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const subscriptionTypes = getSubscriptionTypes();
-  const [updatingSubscription, setUpdatingSubscription] = useState<string | null>(null);
   const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
   
   useEffect(() => {
@@ -44,6 +41,30 @@ export default function GeneralUserTable() {
     };
     
     loadUsers();
+
+    // Setup real-time subscription for external users
+    const subscription = supabase
+      .channel('external_users_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'auth',
+          table: 'users'
+        },
+        (payload: Record<string, unknown>) => {
+          console.log('Real-time update received:', payload);
+          
+          // Refresh users list when auth.users table changes
+          loadUsers();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on component unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
   
   // Handle user deletion
@@ -90,21 +111,6 @@ export default function GeneralUserTable() {
     }
   };
   
-  // Handle subscription change
-  const handleSubscriptionChange = async (userId: string, newSubscription: string) => {
-    setUpdatingSubscription(userId);
-    try {
-      await updateExternalUserSubscription(userId, newSubscription);
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, subscription: newSubscription } : user
-      ));
-    } catch (error) {
-      console.error('Failed to update subscription:', error);
-    } finally {
-      setUpdatingSubscription(null);
-    }
-  };
-
   // Handle verification status change
   const handleVerificationChange = async (userId: string, verify: boolean) => {
     setUpdatingVerification(userId);
@@ -163,7 +169,6 @@ export default function GeneralUserTable() {
                 <th className="px-2 py-1 border text-blue-900 font-bold">Status</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Business</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Contact</th>
-                <th className="px-2 py-1 border text-blue-900 font-bold">Subscription</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Verify</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Edit</th>
                 <th className="px-2 py-1 border text-blue-900 font-bold">Delete</th>
@@ -195,47 +200,6 @@ export default function GeneralUserTable() {
                   </td>
                   <td className="border px-2 py-1">{user.business}</td>
                   <td className="border px-2 py-1">{user.contact}</td>
-                  <td className="border px-2 py-1">
-                    {updatingSubscription === user.id ? (
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <select 
-                          value={user.subscription}
-                          onChange={(e) => handleSubscriptionChange(user.id, e.target.value)}
-                          className="appearance-none w-full bg-white border border-gray-300 hover:border-blue-400 px-3 py-1 rounded-md text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-colors"
-                        >
-                          {subscriptionTypes.map((type) => (
-                            <option 
-                              key={type} 
-                              value={type}
-                              className={`${
-                                type === 'Free' ? 'text-gray-600' :
-                                type === 'Basic' ? 'text-blue-600' :
-                                type === 'Premium' ? 'text-purple-600' :
-                                'text-green-600'
-                              } font-medium`}
-                            >
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                          <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                          </svg>
-                        </div>
-                        <div className={`absolute top-0 left-0 w-1 h-full rounded-l-md ${
-                          user.subscription === 'Free' ? 'bg-gray-400' :
-                          user.subscription === 'Basic' ? 'bg-blue-400' :
-                          user.subscription === 'Premium' ? 'bg-purple-500' :
-                          'bg-green-500'
-                        }`}></div>
-                      </div>
-                    )}
-                  </td>
                   <td className="border px-2 py-1">
                     {updatingVerification === user.id ? (
                       <div className="flex justify-center items-center">
