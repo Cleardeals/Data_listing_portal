@@ -116,7 +116,7 @@ export default function Home() {
 
       {/* Welcome Text */}
       <div className="text-center my-8 px-4">
-        <h1 className="text-3xl text-blue-800 font-bold">Clear Deals Solutions</h1>
+        <h1 className="text-3xl text-blue-800 font-bold"> Solutions</h1>
         <p className="text-lg text-blue-600 mt-2">Lets Work with Technology</p>
         <p className="text-gray-700 mt-4">
           Clear Deals Property is a modern real estate platform designed to simplify property transactions.
