@@ -118,7 +118,7 @@ export default function Home() {
         <h1 className="text-3xl text-blue-800 font-bold"> Solutions</h1>
         <p className="text-lg text-blue-600 mt-2">Lets Work with Technology</p>
         <p className="text-gray-700 mt-4">
-          Clear Deals Property is a modern real estate platform designed to simplify property transactions.
+          Property is a modern real estate platform designed to simplify property transactions.
         </p>
         <h2>It offers users a seamless experience for buying, selling, and renting properties</h2> 
         <h2>with features like verified listings, advanced search filters, custom login, and secure authentication</h2>
