@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { supabase } from "../../../../../packages/shared/supabase";
+import { supabase } from "../../lib/supabase";
 
 
 

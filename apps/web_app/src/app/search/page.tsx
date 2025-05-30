@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { supabase } from "../../../../../packages/shared/supabase";
+import { supabase } from "../../lib/supabase";
 
 // Extract rent utility function
 const extractRent = (rentString: string) => {

@@ -8,7 +8,7 @@ Successfully integrated the data_operator_panel with Supabase database, replacin
 ### 1. Database Connection
 - **File**: `apps/data_operator_panel/src/app/dashboard/page.tsx`
 - **Changes**: 
-  - Added Supabase client import from `packages/shared/supabase/index`
+  - Added Supabase client import from local `src/lib/supabase.ts`
   - Replaced local `fetchPropertyData()` with live Supabase queries
   - Updated state management to use `SupabasePropertyData` interface
 

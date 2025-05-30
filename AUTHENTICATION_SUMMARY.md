@@ -50,9 +50,9 @@ Successfully implemented a comprehensive email-based authentication system using
 - `/src/app/tableview/page.tsx` - Added ProtectedRoute wrapper
 
 ### Configuration Files
-- `/packages/shared/supabase/index.ts` - Enhanced Supabase client configuration
-- `/next.config.ts` - Global environment variable loading setup
-- `/.env` - Global environment variables (JWT secret, Supabase credentials)
+- Individual project Supabase configurations in `src/lib/supabase.ts` for each app
+- Local `.env` files in each project for environment variables
+- Project-specific `next.config.ts` files for Next.js configuration
 
 ## Authentication Flow
 

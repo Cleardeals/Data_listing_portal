@@ -5,7 +5,7 @@ import { PropertyData, supabaseHelpers } from "@/lib/dummyProperties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { supabase } from "../../../../../packages/shared/supabase";
+import { supabase } from "../../lib/supabase";
 
 const Page = () => {
   const [properties, setProperties] = useState<PropertyData[]>([]);

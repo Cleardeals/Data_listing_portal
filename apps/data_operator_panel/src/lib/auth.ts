@@ -1,4 +1,4 @@
-import { supabase } from '../../../../packages/shared/supabase';
+import { supabase } from './supabase';
 import { SignJWT, jwtVerify } from 'jose';
 
 export interface User {

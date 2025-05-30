@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Centralized Supabase configuration for the entire monorepo
-// Environment variables are loaded from the global .env file at the root level
+// Supabase configuration for web_app
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
@@ -30,13 +29,10 @@ export const supabaseAdmin = typeof window === 'undefined' && supabaseServiceRol
     })
   : null;
 
-// Export components
-export { default as SupabaseTestComponent } from './components/SupabaseTestComponent';
-
 // Helper function to test connection (optional)
 export const testConnection = async () => {
   try {
-    const { data, error } = await supabase.from('strings').select('count').single();
+    const { error } = await supabase.from('strings').select('count').single();
     if (error) throw error;
     return { success: true, message: 'Connected to Supabase successfully' };
   } catch (error) {

@@ -11,7 +11,7 @@ import { EditConfirmationModal } from "@/components/modals/EditConfirmationModal
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { SupabasePropertyData } from "@/lib/propertyData";
-import { supabase } from "../../../../../packages/shared/supabase";
+import { supabase } from "../../lib/supabase";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 function DashboardContent() {

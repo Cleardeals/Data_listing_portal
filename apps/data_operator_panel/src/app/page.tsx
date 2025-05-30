@@ -2,7 +2,6 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
-import { SupabaseTestComponent } from "../../../../packages/shared/supabase";
 
 export default function Home() {
   const router = useRouter();
@@ -62,9 +61,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-          {/* Supabase Test Component */}
-          <SupabaseTestComponent />
         </div>
       </main>
 

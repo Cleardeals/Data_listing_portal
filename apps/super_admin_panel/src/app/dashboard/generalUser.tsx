@@ -15,7 +15,7 @@ import {
   verifyUser,
   unverifyUser
 } from '../../lib/supabaseUsers';
-import { supabase } from '../../../../../packages/shared/supabase';
+import { supabase } from '../../lib/supabase';
 
 export default function GeneralUserTable() {
   const [users, setUsers] = useState<ExternalUser[]>([]);

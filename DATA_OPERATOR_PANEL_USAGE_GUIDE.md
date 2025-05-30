@@ -93,7 +93,7 @@ Table: propertydata
 - `apps/data_operator_panel/src/lib/supabaseTypes.ts` - Type definitions
 
 ### Key Technologies:
-- **Supabase Client**: Shared from `packages/shared/supabase`
+- **Supabase Client**: Local configuration in `src/lib/supabase.ts`
 - **TypeScript**: Full type safety with proper interfaces
 - **React State**: Optimistic updates with error handling
 - **Next.js**: Server-side rendering compatible

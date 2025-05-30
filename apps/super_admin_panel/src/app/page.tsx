@@ -2,7 +2,6 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
-import { SupabaseTestComponent } from "../../../../packages/shared/supabase";
 
 export default function Home() {
   const router = useRouter();
@@ -46,9 +45,6 @@ export default function Home() {
           <p className="mt-3 max-w-md mx-auto text-lg text-gray-500 sm:text-xl md:mt-5 md:max-w-3xl">
             Manage users, oversee operations, and maintain system integrity with powerful administrative tools.
           </p>
-          
-          {/* Supabase Test Component */}
-          <SupabaseTestComponent />
           
           <div className="mt-10 space-y-4 sm:space-y-0 sm:mx-auto sm:inline-grid sm:grid-cols-1 sm:gap-5">
             <button

@@ -21,8 +21,8 @@ Successfully integrated Supabase authentication and user management system to re
 - **`/apps/super_admin_panel/src/app/api/external-users/subscription/route.ts`** - Subscription updates for external users
 
 ### 4. Configuration Files
-- **`/packages/shared/supabase/index.ts`** - Enhanced with admin client configuration
-- **`/.env`** - Added service role key configuration
+- **Individual project configurations** - Each app has its own `src/lib/supabase.ts` with admin client configuration
+- **Local .env files** - Each app has its own environment configuration
 - **`/SUPABASE_USER_MANAGEMENT_SETUP.md`** - Comprehensive setup guide
 
 ## Key Features Implemented
