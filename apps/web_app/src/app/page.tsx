@@ -153,7 +153,7 @@ export default function Home() {
               </ul>
             </div> 
             <div>
-              <h4 className="font-semibold mb-2">Contact</h4>
+              <h4 className="font-semibold mb-2">Contact us</h4>
               <p>📞 9625252585</p>
               <p>📞 7046327745</p>
             </div>
