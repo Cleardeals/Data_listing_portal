@@ -6,12 +6,15 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { FiUser, FiLogOut } from "react-icons/fi";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
 }
 
-export default function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+export default function AuthenticatedLayout({
+  children,
+}: AuthenticatedLayoutProps) {
   const { user, logout, loading, isAuthenticated } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -24,17 +27,29 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated && pathname !== "/login" && pathname !== "/") {
+    if (
+      !loading &&
+      !isAuthenticated &&
+      pathname !== "/login" &&
+      pathname !== "/"
+    ) {
       router.push("/login");
     }
     // Redirect unverified users to unverified page (except if already on unverified page)
-    else if (!loading && isAuthenticated && user && !user.is_verified && pathname !== "/unverified") {
+    else if (
+      !loading &&
+      isAuthenticated &&
+      user &&
+      !user.is_verified &&
+      pathname !== "/unverified"
+    ) {
       router.push("/unverified");
     }
   }, [loading, isAuthenticated, user, pathname, router]);
 
   // Don't show navbar on login page, homepage, or unverified page
-  const showNavBar = pathname !== "/login" && pathname !== "/" && pathname !== "/unverified";
+  const showNavBar =
+    pathname !== "/login" && pathname !== "/" && pathname !== "/unverified";
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -52,61 +67,66 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex">
-                <Link href="/dashboard" className="flex-shrink-0 flex items-center">
-                  <Image
-                    src="/favicon.png"
-                    alt="Logo"
-                    width={40}
-                    height={40}
-                  />
-                  <span className="ml-2 text-xl font-bold text-[#1793a6]">
-                    Techno Property Solution
+                <Link
+                  href="/dashboard"
+                  className="flex-shrink-0 flex items-center"
+                >
+                  <span className="ml-2 text-2xl font-extrabold text-black tracking-wide drop-shadow-sm hover:scale-105 transition-transform duration-300">
+                    Project X
                   </span>
                 </Link>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  <Link
-                    href="/dashboard"
-                    className={`${pathname === "/dashboard" ? "border-[#1793a6] text-gray-900" : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/search"
-                    className={`${pathname === "/search" ? "border-[#1793a6] text-gray-900" : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                  >
-                    Search
-                  </Link>
-                  <Link
-                    href="/tableview"
-                    className={`${pathname === "/tableview" ? "border-[#1793a6] text-gray-900" : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                  >
-                    Residential Rent
-                  </Link>
-                </div>
+                <div className="pt-2 pb-3 flex space-x-4 bg-white/80 backdrop-blur-md px-4 rounded-xl shadow-sm">
+  {[
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/search", label: "Search" },
+    { href: "/tableview", label: "Residential Rent" },
+  ].map((item) => {
+    const isActive = pathname === item.href;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={`relative px-4 py-2 rounded-lg text-base font-medium transition-all duration-300 ease-in-out
+          ${
+            isActive
+              ? "bg-gradient-to-r from-[#93c5fd] to-[#60a5fa] text-white shadow-lg ring-2 ring-blue-200 hover:scale-105"
+              : "text-gray-600 hover:bg-blue-50 hover:text-blue-700 hover:shadow-sm hover:scale-105"
+          }`}
+      >
+        {item.label}
+      </Link>
+    );
+  })}
+</div>
+
+
+
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                <div className="ml-3 relative">
-                  <div>
-                    <Link href="/profile">
-                      <button className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1793a6]">
-                        <span className="sr-only">Open user menu</span>
-                        <div className="h-8 w-8 rounded-full bg-[#1793a6] text-white flex items-center justify-center">
-                          <i className="fas fa-user"></i>
-                        </div>
-                      </button>
-                    </Link>
-                  </div>
+                <div className="ml-3 relative flex items-center space-x-3 p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
+                  <Link href="/profile">
+                   <button className="relative h-12 w-12 rounded-full bg-gradient-to-tr from-cyan-300 to-purple-500 p-[2px] hover:scale-105 transition-transform duration-300">
+                     <div className="h-full w-full bg-white rounded-full flex items-center justify-center text-blue-400">
+
+                        <FiUser className="text-xl" />
+                      </div>
+                    </button>
+                  </Link>
+
                   {user && (
-                    <div className="ml-2">
-                      <span className="text-sm text-gray-700">{user.email}</span>
-                      <span className="text-xs text-gray-500 block">{user.role}</span>
+                    <div className="flex flex-col justify-center">
+                      <span className="text-sm font-medium text-gray-800 leading-tight">
+                        {user.email}
+                      </span>
+                      <span className="text-xs text-gray-500">{user.role}</span>
                     </div>
                   )}
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="ml-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1793a6] hover:bg-[#14828f] focus:outline-none"
+                  className="ml-4 px-5 py-2.5 flex items-center gap-2 text-sm font-semibold text-white bg-gradient-to-r from-gray-300 to-gray-800 rounded-full shadow-sm hover:from-gray-400 hover:to-black transition-all duration-300 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600"
                 >
+                  <FiLogOut className="text-base" />
                   Logout
                 </button>
               </div>
@@ -116,7 +136,9 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
                   className="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none"
                 >
                   <span className="sr-only">Open main menu</span>
-                  <i className={`fas ${isMenuOpen ? "fa-times" : "fa-bars"}`}></i>
+                  <i
+                    className={`fas ${isMenuOpen ? "fa-times" : "fa-bars"}`}
+                  ></i>
                 </button>
               </div>
             </div>
@@ -129,7 +151,7 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
                   href="/dashboard"
                   className={`${pathname === "/dashboard" ? "bg-gray-50 border-[#1793a6] text-[#1793a6]" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
                 >
-                  Dashboard
+                  Dashboard123456
                 </Link>
                 <Link
                   href="/search"
@@ -141,7 +163,7 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
                   href="/tableview"
                   className={`${pathname === "/tableview" ? "bg-gray-50 border-[#1793a6] text-[#1793a6]" : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"} block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
                 >
-                  Residential Rent
+                  Residential Rent231324435
                 </Link>
               </div>
               <div className="pt-4 pb-3 border-t border-gray-200">

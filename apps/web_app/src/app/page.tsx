@@ -129,7 +129,7 @@ export default function Home() {
         </p>
         
         {/* Supabase Test Component */}
-        <SupabaseTestComponent />
+       
       </div>
 
       {/* Footer */}
