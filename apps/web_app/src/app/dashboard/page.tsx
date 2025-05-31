@@ -2,11 +2,9 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
-import { ChartData, ChartOptions } from "chart.js";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AreaWisePropertyChart from "@/components/AreaWisePropertyChart";
 
 // Icon components moved from PropertyStats.tsx
 const HomeIcon = ({ className }: { className?: string }) => (
@@ -57,6 +55,7 @@ const PropertyStat = ({ label, value, icon, bgColor, textColor, Link: link }: Pr
 };
 
 // Inline implementation of PropertyStats component
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PropertyStats = ({ className }: { className?: string }) => {
   return (
     <div className={cn("flex items-center justify-between space-x-1 bg-white p-1 shadow-sm h-32", className)}>
@@ -111,398 +110,362 @@ const PropertyStats = ({ className }: { className?: string }) => {
   );
 };
 
-// Dynamic import to avoid SSR issues with Chart.js
-const Chart = dynamic(
-  () => import("react-chartjs-2").then((mod) => mod.Bar),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-[300px]">
-        Loading chart...
-      </div>
-    ),
-  }
-);
-
-// We'll register Chart.js components on the client side only
-let chartRegistered = false;
-
-// Register Chart.js function
-const registerChart = async () => {
-  if (typeof window !== "undefined" && !chartRegistered) {
-    const {
-      Chart,
-      CategoryScale,
-      LinearScale,
-      BarElement,
-      Title,
-      Tooltip,
-      Legend,
-    } = await import("chart.js");
-
-    Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-    chartRegistered = true;
-  }
-};
-
-// PropertyCountCard component
-type PropertyCountCardProps = {
-  title: string;
-  count: number;
-  bgColor: string;
-};
-
-const PropertyCountCard = ({ title, count, bgColor }: PropertyCountCardProps) => {
-  return (
-    <div className={cn("flex flex-col items-center justify-center p-4 text-white", bgColor)}>
-      <span className="text-base lg:text-lg font-medium">{title}</span>
-      <span className="text-xl lg:text-3xl font-bold">{count}</span>
-    </div>
-  );
-};
-
-// AreaChart component
-type AreaChartProps = {
-  type: "residential-rent" | "residential-sell" | "commercial-rent" | "commercial-sell";
-  className?: string;
-};
-
-type AreaData = {
-  area: string;
-  count: number;
-};
-
-type MockDataType = {
-  [key in AreaChartProps["type"]]: AreaData[];
-};
-
-const mockData: MockDataType = {
-  "residential-rent": [
-    { area: "Gandhinagar", count: 145 },
-    { area: "Vaishno Devi", count: 132 },
-    { area: "SG Highway", count: 128 },
-    { area: "Chandkheda", count: 115 },
-    { area: "Sargasan", count: 112 },
-    { area: "Ranip", count: 108 },
-    { area: "Gota", count: 105 },
-    { area: "Jagatpur", count: 102 },
-    { area: "Bopal", count: 98 },
-    { area: "South Bopal", count: 95 },
-    { area: "Sanand", count: 92 },
-    { area: "Zundal", count: 88 },
-    { area: "Kudasan", count: 85 },
-    { area: "Raysan", count: 82 },
-    { area: "Adalaj", count: 78 },
-    { area: "Koba", count: 75 },
-    { area: "Tragad", count: 72 },
-    { area: "Vaishnodevi Circle", count: 68 },
-    { area: "Infocity", count: 65 },
-    { area: "GIFT City", count: 62 },
-  ],
-  "residential-sell": [
-    { area: "Chandkheda", count: 152 },
-    { area: "Sargasan", count: 148 },
-    { area: "Gandhinagar", count: 145 },
-    { area: "Gota", count: 142 },
-    { area: "Jagatpur", count: 138 },
-    { area: "Bopal", count: 135 },
-    { area: "South Bopal", count: 132 },
-    { area: "Ranip", count: 128 },
-    { area: "Vaishno Devi", count: 125 },
-    { area: "Chandlodia", count: 122 },
-    { area: "Kudasan", count: 118 },
-    { area: "Raysan", count: 115 },
-    { area: "Adalaj", count: 112 },
-    { area: "Koba", count: 108 },
-    { area: "Tragad", count: 105 },
-    { area: "Vaishnodevi Circle", count: 102 },
-    { area: "Infocity", count: 98 },
-    { area: "GIFT City", count: 95 },
-    { area: "Shela", count: 92 },
-    { area: "Santej", count: 88 },
-  ],
-  "commercial-rent": [
-    { area: "Gandhinagar", count: 140 },
-    { area: "Navrangpura", count: 138 },
-    { area: "SG Highway", count: 135 },
-    { area: "Chandkheda", count: 130 },
-    { area: "Sargasan", count: 128 },
-    { area: "Ranip", count: 125 },
-    { area: "Gota", count: 122 },
-    { area: "Jagatpur", count: 120 },
-    { area: "Bopal", count: 118 },
-    { area: "South Bopal", count: 115 },
-    { area: "Sanand", count: 112 },
-    { area: "Zundal", count: 110 },
-    { area: "Kudasan", count: 108 },
-    { area: "Raysan", count: 105 },
-    { area: "Adalaj", count: 102 },
-    { area: "Koba", count: 100 },
-    { area: "Tragad", count: 95 },
-    { area: "Vaishnodevi Circle", count: 92 },
-    { area: "Infocity", count: 90 },
-    { area: "GIFT City", count: 85 },
-  ],
-  "commercial-sell": [
-    { area: "Navrangpura", count: 148 },
-    { area: "CG Road", count: 145 },
-    { area: "Gandhinagar", count: 142 },
-    { area: "Gota", count: 140 },
-    { area: "Jagatpur", count: 138 },
-    { area: "Bopal", count: 135 },
-    { area: "South Bopal", count: 132 },
-    { area: "Ranip", count: 130 },
-    { area: "Vaishno Devi", count: 128 },
-    { area: "Chandlodia", count: 125 },
-    { area: "Kudasan", count: 120 },
-    { area: "Raysan", count: 115 },
-    { area: "Adalaj", count: 110 },
-    { area: "Koba", count: 105 },
-    { area: "Tragad", count: 102 },
-    { area: "Vaishnodevi Circle", count: 100 },
-    { area: "Infocity", count: 95 },
-    { area: "GIFT City", count: 92 },
-    { area: "Shela", count: 88 },
-  ],
-};
-
-const getChartColor = (type: AreaChartProps["type"]) => {
-  switch (type) {
-    case "residential-rent":
-      return { bg: "rgba(26, 188, 156, 0.8)", border: "rgb(26, 188, 156)" };
-    case "residential-sell":
-      return { bg: "rgba(39, 174, 96, 0.8)", border: "rgb(39, 174, 96)" };
-    case "commercial-rent":
-      return { bg: "rgba(243, 156, 18, 0.8)", border: "rgb(243, 156, 18)" };
-    case "commercial-sell":
-      return { bg: "rgba(231, 76, 60, 0.8)", border: "rgb(231, 76, 60)" };
-    default:
-      return { bg: "rgba(149, 165, 166, 0.8)", border: "rgb(149, 165, 166)" };
-  }
-};
-
-const AreaChart = ({ type, className }: AreaChartProps) => {
-  const [chartData, setChartData] = useState<ChartData<"bar"> | null>(null);
-  const [chartOptions, setChartOptions] = useState<ChartOptions<"bar"> | null>(null);
-  const colors = useMemo(() => getChartColor(type), [type]);
-
-  useEffect(() => {
-    registerChart();
-  }, []);
-
-  const chartOptionsConfig = useMemo<ChartOptions<"bar">>(
-    () => ({
-      indexAxis: "y" as const,
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: "top" as const,
-          labels: {
-            font: {
-              size: 16,
-            },
-            color: "#4a5568",
-          },
-        },
-        tooltip: {
-          enabled: true,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          titleFont: {
-            size: 16,
-          },
-          bodyFont: {
-            size: 16,
-          },
-          padding: 12,
-          displayColors: false,
-          callbacks: {
-            title: (tooltipItems) => {
-              return tooltipItems[0]?.label || "";
-            },
-            label: (tooltipItem) => {
-              return `Property Count: ${tooltipItem.raw as number}`;
-            },
-          },
-        },
-      },
-      scales: {
-        y: {
-          ticks: {
-            font: {
-              size: 16,
-            },
-            color: "#4a5568",
-          },
-          grid: {
-            display: false,
-          },
-        },
-        x: {
-          beginAtZero: true,
-          ticks: {
-            font: {
-              size: 16,
-            },
-            color: "#4a5568",
-          },
-          grid: {
-            color: "rgba(0, 0, 0, 0.05)",
-          },
-        },
-      },
-    }),
-    []
-  );
-
-  useEffect(() => {
-    const data = mockData[type];
-
-    const sortedData = [...data].sort((a, b) => b.count - a.count);
-    const topAreas = sortedData.slice(0, 12);
-
-    setChartData({
-      labels: topAreas.map((item) => item.area),
-      datasets: [
-        {
-          label: "Property Count",
-          data: topAreas.map((item) => item.count),
-          backgroundColor: colors.bg,
-          borderColor: colors.border,
-          borderWidth: 1,
-          barPercentage: 0.7,
-          categoryPercentage: 0.8,
-        },
-      ],
-    });
-
-    setChartOptions(chartOptionsConfig);
-  }, [type, colors, chartOptionsConfig]);
-
-  return (
-    <div className={cn("p-4 h-[350px]", className)}>
-      {chartData && chartOptions && <Chart data={chartData} options={chartOptions} />}
-    </div>
-  );
-};
-
 // Main Dashboard page component
 export default function DashboardPage() {
   const { user } = useAuth();
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col w-full gap-4 px-2">
-        {/* Welcome Message */}
-        {user && (
-          <div className="bg-white shadow-sm p-4 rounded-md mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">
-              Welcome back, {user.email}!
-            </h1>
-            <p className="text-gray-600">Role: {user.role}</p>
-          </div>
-        )}
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative">
+        {/* 3D Background Elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="float-animation absolute top-20 left-20 w-32 h-32 bg-blue-500/20 rounded-full blur-sm"></div>
+          <div className="float-animation absolute top-40 right-32 w-24 h-24 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+          <div className="float-animation absolute bottom-40 left-40 w-28 h-28 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+        </div>
         
-        <PropertyStats />
+        <div className="relative z-10 flex flex-col w-full gap-6 p-6">
+          {/* Welcome Message */}
+          {user && (
+            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6 mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center pulse-glow">
+                  <span className="text-white text-2xl font-bold">{user.email.charAt(0).toUpperCase()}</span>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gradient-animate">
+                    Welcome back, {user.email}!
+                  </h1>
+                  <p className="text-white/70 text-lg">Role: <span className="text-cyan-400 font-semibold">{user.role}</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Enhanced Property Stats */}
+          <div className="card-hover-3d backdrop-blur-3d bg-white/5 border border-white/20 rounded-2xl p-2 mb-6">
+            <div className="flex items-center justify-between space-x-2">
+              <div className="flex items-center justify-center px-4 py-8 rounded-xl backdrop-blur-sm bg-white/10">
+                <span className="text-2xl font-bold text-gradient-animate">Active Properties</span>
+              </div>
+              
+              <Link href="/tableview" className="group flex-1">
+                <div className="btn-3d bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 flex items-center space-x-3">
+                  <HomeIcon className="group-hover:scale-110 transition-transform" />
+                  <div>
+                    <div className="text-lg font-semibold">Residential Rent</div>
+                    <div className="text-2xl font-bold">₹ 1,155+</div>
+                  </div>
+                </div>
+              </Link>
+              
+              <Link href="/tableview" className="group flex-1">
+                <div className="btn-3d bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 flex items-center space-x-3">
+                  <HomeIcon className="group-hover:scale-110 transition-transform" />
+                  <div>
+                    <div className="text-lg font-semibold">Residential Sell</div>
+                    <div className="text-2xl font-bold">₹ 16,513+</div>
+                  </div>
+                </div>
+              </Link>
+              
+              <Link href="/tableview" className="group flex-1">
+                <div className="btn-3d bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-xl transition-all duration-300 flex items-center space-x-3">
+                  <BuildingIcon className="group-hover:scale-110 transition-transform" />
+                  <div>
+                    <div className="text-lg font-semibold">Commercial Rent</div>
+                    <div className="text-2xl font-bold">₹ 4,663+</div>
+                  </div>
+                </div>
+              </Link>
+              
+              <Link href="/tableview" className="group flex-1">
+                <div className="btn-3d bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white p-4 rounded-xl transition-all duration-300 flex items-center space-x-3">
+                  <BuildingIcon className="group-hover:scale-110 transition-transform" />
+                  <div>
+                    <div className="text-lg font-semibold">Commercial Sell</div>
+                    <div className="text-2xl font-bold">₹ 7,086+</div>
+                  </div>
+                </div>
+              </Link>
+              
+              <Link href="/tableview" className="group flex-1">
+                <div className="btn-3d bg-gradient-to-r from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white p-4 rounded-xl transition-all duration-300 flex items-center space-x-3">
+                  <GridIcon className="group-hover:scale-110 transition-transform" />
+                  <div>
+                    <div className="text-lg font-semibold">Total Active</div>
+                    <div className="text-2xl font-bold">₹ 29,397+</div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-2 gap-8">
-        <div className="bg-white shadow-sm p-5 rounded-md">
-          <h2 className="text-xl lg:text-2xl font-medium text-gray-700 mb-3">
-            Today&apos;s Property
-          </h2>
-          <div className="grid grid-cols-5 gap-1">
-            <Link href="/residential_rent_page">
-              <PropertyCountCard
-                title="Residential Rent"
-                count={0}
-                bgColor="bg-[#1abc9c]"
-              />
-            </Link>
-            <PropertyCountCard
-              title="Residential Sell"
-              count={0}
-              bgColor="bg-[#27ae60]"
-            />
-            <PropertyCountCard
-              title="Commercial Rent"
-              count={0}
-              bgColor="bg-[#f39c12]"
-            />
-            <PropertyCountCard
-              title="Commercial Sell"
-              count={0}
-              bgColor="bg-[#e74c3c]"
-            />
-            <PropertyCountCard
-              title="Total Property"
-              count={0}
-              bgColor="bg-[#95a5a6]"
-            />
+          {/* Enhanced KPI Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-2xl p-6 pulse-glow">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <span className="text-green-400 text-sm font-medium">+12.5%</span>
+              </div>
+              <h3 className="text-white/90 text-sm font-medium mb-1">Total Properties</h3>
+              <p className="text-2xl font-bold text-white">29,397+</p>
+              <p className="text-xs text-white/60 mt-1">Active listings</p>
+            </div>
+
+            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <span className="text-green-400 text-sm font-medium">+8.2%</span>
+              </div>
+              <h3 className="text-white/90 text-sm font-medium mb-1">Total Value</h3>
+              <p className="text-2xl font-bold text-white">₹2.4B+</p>
+              <p className="text-xs text-white/60 mt-1">Market value</p>
+            </div>
+
+            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <span className="text-green-400 text-sm font-medium">+15.3%</span>
+              </div>
+              <h3 className="text-white/90 text-sm font-medium mb-1">Active Users</h3>
+              <p className="text-2xl font-bold text-white">12,847</p>
+              <p className="text-xs text-white/60 mt-1">This month</p>
+            </div>
+
+            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-400/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <span className="text-green-400 text-sm font-medium">+5.7%</span>
+              </div>
+              <h3 className="text-white/90 text-sm font-medium mb-1">Transactions</h3>
+              <p className="text-2xl font-bold text-white">1,256</p>
+              <p className="text-xs text-white/60 mt-1">This week</p>
+            </div>
+          </div>
+
+          {/* Enhanced Quick Actions Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="group">
+              <Link href="/search" className="block">
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-2xl p-6 text-center group-hover:bg-blue-500/20 transition-all duration-500">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Advanced Search</h3>
+                  <p className="text-white/70 text-sm">Find your perfect property with smart filters</p>
+                </div>
+              </Link>
+            </div>
+            
+            <div className="group">
+              <Link href="/tableview" className="block">
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/30 rounded-2xl p-6 text-center group-hover:bg-green-500/20 transition-all duration-500">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Data Explorer</h3>
+                  <p className="text-white/70 text-sm">Complete property listings & analytics</p>
+                </div>
+              </Link>
+            </div>
+            
+            <div className="group">
+              <Link href="/profile" className="block">
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400/30 rounded-2xl p-6 text-center group-hover:bg-purple-500/20 transition-all duration-500">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Profile Hub</h3>
+                  <p className="text-white/70 text-sm">Manage account & preferences</p>
+                </div>
+              </Link>
+            </div>
+            
+            <div className="group">
+              <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-400/30 rounded-2xl p-6 text-center group-hover:bg-orange-500/20 transition-all duration-500 cursor-pointer">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Market Analytics</h3>
+                <p className="text-white/70 text-sm">Real-time market insights & trends</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Market Insights Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
+              <h3 className="text-2xl font-bold text-gradient-animate mb-6">Market Trends</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-400 rounded-full pulse-glow"></div>
+                    <span className="text-white font-medium">Residential Demand</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-400">+24%</div>
+                    <div className="text-xs text-white/60">vs last month</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-blue-400 rounded-full pulse-glow"></div>
+                    <span className="text-white font-medium">Commercial Growth</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-blue-400">+18%</div>
+                    <div className="text-xs text-white/60">vs last month</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-orange-400 rounded-full pulse-glow"></div>
+                    <span className="text-white font-medium">Price Appreciation</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-orange-400">+12%</div>
+                    <div className="text-xs text-white/60">vs last quarter</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-gradient-animate mb-6">Recent Activity</h3>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-white text-sm font-medium">New listing in Gandhinagar</div>
+                    <div className="text-white/60 text-xs">2 hours ago</div>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-white text-sm font-medium">Property sold in Bopal</div>
+                    <div className="text-white/60 text-xs">4 hours ago</div>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-white text-sm font-medium">Price update in Gota</div>
+                    <div className="text-white/60 text-xs">6 hours ago</div>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-white text-sm font-medium">New commercial space</div>
+                    <div className="text-white/60 text-xs">8 hours ago</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Area-wise Property Breakdown Chart */}
+          <div className="mb-8">
+            <AreaWisePropertyChart className="w-full" />
+          </div>
+
+          {/* Today's and Yesterday's Property Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Today's Property */}
+            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gradient-animate mb-6">
+                Today&apos;s Properties
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <Link href="/residential_rent_page" className="group">
+                  <div className="btn-3d bg-gradient-to-br from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center group-hover:scale-105">
+                    <div className="text-sm lg:text-base font-medium mb-2">Residential Rent</div>
+                    <div className="text-xl lg:text-3xl font-bold">0</div>
+                  </div>
+                </Link>
+                <div className="btn-3d bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Residential Sell</div>
+                  <div className="text-xl lg:text-3xl font-bold">0</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Rent</div>
+                  <div className="text-xl lg:text-3xl font-bold">0</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Sell</div>
+                  <div className="text-xl lg:text-3xl font-bold">0</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Total Property</div>
+                  <div className="text-xl lg:text-3xl font-bold">0</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Yesterday's Property */}
+            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gradient-animate mb-6">
+                Yesterday&apos;s Properties
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="btn-3d bg-gradient-to-br from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Residential Rent</div>
+                  <div className="text-xl lg:text-3xl font-bold">37</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Residential Sell</div>
+                  <div className="text-xl lg:text-3xl font-bold">55</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Rent</div>
+                  <div className="text-xl lg:text-3xl font-bold">22</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Sell</div>
+                  <div className="text-xl lg:text-3xl font-bold">6</div>
+                </div>
+                <div className="btn-3d bg-gradient-to-br from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
+                  <div className="text-sm lg:text-base font-medium mb-2">Total</div>
+                  <div className="text-xl lg:text-3xl font-bold">120</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer with Grid Background */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="h-full w-full" style={{
+              backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,.15) 1px, transparent 0)',
+              backgroundSize: '20px 20px'
+            }}></div>
           </div>
         </div>
-
-        <div className="bg-white shadow-sm p-5 rounded-md">
-          <h2 className="text-xl lg:text-2xl font-medium text-gray-700 mb-3">
-            Yesterday&apos;s Property
-          </h2>
-          <div className="grid grid-cols-5 gap-1">
-            <PropertyCountCard
-              title="Residential Rent"
-              count={37}
-              bgColor="bg-[#1abc9c]"
-            />
-            <PropertyCountCard
-              title="Residential Sell"
-              count={55}
-              bgColor="bg-[#27ae60]"
-            />
-            <PropertyCountCard
-              title="Commercial Rent"
-              count={22}
-              bgColor="bg-[#f39c12]"
-            />
-            <PropertyCountCard
-              title="Commercial Sell"
-              count={6}
-              bgColor="bg-[#e74c3c]"
-            />
-            <PropertyCountCard
-              title="Total"
-              count={120}
-              bgColor="bg-[#95a5a6]"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-8 mt-8">
-        <div className="bg-white shadow-sm rounded-md">
-          <h3 className="text-center py-4 text-white bg-[#1abc9c] text-lg lg:text-xl font-medium">
-            Residential Rent Top 50 Area
-          </h3>
-          <AreaChart type="residential-rent" />
-        </div>
-        <div className="bg-white shadow-sm rounded-md">
-          <h3 className="text-center py-4 text-white bg-[#27ae60] text-lg lg:text-xl font-medium">
-            Residential Sell Top 50 Area
-          </h3>
-          <AreaChart type="residential-sell" />
-        </div>
-        <div className="bg-white shadow-sm rounded-md">
-          <h3 className="text-center py-4 text-white bg-[#f39c12] text-lg lg:text-xl font-medium">
-            Commercial Rent Top 50 Area
-          </h3>
-          <AreaChart type="commercial-rent" />
-        </div>
-        <div className="bg-white shadow-sm rounded-md">
-          <h3 className="text-center py-4 text-white bg-[#e74c3c] text-lg lg:text-xl font-medium">
-            Commercial Sell Top 50 Area
-          </h3>
-          <AreaChart type="commercial-sell" />
-        </div>
-      </div>
       </div>
     </ProtectedRoute>
   );

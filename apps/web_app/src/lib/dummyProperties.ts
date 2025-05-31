@@ -25,8 +25,25 @@ export interface PropertyData {
 // Utility functions for Supabase operations
 export const supabaseHelpers = {
   // Format date for comparison (dd/mm/yyyy to yyyy-mm-dd)
-  formatDateForComparison: (ddmmyyyy: string): string => {
-    const [day, month, year] = ddmmyyyy.split('/');
+  formatDateForComparison: (ddmmyyyy: string | null): string => {
+    // Handle null, undefined, or empty strings
+    if (!ddmmyyyy || typeof ddmmyyyy !== 'string') {
+      return '';
+    }
+
+    // Split the date string and validate parts
+    const parts = ddmmyyyy.split('/');
+    if (parts.length !== 3) {
+      return '';
+    }
+
+    const [day, month, year] = parts;
+    
+    // Validate that all parts exist and are numeric
+    if (!day || !month || !year || isNaN(Number(day)) || isNaN(Number(month)) || isNaN(Number(year))) {
+      return '';
+    }
+
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   },
 

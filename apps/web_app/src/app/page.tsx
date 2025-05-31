@@ -47,7 +47,7 @@ export default function Home() {
         <div className="flex items-center gap-8">
           <Link href="/" className="text-blue-600 font-semibold hover:text-blue-800 transition-colors duration-200">HOME</Link>
           <div className="relative group">
-            <span className="cursor-pointer text-gray-700 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
+            <span className="cursor-pointer text-slate-700 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
               ABOUT US 
               <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -59,7 +59,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative group">
-            <span className="cursor-pointer text-gray-700 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
+            <span className="cursor-pointer text-slate-700 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
               HOW IT WORKS
               <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -69,9 +69,9 @@ export default function Home() {
               <Link href="/how-it-works/functions" className="block px-6 py-3 hover:bg-blue-50 transition-colors duration-200">Functions</Link>
             </div>
           </div>
-          <Link href="/services" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">SERVICES</Link>
+          <Link href="/services" className="text-slate-700 hover:text-blue-600 transition-colors duration-200">SERVICES</Link>
           <Link href="/post-property" className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 font-medium shadow-md">POST PROPERTY</Link>
-          <Link href="/contact" className="text-gray-700 hover:text-blue-600 transition-colors duration-200">CONTACT US</Link>
+          <Link href="/contact" className="text-slate-700 hover:text-blue-600 transition-colors duration-200">CONTACT US</Link>
         </div>
       </nav>
 

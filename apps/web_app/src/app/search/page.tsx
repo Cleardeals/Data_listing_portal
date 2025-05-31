@@ -29,47 +29,75 @@ function SearchResults({
 }) {
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-        <div className="text-lg text-gray-600">Loading properties...</div>
+      <div className="flex justify-center items-center py-12">
+        <div className="pulse-glow w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-spin border-4 border-transparent mr-4"></div>
+        <div className="text-xl text-white/80">Loading properties...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="text-lg text-red-600">Error: {error}</div>
+      <div className="flex justify-center items-center py-12">
+        <div className="text-xl text-red-400">⚠️ Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {properties.length > 0 ? (
         <>
-          <div className="mb-4 text-sm text-gray-600">
-            Found {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+          <div className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white/80 text-center">
+            🏠 Found <span className="text-cyan-400 font-bold">{properties.length}</span> {properties.length === 1 ? 'property' : 'properties'}
           </div>
           {properties.map((property) => (
-            <div key={property.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">{property.name} {property.contact}</h2>
-                  <p className="text-gray-600 mb-2">{property.specialnote}</p>
-                  <div className="space-y-1">
-                    <p className="text-green-600 font-medium">💰 Rent: {property.rent}</p>
-                    <p className="text-gray-600">🏠 Type: {property.availability}</p>
-                    <p className="text-gray-600">📍 Area: {property.area}</p>
+            <div key={property.id} className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h2 className="text-xl font-bold text-gradient-animate mb-3">
+                    👤 {property.name} {property.contact}
+                  </h2>
+                  <p className="text-white/80 mb-3 bg-white/10 rounded-lg p-3 border border-white/20">
+                    📝 {property.specialnote}
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 text-green-400 font-semibold bg-green-500/10 rounded-lg p-2 border border-green-500/20">
+                      <span>💰</span>
+                      <span>Rent: {property.rent}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-blue-400 bg-blue-500/10 rounded-lg p-2 border border-blue-500/20">
+                      <span>🏠</span>
+                      <span>Type: {property.availability}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-purple-400 bg-purple-500/10 rounded-lg p-2 border border-purple-500/20">
+                      <span>📍</span>
+                      <span>Area: {property.area}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-gray-600">🛋️ Condition: {property.condition}</p>
-                  <p className="text-gray-600">📐 Size: {property.sqft || 'NA'} sqft</p>
-                  <p className="text-gray-600">💼 Brokerage: {property.brokerage}</p>
-                  <p className="text-gray-600">📊 Status: {property.status}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2 text-orange-400 bg-orange-500/10 rounded-lg p-2 border border-orange-500/20">
+                    <span>🛋️</span>
+                    <span>Condition: {property.condition}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-cyan-400 bg-cyan-500/10 rounded-lg p-2 border border-cyan-500/20">
+                    <span>📐</span>
+                    <span>Size: {property.sqft || 'NA'} sqft</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-pink-400 bg-pink-500/10 rounded-lg p-2 border border-pink-500/20">
+                    <span>💼</span>
+                    <span>Brokerage: {property.brokerage}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-emerald-400 bg-emerald-500/10 rounded-lg p-2 border border-emerald-500/20">
+                    <span>📊</span>
+                    <span>Status: {property.status}</span>
+                  </div>
                   {property.premium && (
-                    <p className="text-gray-600">ℹ️ Details: {property.premium}</p>
+                    <div className="flex items-center space-x-2 text-yellow-400 bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20">
+                      <span>ℹ️</span>
+                      <span>Details: {property.premium}</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -77,10 +105,10 @@ function SearchResults({
           ))}
         </>
       ) : (
-        <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-4">🏠</div>
-          <p className="text-gray-600 text-lg">No properties found</p>
-          <p className="text-gray-500 text-sm mt-2">Try adjusting your search filters</p>
+        <div className="text-center py-16">
+          <div className="text-6xl mb-6 pulse-glow">🏠</div>
+          <p className="text-white/80 text-2xl mb-2">No properties found</p>
+          <p className="text-white/60 text-lg">Try adjusting your search filters</p>
         </div>
       )}
     </div>
@@ -231,11 +259,11 @@ function FilterForm({ onSearch }: {
     <div className="w-full lg:w-full mx-auto overflow-hidden p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="p-4">
-          <table className="w-full border-collapse border border-gray-300">
+          <table className="w-full border-collapse border border-white/20">
             <tbody>
               {/* propertyType */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-100 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Property Type:
                 </th>
                 <td className="px-4 py-2">
@@ -243,7 +271,7 @@ function FilterForm({ onSearch }: {
                     {/* Dropdown Trigger */}
                     <button
                       type="button"
-                      className="w-full px-4 py-2 text-left border border-gray-300 rounded-md"
+                      className="w-full px-4 py-2 text-left border border-white/20 bg-slate-800/50 text-white rounded-md hover:bg-slate-700/50 transition-colors"
                       onClick={() => setShowDropdown((prev) => !prev)}
                     >
                       {selectedPropertyType || "Select Property Type"}
@@ -252,11 +280,11 @@ function FilterForm({ onSearch }: {
 
                     {/* Dropdown Menu */}
                     {showDropdown && (
-                      <div className="absolute w-full mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-10">
+                      <div className="absolute w-full mt-2 bg-slate-800 border border-white/20 rounded-md shadow-lg z-10">
                         {propertyType.map((type) => (
                           <div
                             key={type}
-                            className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                            className="px-4 py-2 hover:bg-blue-600/50 cursor-pointer text-white"
                             onClick={() => {
                               handleCheckboxChange("propertyType", type);
                               setSelectedPropertyType(type);
@@ -272,8 +300,8 @@ function FilterForm({ onSearch }: {
                 </td>
               </tr>
               {/* conditions */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Conditions:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
@@ -286,7 +314,7 @@ function FilterForm({ onSearch }: {
                           handleCheckboxChange("condition", type)
                         }
                       />
-                      <Label htmlFor={type} className="text-sm">
+                      <Label htmlFor={type} className="text-sm text-white">
                         {type}
                       </Label>
                     </div>
@@ -294,8 +322,8 @@ function FilterForm({ onSearch }: {
                 </td>
               </tr>
               {/* areas */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Area:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
@@ -308,7 +336,7 @@ function FilterForm({ onSearch }: {
                           handleCheckboxChange("area", type)
                         }
                       />
-                      <Label htmlFor={type} className="text-sm">
+                      <Label htmlFor={type} className="text-sm text-white">
                         {type}
                       </Label>
                     </div>
@@ -316,8 +344,8 @@ function FilterForm({ onSearch }: {
                 </td>
               </tr>
               {/* availabilities */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Availability:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
@@ -330,7 +358,7 @@ function FilterForm({ onSearch }: {
                           handleCheckboxChange("availability", type)
                         }
                       />
-                      <Label htmlFor={type} className="text-sm">
+                      <Label htmlFor={type} className="text-sm text-white">
                         {type}
                       </Label>
                     </div>
@@ -338,8 +366,8 @@ function FilterForm({ onSearch }: {
                 </td>
               </tr>
               {/* availabilityType */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Availability Type:
                 </th>
                 <td className="flex  flex-wrap items-center gap-4 px-4 py-2">
@@ -352,7 +380,7 @@ function FilterForm({ onSearch }: {
                           handleCheckboxChange("availabilityType", type)
                         }
                       />
-                      <Label htmlFor={type} className="text-sm">
+                      <Label htmlFor={type} className="text-sm text-white">
                         {type}
                       </Label>
                     </div>
@@ -360,8 +388,8 @@ function FilterForm({ onSearch }: {
                 </td>
               </tr>
               {/* premium */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Premium:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
@@ -374,7 +402,7 @@ function FilterForm({ onSearch }: {
                           handleCheckboxChange("premium", type)
                         }
                       />
-                      <Label htmlFor={type} className="text-sm">
+                      <Label htmlFor={type} className="text-sm text-white">
                         {type}
                       </Label>
                     </div>
@@ -382,12 +410,12 @@ function FilterForm({ onSearch }: {
                 </td>
               </tr>
               {/* budget */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Budget:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
-                  <Label htmlFor="budgetMin" className="text-sm">
+                  <Label htmlFor="budgetMin" className="text-sm text-white">
                     Min:
                   </Label>
                   <Input
@@ -396,9 +424,9 @@ function FilterForm({ onSearch }: {
                     name="budgetMin"
                     value={filters.budgetMin}
                     onChange={handleInputChange}
-                    className="w-24"
+                    className="w-24 bg-slate-800/50 border-white/20 text-white placeholder-white/50"
                   />
-                  <Label htmlFor="budgetMax" className="text-sm">
+                  <Label htmlFor="budgetMax" className="text-sm text-white">
                     Max:
                   </Label>
                   <Input
@@ -407,17 +435,17 @@ function FilterForm({ onSearch }: {
                     name="budgetMax"
                     value={filters.budgetMax}
                     onChange={handleInputChange}
-                    className="w-24"
+                    className="w-24 bg-slate-800/50 border-white/20 text-white placeholder-white/50"
                   />
                 </td>
               </tr>
               {/* sqrt feet */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Sqft:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
-                  <Label htmlFor="sqftFrom" className="text-sm">
+                  <Label htmlFor="sqftFrom" className="text-sm text-white">
                     From:
                   </Label>
                   <Input
@@ -426,9 +454,9 @@ function FilterForm({ onSearch }: {
                     name="sqftFrom"
                     value={filters.sqftFrom}
                     onChange={handleInputChange}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md"
                   />
-                  <Label htmlFor="sqftTo" className="text-sm">
+                  <Label htmlFor="sqftTo" className="text-sm text-white">
                     To:
                   </Label>
                   <Input
@@ -437,13 +465,13 @@ function FilterForm({ onSearch }: {
                     name="sqftTo"
                     value={filters.sqftTo}
                     onChange={handleInputChange}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md"
                   />
                 </td>
               </tr>
               {/* premises */}
-              <tr className="border-b border-gray-300">
-                <th className="border-r border-gray-300 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
                   Premises:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2 w-full">
@@ -453,12 +481,12 @@ function FilterForm({ onSearch }: {
                     name="premise"
                     value={filters.premise}
                     onChange={handleInputChange}
-                    className="w-full maxw-l px-4 py-2 border border-gray-300 rounded-md"
+                    className="w-full maxw-l px-4 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md"
                   />
                 </td>
               </tr>
               {/* submit button */}
-              <tr className="border border-[#0b7082]-300">
+              <tr className="border border-white/20">
                 <td colSpan={2} className="flex-wrap px-4 py-2 text-center">
                   <Button
                     type="submit"
@@ -571,35 +599,106 @@ export default function SearchPage() {
   
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-100">
-        <div className="py-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative">
+        {/* Enhanced 3D Background Elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="float-animation absolute top-20 left-20 w-32 h-32 bg-blue-500/20 rounded-full blur-sm"></div>
+          <div className="float-animation absolute top-40 right-32 w-24 h-24 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+          <div className="float-animation absolute bottom-40 left-40 w-28 h-28 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+          <div className="float-animation absolute top-60 left-1/3 w-20 h-20 bg-emerald-500/20 rounded-full blur-sm" style={{animationDelay: '3s'}}></div>
+          <div className="float-animation absolute bottom-20 right-20 w-36 h-36 bg-pink-500/15 rounded-full blur-sm" style={{animationDelay: '4s'}}></div>
+        </div>
+        
+        {/* Grid Overlay */}
+        <div className="absolute inset-0 grid-overlay opacity-10"></div>
+        
+        <div className="relative z-10 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Search Properties
-            </h1>
-            
+            {/* Enhanced Header Section */}
+            <div className="text-center mb-12">
+              <h1 className="text-5xl lg:text-6xl font-bold text-gradient-animate mb-6">
+                🔍 Property Search Hub
+              </h1>
+              <p className="text-white/70 text-xl mb-8">Discover your perfect property with AI-powered search filters</p>
+              
+              {/* Modern Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl p-6">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-blue-500/20 rounded-full">
+                      <span className="text-3xl">🏠</span>
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">{properties.length}</h3>
+                  <p className="text-blue-200">Total Properties</p>
+                </div>
+                
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-6">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-green-500/20 rounded-full">
+                      <span className="text-3xl">✅</span>
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    {properties.filter(p => p.status === 'Available').length}
+                  </h3>
+                  <p className="text-green-200">Available Now</p>
+                </div>
+                
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-xl p-6">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-purple-500/20 rounded-full">
+                      <span className="text-3xl">⭐</span>
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    {properties.filter(p => p.important).length}
+                  </h3>
+                  <p className="text-purple-200">Featured</p>
+                </div>
+              </div>
+            </div>
+
             {/* Error display */}
             {error && (
-              <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                <p>Error loading properties: {error}</p>
+              <div className="mb-6 card-hover-3d backdrop-blur-3d bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-500/20 rounded-full">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Error loading properties</p>
+                    <p className="text-red-200">{error}</p>
+                  </div>
+                </div>
                 <Button 
                   onClick={fetchProperties}
-                  className="mt-2 bg-red-600 hover:bg-red-700 text-white"
+                  className="btn-3d bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 mt-4"
                 >
-                  Retry
+                  🔄 Retry Loading
                 </Button>
               </div>
             )}
             
-            <div className="flex justify-end mb-4">
+            {/* Enhanced Control Panel */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+              <div className="flex flex-wrap gap-3">
+                <div className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-2">
+                  <span className="text-white/70 text-sm">Showing:</span>
+                  <span className="text-cyan-400 font-bold ml-2">{searchResult.length}</span>
+                  <span className="text-white/70 text-sm ml-1">properties</span>
+                </div>
+              </div>
+              
               <Button
                 onClick={() => setShowSearch((prev) => !prev)}
-                className="text-black transition duration-300 bg-white hover:bg-gray-300"
+                className="btn-3d bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 px-8 py-3 text-lg"
               >
-                {showSearch ? "Hide Search Panel" : "Show Search Panel"}
+                {showSearch ? "🔍 Hide Search Panel" : "⚙️ Show Search Panel"}
               </Button>
             </div>
-            <div className="border rounded-lg shadow-md p-6 bg-white">
+            
+            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8">
               {showSearch ? (
                 <FilterForm onSearch={handleSearch} />
               ) : (

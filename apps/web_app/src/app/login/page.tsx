@@ -131,147 +131,201 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#ededed]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1793a6]"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <div className="float-animation absolute top-10 left-10 w-20 h-20 bg-blue-500/20 rounded-full blur-sm"></div>
+          <div className="float-animation absolute top-40 right-20 w-32 h-32 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+          <div className="float-animation absolute bottom-32 left-32 w-24 h-24 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+        </div>
+        <div className="relative z-10 text-center">
+          <div className="pulse-glow w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-spin border-4 border-transparent"></div>
+          <div className="text-white/80 text-lg">Loading...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#ededed]">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* 3D Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
+        <div className="absolute inset-0 opacity-30">
+          <div className="float-animation absolute top-10 left-10 w-20 h-20 bg-blue-500/20 rounded-full blur-sm"></div>
+          <div className="float-animation absolute top-40 right-20 w-32 h-32 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+          <div className="float-animation absolute bottom-32 left-32 w-24 h-24 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+          <div className="float-animation absolute bottom-10 right-10 w-16 h-16 bg-pink-500/20 rounded-full blur-sm" style={{animationDelay: '0.5s'}}></div>
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.1),transparent_50%)]"></div>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center px-6 py-3 shadow bg-white">
-        <Link href="/">
+      <div className="relative z-10 flex items-center px-6 py-4 backdrop-blur-3d bg-white/10 border-b border-white/20">
+        <Link href="/" className="group">
           <div className="flex items-center">
-            <Image src="/favicon.png" alt="Techno Property Solution" width={40} height={40} className="h-10 mr-3" />
-            <span className="text-3xl text-[#1793a6] font-semibold" style={{ fontFamily: 'Orbitron, sans-serif' }}>
-              Techno Property Solution
+            <div className="relative">
+              <Image src="/globe.svg" alt="PropertyHub" width={40} height={40} className="h-10 mr-3 group-hover:scale-110 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+            </div>
+            <span className="text-3xl bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold animate-pulse" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+              PropertyHub
             </span>
           </div>
         </Link>
       </div>
 
       {/* Centered Card */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="text-center mb-6">
-          <div className="text-[#1793a6] text-xl font-semibold">Welcome To Clear Deals Solution</div>
-          <div className="text-[#1793a6] text-lg">Total Solution Of Admin Support</div>
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div className="text-center mb-8">
+          <div className="text-gradient-animate text-3xl md:text-4xl font-bold mb-4">
+            Welcome To PropertyHub
+          </div>
+          <div className="text-white/80 text-lg md:text-xl">
+            LOGIN as a Customer to explore properties
+          </div>
         </div>
+        
         <form
           onSubmit={showOTPField ? handleVerifyOTP : handleSendOTP}
-          className="bg-white rounded shadow-lg w-full max-w-md"
+          className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl w-full max-w-md overflow-hidden"
         >
-          <div className="bg-gradient-to-b from-[#b6e0ef] to-white rounded-t px-6 py-3 text-lg font-semibold text-[#1793a6]">
-            {showOTPField ? 'Verify OTP' : 'Sign In'}
+          <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 px-6 py-4 border-b border-white/20">
+            <h2 className="text-xl font-bold text-white text-center">
+              {showOTPField ? 'Verify OTP' : 'Sign In'}
+            </h2>
           </div>
-          <div className="p-6">
+          
+          <div className="p-6 space-y-6">
             {error && (
-              <div className="mb-4 text-red-500 text-sm text-center">
+              <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 backdrop-blur-sm">
                 {error}
               </div>
             )}
             {success && (
-              <div className="mb-4 text-green-500 text-sm text-center">
+              <div className="text-green-400 text-sm text-center bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3 backdrop-blur-sm">
                 {success}
               </div>
             )}
             
             {!showOTPField ? (
-              <>
-                <div className="mb-4 flex items-center border rounded px-3 py-2 bg-[#f7f7f7]">
-                  <span className="text-gray-400 mr-2">
-                    <i className="fa fa-envelope"></i>
-                  </span>
-                  <input
-                    type="email"
-                    placeholder="Enter Email Address"
-                    className="w-full outline-none bg-transparent"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
+              <div className="space-y-4">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-3">
+                    <span className="text-white/60 mr-3">
+                      <i className="fa fa-envelope"></i>
+                    </span>
+                    <input
+                      type="email"
+                      placeholder="Enter Email Address"
+                      className="w-full outline-none bg-transparent text-white placeholder-white/50"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-[#1793a6] text-white py-2 rounded font-semibold hover:bg-[#12788a] transition disabled:opacity-50"
+                  className="btn-3d w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Sending OTP...' : 'Send OTP'}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"></div>
+                      Sending OTP...
+                    </div>
+                  ) : (
+                    'Send OTP'
+                  )}
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="mb-4 text-sm text-gray-600 text-center">
-                  Verification sent to: <strong>{email}</strong>
-                  <br />
-                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded text-xs">
-                    <strong>Check your email for:</strong>
-                    <ul className="mt-1 text-left">
+              <div className="space-y-4">
+                <div className="text-center text-white/80 text-sm">
+                  <div className="mb-3">
+                    Verification sent to: <span className="text-cyan-400 font-semibold">{email}</span>
+                  </div>
+                  <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                    <div className="font-semibold text-blue-300 mb-2">Check your email for:</div>
+                    <ul className="text-left text-white/70 space-y-1">
                       <li>• A 6-digit verification code</li>
                     </ul>
-                    <div className="mt-1 text-blue-600">
+                    <div className="mt-2 text-cyan-300 text-xs">
                       Enter the 6-digit code sent to your email to complete sign in.
                     </div>
                   </div>
                 </div>
-                <div className="mb-4 flex items-center border rounded px-3 py-2 bg-[#f7f7f7]">
-                  <span className="text-gray-400 mr-2">
-                    <i className="fa fa-lock"></i>
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Enter 6-digit verification code"
-                    className="w-full outline-none bg-transparent text-center text-lg tracking-widest"
-                    value={otp}
-                    onChange={e => {
-                      // Only allow digits and limit to 6 characters
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setOTP(value);
-                    }}
-                    maxLength={6}
-                    disabled={isLoading}
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoFocus
-                  />
+                
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-cyan-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-3">
+                    <span className="text-white/60 mr-3">
+                      <i className="fa fa-lock"></i>
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      className="w-full outline-none bg-transparent text-white placeholder-white/50 text-center text-lg tracking-widest font-mono"
+                      value={otp}
+                      onChange={e => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setOTP(value);
+                      }}
+                      maxLength={6}
+                      disabled={isLoading}
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoFocus
+                    />
+                  </div>
                 </div>
+                
                 <button
                   type="submit"
-                  className="w-full bg-[#1793a6] text-white py-2 rounded font-semibold hover:bg-[#12788a] transition disabled:opacity-50"
+                  className="btn-3d w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading || otp.length < 4}
                 >
-                  {isLoading ? 'Verifying...' : 'Verify Code'}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"></div>
+                      Verifying...
+                    </div>
+                  ) : (
+                    'Verify Code'
+                  )}
                 </button>
                 
-                <div className="mt-4 text-center">
+                <div className="flex flex-col items-center space-y-2">
                   <button
                     type="button"
                     onClick={handleResendOTP}
-                    className={`text-sm ${countdown > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-[#1793a6] hover:underline'}`}
+                    className={`text-sm transition-colors ${
+                      countdown > 0 
+                        ? 'text-white/40 cursor-not-allowed' 
+                        : 'text-cyan-400 hover:text-cyan-300'
+                    }`}
                     disabled={countdown > 0 || isLoading}
                   >
                     {countdown > 0 ? `Resend OTP in ${countdown}s` : 'Resend OTP'}
                   </button>
-                </div>
-                
-                <div className="mt-2 text-center">
+                  
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="text-sm text-gray-500 hover:underline"
+                    className="text-sm text-white/60 hover:text-white/80 transition-colors"
                     disabled={isLoading}
                   >
                     Change Email
                   </button>
                 </div>
-              </>
+              </div>
             )}
             
-            <div className="mt-4 text-center">
-              <Link href="/" className="text-[#1793a6] hover:underline">
-                Back to Home
+            <div className="text-center pt-4 border-t border-white/20">
+              <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm">
+                ← Back to Home
               </Link>
             </div>
           </div>
@@ -279,13 +333,15 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#555] text-white text-sm py-3 px-4 flex flex-col md:flex-row justify-between items-center">
-        <span className="mb-2 md:mb-0">Terms &amp; Condition</span>
-        <div className="flex items-center space-x-4">
-          <span>Customer Care</span>
-          <span>📞 +91-7984071224</span>
-          <span>📞 +91-7046327745</span>
-          <span>📞 079-40054959</span>
+      <footer className="relative z-10 backdrop-blur-3d bg-black/30 border-t border-white/20 text-white text-sm py-4 px-4">
+        <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+          <span className="text-white/80">Terms &amp; Condition</span>
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4 text-white/70">
+            <span>Customer Care</span>
+            <span className="flex items-center"><i className="fa fa-phone mr-1"></i> +91-7984071224</span>
+            <span className="flex items-center"><i className="fa fa-phone mr-1"></i> +91-7046327745</span>
+            <span className="flex items-center"><i className="fa fa-phone mr-1"></i> 079-40054959</span>
+          </div>
         </div>
       </footer>
     </div>

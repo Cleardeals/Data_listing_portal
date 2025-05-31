@@ -165,109 +165,52 @@ const Page = () => {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative font-sans">
-        {/* Enhanced 3D Background Elements */}
+        {/* 3D Background Elements */}
         <div className="absolute inset-0 opacity-20">
           <div className="float-animation absolute top-20 left-20 w-32 h-32 bg-blue-500/20 rounded-full blur-sm"></div>
           <div className="float-animation absolute top-40 right-32 w-24 h-24 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
           <div className="float-animation absolute bottom-40 left-40 w-28 h-28 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
-          <div className="float-animation absolute top-60 left-1/3 w-20 h-20 bg-emerald-500/20 rounded-full blur-sm" style={{animationDelay: '3s'}}></div>
-          <div className="float-animation absolute bottom-20 right-20 w-36 h-36 bg-pink-500/15 rounded-full blur-sm" style={{animationDelay: '4s'}}></div>
         </div>
         
-        {/* Grid Overlay */}
-        <div className="absolute inset-0 grid-overlay opacity-10"></div>
-        
         <div className="relative z-10 p-6">
-          {/* Enhanced Header */}
           <div className="text-center mb-8">
-            <h1 className="text-5xl lg:text-6xl font-bold text-gradient-animate mb-6">
-              🏠 Property Management Hub
+            <h1 className="text-4xl lg:text-5xl font-bold text-gradient-animate mb-4">
+              🏠 Property Listings
             </h1>
-            <p className="text-white/70 text-xl mb-8">Comprehensive property portfolio management system</p>
-            
-            {/* Property Statistics Dashboard */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">🏠</div>
-                <div className="text-2xl font-bold text-white">{filteredProperties.length}</div>
-                <div className="text-blue-200 text-sm">Total Properties</div>
-              </div>
-              
-              <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">✅</div>
-                <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.status === 'Available').length}
-                </div>
-                <div className="text-green-200 text-sm">Available</div>
-              </div>
-              
-              <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">⭐</div>
-                <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.important).length}
-                </div>
-                <div className="text-yellow-200 text-sm">Important</div>
-              </div>
-              
-              <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">🔑</div>
-                <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.rentedout).length}
-                </div>
-                <div className="text-red-200 text-sm">Rented Out</div>
-              </div>
-            </div>
+            <p className="text-white/70 text-lg">Residential Rent Property Management</p>
           </div>
 
-          {/* Enhanced Controls */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
             {/* Filter Tabs */}
             <div className="flex flex-wrap gap-3">
               {[
-                { key: 'imp', label: '⭐ Important', color: 'from-yellow-600 to-orange-600', count: properties.filter(p => p.important).length },
-                { key: 'today', label: '📅 Today', color: 'from-blue-600 to-cyan-600', count: properties.filter(p => parseDate(p.date) === supabaseHelpers.getTodayDate()).length },
-                { key: 'yesterday', label: '📆 Yesterday', color: 'from-indigo-600 to-blue-600', count: properties.filter(p => parseDate(p.date) === supabaseHelpers.getYesterdayDate()).length },
-                { key: 'all', label: '📋 All Properties', color: 'from-slate-600 to-gray-600', count: properties.length }
+                { key: 'imp', label: '⭐ Important', color: 'from-yellow-600 to-orange-600' },
+                { key: 'today', label: '📅 Today', color: 'from-blue-600 to-cyan-600' },
+                { key: 'yesterday', label: '📆 Yesterday', color: 'from-indigo-600 to-blue-600' },
+                { key: 'all', label: '📋 All', color: 'from-slate-600 to-gray-600' }
               ].map((tab) => (
                 <Button 
                   key={tab.key}
                   className={`btn-3d bg-gradient-to-r ${tab.color} hover:scale-105 text-white border-0 transition-all duration-300 ${
-                    activeTab === tab.key ? 'ring-2 ring-white/50 shadow-lg' : ''
+                    activeTab === tab.key ? 'ring-2 ring-white/50' : ''
                   }`}
                   onClick={() => filterProperties(tab.key)}
                 >
-                  <div className="flex items-center space-x-2">
-                    <span>{tab.label}</span>
-                    <span className="bg-white/20 px-2 py-1 rounded-full text-xs">{tab.count}</span>
-                  </div>
+                  {tab.label}
                 </Button>
               ))}
             </div>
 
-            {/* Enhanced Search Box */}
+            {/* Search Box */}
             <div className="w-full lg:w-1/2">
               <div className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl overflow-hidden flex items-center">
-                <div className="flex-1 relative">
-                  <Input
-                    type="text"
-                    placeholder="🔍 Search by name, contact, or premise..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="w-full px-4 py-3 bg-transparent text-white placeholder-white/60 border-0 focus:outline-none focus:ring-0"
-                  />
-                  {searchTerm && (
-                    <button 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setFilteredProperties(properties);
-                        setActiveTab('all');
-                      }}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+                <Input
+                  type="text"
+                  placeholder="🔍 Search by Contact or Premise..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  className="w-full px-4 py-3 bg-transparent text-white placeholder-white/60 border-0 focus:outline-none focus:ring-0"
+                />
                 <button className="bg-white/20 backdrop-blur-sm px-4 py-3 border-l border-white/20 text-white hover:bg-white/30 transition-colors">
                   🔍
                 </button>
