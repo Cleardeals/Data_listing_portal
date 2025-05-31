@@ -283,23 +283,22 @@ export const AddEditPropertyModal = ({
               />
             </div>
           </div>
+          <div className="mt-auto pt-4 border-t border-gray-200 sticky bottom-0 bg-white pb-2 z-10 flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded hover:bg-gray-100 text-gray-900"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              {mode === 'edit' ? 'Edit' : 'Add'}
+            </button>
+          </div>
         </form>
-
-        <div className="mt-auto pt-4 border-t border-gray-200 sticky bottom-0 bg-white pb-2 z-10 flex justify-end gap-4"> {/* Changed mt-6 to mt-auto, added classes for sticky footer */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border rounded hover:bg-gray-100 text-gray-900"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            {mode === 'edit' ? 'Edit' : 'Add'}
-          </button>
-        </div>
       </div>
     </div>
   );
