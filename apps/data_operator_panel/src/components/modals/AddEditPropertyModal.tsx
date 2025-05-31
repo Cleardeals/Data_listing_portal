@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 
 // Define PropertyData type at the top of the file for better accessibility
 type PropertyData = {
-  nameContact: string;
+  name: string;
+  contact: string;
   address: string;
   premise: string;
   area: string;
@@ -15,6 +16,9 @@ type PropertyData = {
   key: string;
   brokerage: string;
   status: string;
+  premium: string;
+  specialnote: string;
+  rentedout: boolean;
 };
 
 // Define the AddEditPropertyModal component
@@ -32,7 +36,8 @@ export const AddEditPropertyModal = ({
   onSubmit: (data: PropertyData) => void;
 }) => {
   const [data, setData] = useState<PropertyData>(initialData || {
-    nameContact: '',
+    name: '',
+    contact: '',
     address: '',
     premise: '',
     area: '',
@@ -42,13 +47,17 @@ export const AddEditPropertyModal = ({
     sqft: '',
     key: 'Yes',
     brokerage: '',
-    status: 'Active'
+    status: 'Active',
+    premium: '',
+    specialnote: '',
+    rentedout: false
   });
   
   // Update form fields if initialData changes (for editing different rows)
   useEffect(() => {
     setData(initialData || {
-      nameContact: '',
+      name: '',
+      contact: '',
       address: '',
       premise: '',
       area: '',
@@ -58,13 +67,16 @@ export const AddEditPropertyModal = ({
       sqft: '',
       key: 'Yes',
       brokerage: '',
-      status: 'Active'
+      status: 'Active',
+      premium: '',
+      specialnote: '',
+      rentedout: false
     });
   }, [initialData]);
   
   if (!open) return null;
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setData((prev: PropertyData) => ({ ...prev, [name]: value }));
   };
@@ -75,22 +87,36 @@ export const AddEditPropertyModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-        <h2 className="text-xl font-bold mb-4 text-gray-900">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"> {/* Removed overflow-y-auto */}
+      <div className="bg-white p-6 rounded-lg w-full max-w-2xl my-8 flex flex-col max-h-[90vh]"> {/* Added flex flex-col, removed its own overflow-y-auto */}
+        <h2 className="text-xl font-bold mb-4 text-gray-900 sticky top-0 bg-white pt-2 pb-2 z-10"> {/* Added pb-2 and z-10 */}
           {mode === 'edit' ? 'Edit Entry' : 'Add New Entry'}
         </h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto pr-2 space-y-4"> {/* Added flex-grow, overflow-y-auto, pr-2 for scrollbar, space-y-4 for consistent spacing */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Name & Contact */}
-            <div className="col-span-2">
-              <label className="block mb-2 text-gray-800 font-medium">Name & Contact</label>
+            {/* Name */}
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Name</label>
               <input
                 type="text"
-                name="nameContact"
-                value={data.nameContact}
+                name="name"
+                value={data.name}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
+                placeholder="Enter name"
+              />
+            </div>
+
+            {/* Contact */}
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Contact</label>
+              <input
+                type="text"
+                name="contact"
+                value={data.contact}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+                placeholder="Enter contact number"
               />
             </div>
 
@@ -203,7 +229,7 @@ export const AddEditPropertyModal = ({
             </div>
 
             {/* Status */}
-            <div className="col-span-2">
+            <div>
               <label className="block mb-2 text-gray-800 font-medium">Status</label>
               <select
                 name="status"
@@ -216,24 +242,64 @@ export const AddEditPropertyModal = ({
                 <option>Pending</option>
               </select>
             </div>
-          </div>
 
-          <div className="mt-6 flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-100 text-gray-900"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              {mode === 'edit' ? 'Edit' : 'Add'}
-            </button>
+            {/* Rented Out */}
+            <div>
+              <label className="block mb-2 text-gray-800 font-medium">Rented Out</label>
+              <select
+                name="rentedout"
+                value={data.rentedout ? 'true' : 'false'}
+                onChange={(e) => setData(prev => ({ ...prev, rentedout: e.target.value === 'true' }))}
+                className="w-full p-2 border rounded text-gray-900"
+              >
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+
+            {/* Premium */}
+            <div className="col-span-2">
+              <label className="block mb-2 text-gray-800 font-medium">Premium</label>
+              <input
+                type="text"
+                name="premium"
+                value={data.premium}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+                placeholder="Enter premium details"
+              />
+            </div>
+
+            {/* Special Note */}
+            <div className="col-span-2">
+              <label className="block mb-2 text-gray-800 font-medium">Special Note</label>
+              <textarea
+                name="specialnote"
+                value={data.specialnote}
+                onChange={handleInputChange}
+                className="w-full p-2 border rounded text-gray-900"
+                rows={3}
+                placeholder="Enter special notes or remarks"
+              />
+            </div>
           </div>
         </form>
+
+        <div className="mt-auto pt-4 border-t border-gray-200 sticky bottom-0 bg-white pb-2 z-10 flex justify-end gap-4"> {/* Changed mt-6 to mt-auto, added classes for sticky footer */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border rounded hover:bg-gray-100 text-gray-900"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            {mode === 'edit' ? 'Edit' : 'Add'}
+          </button>
+        </div>
       </div>
     </div>
   );

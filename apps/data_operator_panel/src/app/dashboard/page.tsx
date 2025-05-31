@@ -45,16 +45,26 @@ function DashboardContent() {
       setLoading(true);
       setError(null);
       
+      // Check if we have a session before fetching
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        console.log('No active session found during fetch properties');
+        // We'll let the ProtectedRoute handle the redirection
+        return;
+      }
+      
       const { data, error: supabaseError } = await supabase
         .from('propertydata')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (supabaseError) {
+        console.error('Supabase error fetching properties:', supabaseError);
         throw supabaseError;
       }
 
       setPropertyData(data || []);
+      console.log(`Fetched ${data?.length || 0} properties successfully`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
@@ -63,39 +73,59 @@ function DashboardContent() {
     }
   };
 
+  // Track reconnection attempts with ref instead of state to avoid re-renders
+  const reconnectAttemptRef = React.useRef(false);
+  
   useEffect(() => {
     // Fetch property data when component mounts
     fetchProperties();
 
     // Setup real-time subscription
     const setupRealtime = () => {
-      const channel = supabase
-        .channel('property-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'propertydata'
-          },
-          (payload) => {
-            console.log('Real-time change received:', payload);
-            handleRealtimeChange(payload as RealtimePostgresChangesPayload<SupabasePropertyData>);
-          }
-        )
-        .subscribe((status) => {
-          console.log('Realtime subscription status:', status);
-          if (status === 'SUBSCRIBED') {
-            setRealtimeStatus('connected');
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            setRealtimeStatus('disconnected');
-          } else {
-            setRealtimeStatus('connecting');
-          }
-        });
+      try {
+        const channel = supabase
+          .channel('property-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'propertydata'
+            },
+            (payload) => {
+              console.log('Real-time change received:', payload);
+              handleRealtimeChange(payload as RealtimePostgresChangesPayload<SupabasePropertyData>);
+            }
+          )
+          .subscribe((status) => {
+            console.log('Realtime subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              setRealtimeStatus('connected');
+              reconnectAttemptRef.current = false;
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              setRealtimeStatus('disconnected');
+              // If we get disconnected, attempt to reconnect after a delay - only once
+              if (!reconnectAttemptRef.current) {
+                reconnectAttemptRef.current = true;
+                console.log('Scheduling reconnect attempt');
+                setTimeout(() => {
+                  console.log('Attempting to reconnect...');
+                  setupRealtime();
+                }, 5000);
+              }
+            } else {
+              setRealtimeStatus('connecting');
+            }
+          });
 
-      setRealtimeChannel(channel);
-      return channel;
+        setRealtimeChannel(channel);
+        return channel;
+      } catch (err) {
+        console.error('Error setting up realtime:', err);
+        setRealtimeStatus('disconnected');
+        setError('Failed to establish real-time connection. Please refresh the page.');
+        return null;
+      }
     };
 
     const channel = setupRealtime();
@@ -103,10 +133,14 @@ function DashboardContent() {
     // Cleanup subscription on unmount
     return () => {
       if (channel) {
-        supabase.removeChannel(channel);
+        try {
+          supabase.removeChannel(channel);
+        } catch (err) {
+          console.error('Error removing channel:', err);
+        }
       }
     };
-  }, []);
+  }, []); // Remove the dependency on realtimeStatus
 
   // Handle real-time changes
   const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<SupabasePropertyData>) => {
@@ -148,12 +182,9 @@ function DashboardContent() {
 
   const handleAddProperty = async (data: PropertyData) => {
     try {
-      // Parse nameContact to separate name and contact
-      const [name, contact] = data.nameContact.split('\n');
-      
       const newProperty = {
-        name: name || '',
-        contact: contact || '',
+        name: data.name,
+        contact: data.contact,
         address: data.address,
         premise: data.premise,
         area: data.area,
@@ -164,11 +195,11 @@ function DashboardContent() {
         key: data.key,
         brokerage: data.brokerage,
         status: data.status,
+        premium: data.premium,
+        specialnote: data.specialnote,
+        rentedout: data.rentedout,
         important: 0,
-        premium: '',
-        specialnote: '',
-        date: new Date().toLocaleDateString('en-GB'),
-        rentedout: false
+        date: new Date().toLocaleDateString('en-GB')
       };
 
       const { error } = await supabase
@@ -190,12 +221,9 @@ function DashboardContent() {
     if (selectedRow === null) return;
     
     try {
-      // Parse nameContact to separate name and contact
-      const [name, contact] = data.nameContact.split('\n');
-      
       const updatedProperty = {
-        name: name || '',
-        contact: contact || '',
+        name: data.name,
+        contact: data.contact,
         address: data.address,
         premise: data.premise,
         area: data.area,
@@ -206,6 +234,9 @@ function DashboardContent() {
         key: data.key,
         brokerage: data.brokerage,
         status: data.status,
+        premium: data.premium,
+        specialnote: data.specialnote,
+        rentedout: data.rentedout,
         updated_at: new Date().toISOString()
       };
 
@@ -231,7 +262,8 @@ function DashboardContent() {
       if (rowData) {
         // Convert the fetched data to PropertyData format
         const formattedData: PropertyData = {
-          nameContact: `${rowData.name}\n${rowData.contact || ''}`,
+          name: rowData.name || '',
+          contact: rowData.contact || '',
           address: rowData.address || '',
           premise: rowData.premise || '',
           area: rowData.area || '',
@@ -241,7 +273,10 @@ function DashboardContent() {
           sqft: rowData.sqft || '',
           key: rowData.key || '',
           brokerage: rowData.brokerage || '',
-          status: rowData.status || ''
+          status: rowData.status || '',
+          premium: rowData.premium || '',
+          specialnote: rowData.specialnote || '',
+          rentedout: rowData.rentedout || false
         };
         setEditData(formattedData);
         setShowEditForm(true);
@@ -253,14 +288,24 @@ function DashboardContent() {
   const handleDeleteConfirm = async () => {
     if (selectedRow !== null) {
       try {
+        setError(null); // Clear any previous errors
+        
         const { error } = await supabase
           .from('propertydata')
           .delete()
           .eq('id', selectedRow);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase delete error:', error);
+          throw error;
+        }
 
         console.log(`Successfully deleted row ${selectedRow}`);
+        
+        // Update local state immediately, don't rely solely on real-time updates
+        setPropertyData(prevData => prevData.filter(item => item.id !== selectedRow));
+        
+        setSelectedRow(null);
       } catch (err: unknown) {
         console.error('Error deleting property:', err);
         setError(err instanceof Error ? err.message : 'Failed to delete property');

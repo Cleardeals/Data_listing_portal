@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { supabase } from "../../lib/supabase";
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 const Page = () => {
   const [properties, setProperties] = useState<PropertyData[]>([]);
@@ -15,6 +16,7 @@ const Page = () => {
   const [expandedDescriptionId, setExpandedDescriptionId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
 
   // Fetch properties from Supabase
   const fetchProperties = async () => {
@@ -41,10 +43,140 @@ const Page = () => {
     }
   };
 
-  // Load properties on component mount
+  // Load properties on component mount and setup real-time subscription
   useEffect(() => {
     fetchProperties();
+
+    // Setup real-time subscription
+    const setupRealtime = () => {
+      const channel = supabase
+        .channel('property-changes-tableview')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'propertydata'
+          },
+          (payload) => {
+            console.log('Real-time change received in tableview:', payload);
+            handleRealtimeChange(payload as RealtimePostgresChangesPayload<PropertyData>);
+          }
+        )
+        .subscribe((status) => {
+          console.log('Tableview realtime subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            setRealtimeStatus('connected');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            setRealtimeStatus('disconnected');
+          } else {
+            setRealtimeStatus('connecting');
+          }
+        });
+
+      return channel;
+    };
+
+    const channel = setupRealtime();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle real-time changes
+  const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<PropertyData>) => {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+    
+    setProperties(currentData => {
+      switch (eventType) {
+        case 'INSERT':
+          // Add new record if it doesn't exist
+          if (newRecord) {
+            const existingIndex = currentData.findIndex(item => item.id === newRecord.id);
+            if (existingIndex === -1) {
+              return [newRecord, ...currentData];
+            }
+          }
+          return currentData;
+          
+        case 'UPDATE':
+          // Update existing record
+          if (newRecord) {
+            return currentData.map(item => 
+              item.id === newRecord.id ? newRecord : item
+            );
+          }
+          return currentData;
+          
+        case 'DELETE':
+          // Remove deleted record
+          if (oldRecord) {
+            return currentData.filter(item => item.id !== oldRecord.id);
+          }
+          return currentData;
+          
+        default:
+          return currentData;
+      }
+    });
+
+    // Also update filtered properties based on current active tab
+    setFilteredProperties(currentFiltered => {
+      switch (eventType) {
+        case 'INSERT':
+          if (newRecord) {
+            const existingIndex = currentFiltered.findIndex(item => item.id === newRecord.id);
+            if (existingIndex === -1) {
+              // Check if new record matches current filter
+              return shouldIncludeInFilter(newRecord, activeTab) ? [newRecord, ...currentFiltered] : currentFiltered;
+            }
+          }
+          return currentFiltered;
+          
+        case 'UPDATE':
+          if (newRecord) {
+            const updatedFiltered = currentFiltered.map(item => 
+              item.id === newRecord.id ? newRecord : item
+            );
+            // Reapply filter to ensure consistency
+            return updatedFiltered.filter(item => shouldIncludeInFilter(item, activeTab));
+          }
+          return currentFiltered;
+          
+        case 'DELETE':
+          if (oldRecord) {
+            return currentFiltered.filter(item => item.id !== oldRecord.id);
+          }
+          return currentFiltered;
+          
+        default:
+          return currentFiltered;
+      }
+    });
+  };
+
+  // Helper function to check if a property should be included in current filter
+  const shouldIncludeInFilter = (property: PropertyData, tab: string): boolean => {
+    const today = supabaseHelpers.getTodayDate();
+    const yesterday = supabaseHelpers.getYesterdayDate();
+
+    switch (tab) {
+      case 'imp':
+        return Boolean(property.important);
+      case 'today':
+        return parseDate(property.date) === today;
+      case 'yesterday':
+        return parseDate(property.date) === yesterday;
+      case 'all':
+      default:
+        return true;
+    }
+  };
 
   const parseDate = React.useCallback((ddmmyyyy: string | null) => {
     if (!ddmmyyyy) return '';
@@ -244,8 +376,32 @@ const Page = () => {
               ))}
             </div>
 
-            {/* Enhanced Search Box */}
-            <div className="w-full lg:w-1/2">
+            {/* Real-time Status & Search Box */}
+            <div className="w-full lg:w-1/2 flex flex-col gap-3">
+              {/* Real-time Status Indicator */}
+              <div className="flex items-center justify-end gap-2">
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                  realtimeStatus === 'connected' 
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                    : realtimeStatus === 'disconnected'
+                    ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                    : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    realtimeStatus === 'connected' 
+                      ? 'bg-green-400 animate-pulse' 
+                      : realtimeStatus === 'disconnected'
+                      ? 'bg-red-400'
+                      : 'bg-yellow-400 animate-pulse'
+                  }`}></div>
+                  <span>
+                    {realtimeStatus === 'connected' ? 'Live Sync Active' : 
+                     realtimeStatus === 'disconnected' ? 'Sync Disconnected' : 'Connecting...'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Enhanced Search Box */}
               <div className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl overflow-hidden flex items-center">
                 <div className="flex-1 relative">
                   <Input
