@@ -52,23 +52,23 @@ function SearchResults({
             🏠 Found <span className="text-cyan-400 font-bold">{properties.length}</span> {properties.length === 1 ? 'property' : 'properties'}
           </div>
           {properties.map((property) => (
-            <div key={property.id} className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
+            <div key={property.serial_number} className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <h2 className="text-xl font-bold text-gradient-animate mb-3">
-                    👤 {property.name} {property.contact}
+                    👤 {property.owner_name} {property.owner_contact}
                   </h2>
                   <p className="text-white/80 mb-3 bg-white/10 rounded-lg p-3 border border-white/20">
-                    📝 {property.specialnote}
+                    📝 {property.special_note}
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2 text-green-400 font-semibold bg-green-500/10 rounded-lg p-2 border border-green-500/20">
                       <span>💰</span>
-                      <span>Rent: {property.rent}</span>
+                      <span>Price: {property.rent_or_sell_price}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-blue-400 bg-blue-500/10 rounded-lg p-2 border border-blue-500/20">
                       <span>🏠</span>
-                      <span>Type: {property.availability}</span>
+                      <span>Type: {property.sub_property_type}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-purple-400 bg-purple-500/10 rounded-lg p-2 border border-purple-500/20">
                       <span>📍</span>
@@ -79,24 +79,24 @@ function SearchResults({
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-orange-400 bg-orange-500/10 rounded-lg p-2 border border-orange-500/20">
                     <span>🛋️</span>
-                    <span>Condition: {property.condition}</span>
+                    <span>Furnishing: {property.furnishing_status}</span>
                   </div>
                   <div className="flex items-center space-x-2 text-cyan-400 bg-cyan-500/10 rounded-lg p-2 border border-cyan-500/20">
                     <span>📐</span>
-                    <span>Size: {property.sqft || 'NA'} sqft</span>
+                    <span>Size: {property.size || 'NA'} sqft</span>
                   </div>
                   <div className="flex items-center space-x-2 text-pink-400 bg-pink-500/10 rounded-lg p-2 border border-pink-500/20">
-                    <span>💼</span>
-                    <span>Brokerage: {property.brokerage}</span>
+                    <span>�</span>
+                    <span>Deposit: {property.deposit}</span>
                   </div>
                   <div className="flex items-center space-x-2 text-emerald-400 bg-emerald-500/10 rounded-lg p-2 border border-emerald-500/20">
                     <span>📊</span>
-                    <span>Status: {property.status}</span>
+                    <span>Availability: {property.availability}</span>
                   </div>
-                  {property.premium && (
+                  {property.additional_details && (
                     <div className="flex items-center space-x-2 text-yellow-400 bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20">
                       <span>ℹ️</span>
-                      <span>Details: {property.premium}</span>
+                      <span>Details: {property.additional_details}</span>
                     </div>
                   )}
                 </div>
@@ -149,76 +149,48 @@ function FilterForm({ onSearch }: {
   });
 
   const propertyType = [
-    "Residential Rent",
-    "Commercial Rent",
-    "Residential Sale",
-    "Commercial Sale",
+    "Res_resale",
+    "Res_rental", 
+    "Com_resale",
+    "Com_rental",
+    "N/A"
   ];
 
   const conditions = [
-    "Fully Furnished",
-    "Semi Furnished",
+    "Furnished",
+    "Semi-Furnished", 
     "Unfurnished",
-    "Fix-Furnished",
-    "Kitchen-Fix",
+    "N/A"
   ];
   const areas = [
-    "100 Feet Road",
-    "Dholera",
-    "Juhapur",
-    "New CG Road",
-    "Sanand",
-    "Sola",
-    "Adalaj",
-    "Drive In Road",
-    "Kalol",
-    "New Ranip",
-    "Sanathal",
-    "South Bopal",
-    "Ellisbridge",
-    "Koba",
-    "New Wadaj",
-    "Santej",
-    "Ambawadi",
-    "SP Ring Road",
-    "Ambli",
-    "Gandinagar",
-    "Koteshwaar",
-    "Ninar Nagar",
-    "Sargasan",
-    "Subhash Bridge",
-    "Other Area",
+    "Aundh", "Balewadi", "Baner", "Bavdhan", "Bhosari", "Bibwewadi", "Budhwar Peth",
+    "Chakan", "Dhanori", "Dhanraj Road", "Deccan Gymkhana", "Dhayari", "Hadapsar",
+    "Hinjewadi", "Kalyani Nagar", "Karve Nagar", "Katraj", "Kharadi", "Kondhwa",
+    "Koregaon Park", "Kothrud", "Lohegaon", "Lullanagar", "Magarpatta", "Marunji",
+    "Model Colony", "Mohammedwadi", "Moshi", "Mundhwa", "NIBM Road", "Narayan Peth",
+    "Pashan", "Pimple Saudagar", "Pimple Gurav", "Pimple Nilakh", "Pimpri Chinchwad",
+    "Ravet", "Sadashiv Peth", "Sahakar Nagar", "Shaniwar Peth", "Shivajinagar",
+    "Sinhagad Road", "Swargate", "Talegaon", "Tathawade", "Undri", "Uruli Kanchan",
+    "Viman Nagar", "Vishrantwadi", "Wagholi", "Wakad", "Wanwadi", "Warje",
+    "Wadgaon Sheri", "Yerawada", "Chinchwad", "Sus", "Kate Wasti", "Nigdi",
+    "Susgav", "Suisgaon", "Rahatani", "Akurdi", "Punawale", "N/A"
   ];
   const availabilities = [
-    "1 Room",
-    "1 Room & Kitchen",
-    "1.5 BHK",
-    "1 BHK",
-    "2 Room",
-    "2 Room & Kitchen",
-    "2.5 BHK",
-    "2 BHK",
-    "3.5 BHK",
-    "3BHK",
-    "4BHK",
-    "5BHK",
-    "6BHK",
-    "Above 6BKH",
-    "Duplex1",
-    "Independent Buliding",
-    "PG",
-    "Residential Plot",
-    "Duplex",
+    "1 BHK", "1.5 BHK", "1 Rk", "1RK", "1 RK", "1BHK",
+    "2 BHK", "2.5 BHK", "2.5BHK", "2 BHk", "2BHK",
+    "3 BHK", "3.5 BHK", "3BHK",
+    "4 BHK", "4.5 BHK",
+    "5 BHK", "6 BHK", "8 BHK", "10 BHK",
+    "N/A"
   ];
   const availabilityTypes = [
-    "Low Rise Apartment",
-    "High Rise Apartment",
-    "Bungalow",
-    "Penthouse",
-    "Weekend Home",
-    "Rowhouse",
-    "Tenement",
-    "Building",
+    "All",
+    "Bachelors (Men Only)",
+    "Bachelors (Men/Women)", 
+    "Bachelors (Women Only)",
+    "Both",
+    "Family Only",
+    "N/A"
   ];
   const descriptionOptions = ["For Family", "For Executive", "For Bachelors"];
 
@@ -520,7 +492,7 @@ export default function SearchPage() {
       const { data, error: supabaseError } = await supabase
         .from('propertydata')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('date_stamp', { ascending: false });
 
       if (supabaseError) {
         throw supabaseError;
@@ -574,23 +546,23 @@ export default function SearchPage() {
     const filtered = properties.filter((property) => {
       return (
         (filters.propertyType.length === 0 ||
-          (property.availability && filters.propertyType.includes(property.availability))) &&
+          (property.property_type && filters.propertyType.includes(property.property_type))) &&
         (filters.condition.length === 0 ||
-          (property.condition && filters.condition.includes(property.condition))) &&
+          (property.furnishing_status && filters.condition.includes(property.furnishing_status))) &&
         (filters.area.length === 0 || 
           (property.area && filters.area.includes(property.area))) &&
         (filters.availability.length === 0 ||
-          (property.availability && filters.availability.includes(property.availability))) &&
+          (property.sub_property_type && filters.availability.includes(property.sub_property_type))) &&
         (filters.premium.length === 0 ||
           filters.premium.some((desc) =>
-            property.premium?.toLowerCase().includes(desc.toLowerCase())
+            property.additional_details?.toLowerCase().includes(desc.toLowerCase())
           )) &&
         (!filters.budgetMin ||
-          parseInt(filters.budgetMin) <= extractRent(String(property.rent))) &&
+          parseInt(filters.budgetMin) <= extractRent(String(property.rent_or_sell_price))) &&
         (!filters.budgetMax ||
-          parseInt(filters.budgetMax) >= extractRent(String(property.rent))) &&
+          parseInt(filters.budgetMax) >= extractRent(String(property.rent_or_sell_price))) &&
         (!filters.premise ||
-          property.premise?.toLowerCase().includes(filters.premise.toLowerCase()))
+          property.address?.toLowerCase().includes(filters.premise.toLowerCase()))
       );
     });
     setSearchResult(filtered);
@@ -640,7 +612,7 @@ export default function SearchPage() {
                     </div>
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    {properties.filter(p => p.status === 'Available').length}
+                    {properties.filter(p => p.availability === 'Available').length}
                   </h3>
                   <p className="text-green-200">Available Now</p>
                 </div>
@@ -652,7 +624,7 @@ export default function SearchPage() {
                     </div>
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    {properties.filter(p => p.important).length}
+                    {properties.filter(p => p.special_note && p.special_note.trim().length > 0).length}
                   </h3>
                   <p className="text-purple-200">Featured</p>
                 </div>

@@ -27,7 +27,7 @@ const Page = () => {
       const { data, error: supabaseError } = await supabase
         .from('propertydata')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('date_stamp', { ascending: false });
 
       if (supabaseError) {
         throw supabaseError;
@@ -97,7 +97,7 @@ const Page = () => {
         case 'INSERT':
           // Add new record if it doesn't exist
           if (newRecord) {
-            const existingIndex = currentData.findIndex(item => item.id === newRecord.id);
+            const existingIndex = currentData.findIndex(item => item.serial_number === newRecord.serial_number);
             if (existingIndex === -1) {
               return [newRecord, ...currentData];
             }
@@ -108,7 +108,7 @@ const Page = () => {
           // Update existing record
           if (newRecord) {
             return currentData.map(item => 
-              item.id === newRecord.id ? newRecord : item
+              item.serial_number === newRecord.serial_number ? newRecord : item
             );
           }
           return currentData;
@@ -116,7 +116,7 @@ const Page = () => {
         case 'DELETE':
           // Remove deleted record
           if (oldRecord) {
-            return currentData.filter(item => item.id !== oldRecord.id);
+            return currentData.filter(item => item.serial_number !== oldRecord.serial_number);
           }
           return currentData;
           
@@ -130,7 +130,7 @@ const Page = () => {
       switch (eventType) {
         case 'INSERT':
           if (newRecord) {
-            const existingIndex = currentFiltered.findIndex(item => item.id === newRecord.id);
+            const existingIndex = currentFiltered.findIndex(item => item.serial_number === newRecord.serial_number);
             if (existingIndex === -1) {
               // Check if new record matches current filter
               return shouldIncludeInFilter(newRecord, activeTab) ? [newRecord, ...currentFiltered] : currentFiltered;
@@ -141,7 +141,7 @@ const Page = () => {
         case 'UPDATE':
           if (newRecord) {
             const updatedFiltered = currentFiltered.map(item => 
-              item.id === newRecord.id ? newRecord : item
+              item.serial_number === newRecord.serial_number ? newRecord : item
             );
             // Reapply filter to ensure consistency
             return updatedFiltered.filter(item => shouldIncludeInFilter(item, activeTab));
@@ -150,7 +150,7 @@ const Page = () => {
           
         case 'DELETE':
           if (oldRecord) {
-            return currentFiltered.filter(item => item.id !== oldRecord.id);
+            return currentFiltered.filter(item => item.serial_number !== oldRecord.serial_number);
           }
           return currentFiltered;
           
@@ -167,20 +167,20 @@ const Page = () => {
 
     switch (tab) {
       case 'imp':
-        return Boolean(property.important);
+        return Boolean(property.special_note && property.special_note.trim().length > 0);
       case 'today':
-        return parseDate(property.date) === today;
+        return parseDate(property.date_stamp) === today;
       case 'yesterday':
-        return parseDate(property.date) === yesterday;
+        return parseDate(property.date_stamp) === yesterday;
       case 'all':
       default:
         return true;
     }
   };
 
-  const parseDate = React.useCallback((ddmmyyyy: string | null) => {
-    if (!ddmmyyyy) return '';
-    return supabaseHelpers.formatDateForComparison(ddmmyyyy);
+  const parseDate = React.useCallback((isoString: string | null) => {
+    if (!isoString) return '';
+    return supabaseHelpers.formatDateForComparison(isoString);
   }, []);
 
   useEffect(() => {
@@ -192,14 +192,14 @@ const Page = () => {
       const yesterday = supabaseHelpers.getYesterdayDate();
 
       if (tab === 'imp') {
-        filtered = filtered.filter((p) => Boolean(p.important));
+        filtered = filtered.filter((p) => Boolean(p.special_note && p.special_note.trim().length > 0));
       } else if (tab === 'today') {
         filtered = filtered.filter((p) => {
-          const propdate = parseDate(p.date);
+          const propdate = parseDate(p.date_stamp);
           return propdate === today;
         });
       } else if (tab === 'yesterday') {
-        filtered = filtered.filter((p) => parseDate(p.date) === yesterday);
+        filtered = filtered.filter((p) => parseDate(p.date_stamp) === yesterday);
       }
 
       setFilteredProperties(filtered);
@@ -207,56 +207,6 @@ const Page = () => {
     
     applyFilters(activeTab);
   }, [properties, activeTab, parseDate]);
-
-  const handleImportantChange = async (id: number) => {
-    try {
-      const property = properties.find(p => p.id === id);
-      if (!property) return;
-
-      const newImportantValue = property.important ? 0 : 1;
-      
-      const { error } = await supabase
-        .from('propertydata')
-        .update({ important: newImportantValue })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Update local state
-      const updatedProperties = properties.map((property) =>
-        property.id === id ? { ...property, important: newImportantValue } : property
-      );
-      setProperties(updatedProperties);
-    } catch (err: unknown) {
-      console.error('Error updating important status:', err);
-      setError('Failed to update important status');
-    }
-  };
-
-  const handleRentedOutChange = async (id: number) => {
-    try {
-      const property = properties.find(p => p.id === id);
-      if (!property) return;
-
-      const newRentedOutValue = !property.rentedout;
-      
-      const { error } = await supabase
-        .from('propertydata')
-        .update({ rentedout: newRentedOutValue })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Update local state
-      const updatedProperties = properties.map((property) =>
-        property.id === id ? { ...property, rentedout: newRentedOutValue } : property
-      );
-      setProperties(updatedProperties);
-    } catch (err: unknown) {
-      console.error('Error updating rented out status:', err);
-      setError('Failed to update rented out status');
-    }
-  };
 
   const filterProperties = (tab: string) => {
     setActiveTab(tab);
@@ -266,14 +216,15 @@ const Page = () => {
     const yesterday = supabaseHelpers.getYesterdayDate();
 
     if (tab === 'imp') {
-      filtered = filtered.filter((p) => Boolean(p.important));
+      // Filter properties with special notes (treating them as important)
+      filtered = filtered.filter((p) => Boolean(p.special_note && p.special_note.trim().length > 0));
     } else if (tab === 'today') {
       filtered = filtered.filter((p) => {
-        const propdate = parseDate(p.date);
+        const propdate = parseDate(p.date_stamp);
         return propdate === today;
       });
     } else if (tab === 'yesterday') {
-      filtered = filtered.filter((p) => parseDate(p.date) === yesterday);
+      filtered = filtered.filter((p) => parseDate(p.date_stamp) === yesterday);
     }
 
     setFilteredProperties(filtered);
@@ -283,8 +234,8 @@ const Page = () => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
     const searchedProperties = properties.filter((property) => {
-      const nameContact = property.name + (property.contact ? `\n${property.contact}` : '');
-      return nameContact.toLowerCase().includes(term) || (property.premise || '').toLowerCase().includes(term);
+      const nameContact = (property.owner_name || '') + (property.owner_contact ? `\n${property.owner_contact}` : '');
+      return nameContact.toLowerCase().includes(term) || (property.address || '').toLowerCase().includes(term);
     });
     setFilteredProperties(searchedProperties);
     setActiveTab('all');
@@ -328,7 +279,7 @@ const Page = () => {
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-4">
                 <div className="text-3xl mb-2">✅</div>
                 <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.status === 'Available').length}
+                  {filteredProperties.filter(p => p.availability === 'Available').length}
                 </div>
                 <div className="text-green-200 text-sm">Available</div>
               </div>
@@ -336,17 +287,17 @@ const Page = () => {
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 rounded-xl p-4">
                 <div className="text-3xl mb-2">⭐</div>
                 <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.important).length}
+                  {filteredProperties.filter(p => p.special_note && p.special_note.trim().length > 0).length}
                 </div>
-                <div className="text-yellow-200 text-sm">Important</div>
+                <div className="text-yellow-200 text-sm">With Special Notes</div>
               </div>
               
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-xl p-4">
                 <div className="text-3xl mb-2">🔑</div>
                 <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.rentedout).length}
+                  {filteredProperties.filter(p => p.rent_sold_out).length}
                 </div>
-                <div className="text-red-200 text-sm">Rented Out</div>
+                <div className="text-red-200 text-sm">Sold/Rented Out</div>
               </div>
             </div>
           </div>
@@ -356,9 +307,9 @@ const Page = () => {
             {/* Filter Tabs */}
             <div className="flex flex-wrap gap-3">
               {[
-                { key: 'imp', label: '⭐ Important', color: 'from-yellow-600 to-orange-600', count: properties.filter(p => p.important).length },
-                { key: 'today', label: '📅 Today', color: 'from-blue-600 to-cyan-600', count: properties.filter(p => parseDate(p.date) === supabaseHelpers.getTodayDate()).length },
-                { key: 'yesterday', label: '📆 Yesterday', color: 'from-indigo-600 to-blue-600', count: properties.filter(p => parseDate(p.date) === supabaseHelpers.getYesterdayDate()).length },
+                { key: 'imp', label: '⭐ With Special Notes', color: 'from-yellow-600 to-orange-600', count: properties.filter(p => p.special_note && p.special_note.trim().length > 0).length },
+                { key: 'today', label: '📅 Today', color: 'from-blue-600 to-cyan-600', count: properties.filter(p => parseDate(p.date_stamp) === supabaseHelpers.getTodayDate()).length },
+                { key: 'yesterday', label: '📆 Yesterday', color: 'from-indigo-600 to-blue-600', count: properties.filter(p => parseDate(p.date_stamp) === supabaseHelpers.getYesterdayDate()).length },
                 { key: 'all', label: '📋 All Properties', color: 'from-slate-600 to-gray-600', count: properties.length }
               ].map((tab) => (
                 <Button 
@@ -406,7 +357,7 @@ const Page = () => {
                 <div className="flex-1 relative">
                   <Input
                     type="text"
-                    placeholder="🔍 Search by name, contact, or premise..."
+                    placeholder="🔍 Search by owner name, contact, or address..."
                     value={searchTerm}
                     onChange={handleSearch}
                     className="w-full px-4 py-3 bg-transparent text-white placeholder-white/60 border-0 focus:outline-none focus:ring-0"
@@ -467,7 +418,7 @@ const Page = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gradient-to-r from-blue-600/80 to-cyan-600/80 text-white">
-                      {['⭐', '📝 Special Note', '📅 Date', '👤 Name & Contact', '📍 Address', '🏠 Premise', '📍 Area', '💰 Rent', '🗓️ Availability', '🔧 Condition', '📏 SqFt/Sign', '🔑 Key', '💼 Brokerage', '📊 Status', '🏠 Rented Out?', '📋'].map((heading) => (
+                      {['⭐', '📝 Special Note', '📅 Date', '👤 Owner & Contact', '📍 Address', '🏠 Property Type', '📍 Area', '💰 Price', '🗓️ Availability', '📏 Size', '🏠 Additional Details', '📅 Age', '💰 Deposit', '🏠 Sold/Rented Out?', '📋'].map((heading) => (
                         <th key={heading} className="px-4 py-4 text-left font-semibold border-r border-white/20 last:border-r-0">
                           {heading}
                         </th>
@@ -477,7 +428,7 @@ const Page = () => {
                   <tbody>
                     {filteredProperties.length === 0 ? (
                       <tr>
-                        <td colSpan={16} className="text-center py-16">
+                        <td colSpan={15} className="text-center py-16">
                           <div className="text-white/60">
                             <div className="text-6xl mb-4">🏠</div>
                             <p className="text-xl">No properties found</p>
@@ -487,28 +438,28 @@ const Page = () => {
                       </tr>
                     ) : (
                       filteredProperties.map((property, index) => (
-                        <React.Fragment key={property.id}>
+                        <React.Fragment key={property.serial_number}>
                           <tr className={`hover:bg-white/10 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white/5' : 'bg-transparent'}`}>
                             <td className="px-4 py-4 border-r border-white/10 text-center">
                               <input
                                 type="checkbox"
-                                checked={Boolean(property.important)}
-                                onChange={() => handleImportantChange(property.id)}
+                                checked={Boolean(property.special_note && property.special_note.trim().length > 0)}
+                                readOnly
                                 className="w-4 h-4 text-yellow-500 bg-transparent border-2 border-white/30 rounded focus:ring-yellow-500 focus:ring-2"
                               />
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
-                              <div className="truncate" title={property.premium || ''}>
-                                {property.premium || '-'}
+                              <div className="truncate" title={property.special_note || ''}>
+                                {property.special_note || '-'}
                               </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 whitespace-nowrap">
-                              {property.date || '-'}
+                              {property.date_stamp || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
                               <div className="whitespace-pre-line text-sm">
-                                <div className="font-semibold">{property.name || '-'}</div>
-                                {property.contact && <div className="text-white/70">{property.contact}</div>}
+                                <div className="font-semibold">{property.owner_name || '-'}</div>
+                                {property.owner_contact && <div className="text-white/70">{property.owner_contact}</div>}
                               </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
@@ -517,80 +468,69 @@ const Page = () => {
                               </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90">
-                              {property.premise || '-'}
+                              {property.property_type || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90">
                               {property.area || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 font-semibold">
-                              {property.rent || '-'}
+                              {property.rent_or_sell_price || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
                               <div className="whitespace-pre-line text-sm truncate" title={property.availability || ''}>
                                 {property.availability || '-'}
                               </div>
                             </td>
+                            <td className="px-4 py-4 border-r border-white/10 text-white/90">
+                              {property.size || 'N/A'}
+                            </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
-                              <div className="whitespace-pre-line text-sm truncate" title={property.condition || ''}>
-                                {property.condition || '-'}
+                              <div className="whitespace-pre-line text-sm truncate" title={property.additional_details || ''}>
+                                {property.additional_details || '-'}
                               </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90">
-                              {property.sqft || 'NA'}
+                              {property.age || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
-                              <div className="whitespace-pre-line text-sm truncate" title={property.key || ''}>
-                                {property.key || '-'}
+                              <div className="whitespace-pre-line text-sm truncate" title={property.deposit || ''}>
+                                {property.deposit || '-'}
                               </div>
-                            </td>
-                            <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
-                              <div className="whitespace-pre-line text-sm truncate" title={property.brokerage || ''}>
-                                {property.brokerage || '-'}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 border-r border-white/10 text-white/90">
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                property.status === 'Available' ? 'bg-green-500/20 text-green-300' :
-                                property.status === 'Rented' ? 'bg-red-500/20 text-red-300' :
-                                'bg-yellow-500/20 text-yellow-300'
-                              }`}>
-                                {property.status || 'Unknown'}
-                              </span>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-center">
                               <input
                                 type="checkbox"
-                                checked={Boolean(property.rentedout)}
-                                onChange={() => handleRentedOutChange(property.id)}
+                                checked={Boolean(property.rent_sold_out)}
+                                readOnly
                                 className="w-4 h-4 text-green-500 bg-transparent border-2 border-white/30 rounded focus:ring-green-500 focus:ring-2"
                               />
                             </td>
                             <td className="px-4 py-4 text-center">
                               <button
-                                onClick={() => toggleDescription(property.id)}
+                                onClick={() => toggleDescription(property.serial_number)}
                                 className="text-white/70 hover:text-white transition-colors duration-200 text-lg"
                               >
-                                {expandedDescriptionId === property.id ? '▲' : '▼'}
+                                {expandedDescriptionId === property.serial_number ? '▲' : '▼'}
                               </button>
                             </td>
                           </tr>
-                          {expandedDescriptionId === property.id && (
+                          {expandedDescriptionId === property.serial_number && (
                             <tr>
-                              <td colSpan={16} className="px-6 py-4 bg-white/10 border-t border-white/20">
+                              <td colSpan={15} className="px-6 py-4 bg-white/10 border-t border-white/20">
                                 <div className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-white/20">
-                                  {property.specialnote && (
+                                  {property.special_note && (
                                     <div className="mb-3">
-                                      <span className="font-bold text-sm text-blue-300">📝 Description:</span>
+                                      <span className="font-bold text-sm text-blue-300">📝 Special Note:</span>
                                       <div className="text-sm text-white/80 mt-1 whitespace-pre-line">
-                                        {property.specialnote}
+                                        {property.special_note}
                                       </div>
                                     </div>
                                   )}
-                                  {property.premium && (
+                                  {property.additional_details && (
                                     <div>
-                                      <span className="font-bold text-sm text-yellow-300">⭐ Premium Note:</span>
+                                      <span className="font-bold text-sm text-yellow-300">⭐ Additional Details:</span>
                                       <div className="text-sm text-white/80 mt-1 whitespace-pre-line">
-                                        {property.premium}
+                                        {property.additional_details}
                                       </div>
                                     </div>
                                   )}

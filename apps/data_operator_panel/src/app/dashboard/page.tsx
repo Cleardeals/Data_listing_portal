@@ -56,7 +56,7 @@ function DashboardContent() {
       const { data, error: supabaseError } = await supabase
         .from('propertydata')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('date_stamp', { ascending: false });
 
       if (supabaseError) {
         console.error('Supabase error fetching properties:', supabaseError);
@@ -151,7 +151,7 @@ function DashboardContent() {
         case 'INSERT':
           // Add new record if it doesn't exist
           if (newRecord) {
-            const existingIndex = currentData.findIndex(item => item.id === newRecord.id);
+            const existingIndex = currentData.findIndex(item => item.serial_number === newRecord.serial_number);
             if (existingIndex === -1) {
               return [newRecord, ...currentData];
             }
@@ -162,7 +162,7 @@ function DashboardContent() {
           // Update existing record
           if (newRecord) {
             return currentData.map(item => 
-              item.id === newRecord.id ? newRecord : item
+              item.serial_number === newRecord.serial_number ? newRecord : item
             );
           }
           return currentData;
@@ -170,7 +170,7 @@ function DashboardContent() {
         case 'DELETE':
           // Remove deleted record
           if (oldRecord) {
-            return currentData.filter(item => item.id !== oldRecord.id);
+            return currentData.filter(item => item.serial_number !== oldRecord.serial_number);
           }
           return currentData;
           
@@ -183,23 +183,23 @@ function DashboardContent() {
   const handleAddProperty = async (data: PropertyData) => {
     try {
       const newProperty = {
-        name: data.name,
-        contact: data.contact,
-        address: data.address,
-        premise: data.premise,
+        owner_name: data.owner_name,
+        owner_contact: data.owner_contact,
         area: data.area,
-        rent: data.rent,
+        address: data.address,
+        property_type: data.property_type,
+        sub_property_type: data.sub_property_type,
+        size: typeof data.size === 'string' ? parseFloat(data.size) || null : data.size,
+        furnishing_status: data.furnishing_status,
         availability: data.availability,
-        condition: data.condition,
-        sqft: data.sqft,
-        key: data.key,
-        brokerage: data.brokerage,
-        status: data.status,
-        premium: data.premium,
-        specialnote: data.specialnote,
-        rentedout: data.rentedout,
-        important: 0,
-        date: new Date().toLocaleDateString('en-GB')
+        floor: data.floor,
+        tenant_preference: data.tenant_preference,
+        additional_details: data.additional_details,
+        age: data.age,
+        rent_or_sell_price: data.rent_or_sell_price,
+        deposit: data.deposit,
+        special_note: data.special_note,
+        rent_sold_out: false
       };
 
       const { error } = await supabase
@@ -222,28 +222,28 @@ function DashboardContent() {
     
     try {
       const updatedProperty = {
-        name: data.name,
-        contact: data.contact,
-        address: data.address,
-        premise: data.premise,
+        owner_name: data.owner_name,
+        owner_contact: data.owner_contact,
         area: data.area,
-        rent: data.rent,
+        address: data.address,
+        property_type: data.property_type,
+        sub_property_type: data.sub_property_type,
+        size: typeof data.size === 'string' ? parseFloat(data.size) || null : data.size,
+        furnishing_status: data.furnishing_status,
         availability: data.availability,
-        condition: data.condition,
-        sqft: data.sqft,
-        key: data.key,
-        brokerage: data.brokerage,
-        status: data.status,
-        premium: data.premium,
-        specialnote: data.specialnote,
-        rentedout: data.rentedout,
-        updated_at: new Date().toISOString()
+        floor: data.floor,
+        tenant_preference: data.tenant_preference,
+        additional_details: data.additional_details,
+        age: data.age,
+        rent_or_sell_price: data.rent_or_sell_price,
+        deposit: data.deposit,
+        special_note: data.special_note
       };
 
       const { error } = await supabase
         .from('propertydata')
         .update(updatedProperty)
-        .eq('id', selectedRow);
+        .eq('serial_number', selectedRow);
 
       if (error) throw error;
 
@@ -258,25 +258,26 @@ function DashboardContent() {
 
   const handleEditConfirm = () => {
     if (selectedRow !== null) {
-      const rowData = propertyData.find(item => item.id === selectedRow);
+      const rowData = propertyData.find(item => item.serial_number === selectedRow);
       if (rowData) {
         // Convert the fetched data to PropertyData format
         const formattedData: PropertyData = {
-          name: rowData.name || '',
-          contact: rowData.contact || '',
+          owner_name: rowData.owner_name || '',
+          owner_contact: rowData.owner_contact || '',
+          area: rowData.area || 'N/A',
           address: rowData.address || '',
-          premise: rowData.premise || '',
-          area: rowData.area || '',
-          rent: rowData.rent || '',
+          property_type: rowData.property_type || 'N/A',
+          sub_property_type: rowData.sub_property_type || 'N/A',
+          size: rowData.size || '',
+          furnishing_status: rowData.furnishing_status || 'N/A',
           availability: rowData.availability || '',
-          condition: rowData.condition || '',
-          sqft: rowData.sqft || '',
-          key: rowData.key || '',
-          brokerage: rowData.brokerage || '',
-          status: rowData.status || '',
-          premium: rowData.premium || '',
-          specialnote: rowData.specialnote || '',
-          rentedout: rowData.rentedout || false
+          floor: rowData.floor || '',
+          tenant_preference: rowData.tenant_preference || 'N/A',
+          additional_details: rowData.additional_details || '',
+          age: rowData.age || '',
+          rent_or_sell_price: rowData.rent_or_sell_price || '',
+          deposit: rowData.deposit || '',
+          special_note: rowData.special_note || ''
         };
         setEditData(formattedData);
         setShowEditForm(true);
@@ -293,7 +294,7 @@ function DashboardContent() {
         const { error } = await supabase
           .from('propertydata')
           .delete()
-          .eq('id', selectedRow);
+          .eq('serial_number', selectedRow);
 
         if (error) {
           console.error('Supabase delete error:', error);
@@ -303,7 +304,7 @@ function DashboardContent() {
         console.log(`Successfully deleted row ${selectedRow}`);
         
         // Update local state immediately, don't rely solely on real-time updates
-        setPropertyData(prevData => prevData.filter(item => item.id !== selectedRow));
+        setPropertyData(prevData => prevData.filter(item => item.serial_number !== selectedRow));
         
         setSelectedRow(null);
       } catch (err: unknown) {
@@ -615,22 +616,23 @@ function DashboardContent() {
             <thead>
               <tr className="bg-[#167F92] text-white">
                 <th className="p-3 border"> <input type="checkbox" /> </th>
-                <th className="p-3 border">Imp</th>
-                <th className="p-3 border">Premium</th>
+                <th className="p-3 border">Property ID</th>
+                <th className="p-3 border">Property Type</th>
                 <th className="p-3 border">Special Note</th>
                 <th className="p-3 border">Date</th>
-                <th className="p-3 border">Name & Contact</th>
+                <th className="p-3 border">Owner & Contact</th>
                 <th className="p-3 border">Address</th>
-                <th className="p-3 border">Premise</th>
                 <th className="p-3 border">Area</th>
-                <th className="p-3 border">Rent</th>
+                <th className="p-3 border">Sub Property Type</th>
+                <th className="p-3 border">Size (sq ft)</th>
+                <th className="p-3 border">Furnishing</th>
                 <th className="p-3 border">Availability</th>
-                <th className="p-3 border">Condition</th>
-                <th className="p-3 border">SqFt/Sqyd</th>
-                <th className="p-3 border">Key</th>
-                <th className="p-3 border">Brokerage</th>
-                <th className="p-3 border">Status</th>
-                <th className="p-3 border">Rented Out?</th>
+                <th className="p-3 border">Floor</th>
+                <th className="p-3 border">Tenant Preference</th>
+                <th className="p-3 border">Age</th>
+                <th className="p-3 border">Price</th>
+                <th className="p-3 border">Deposit</th>
+                <th className="p-3 border">Rent/Sold Out?</th>
                 <th className="p-3 border sticky right-16 bg-[#167F92] z-10 border-l-2 w-16">Edit</th>
                 <th className="p-3 border sticky right-0 bg-[#167F92] z-10 border-l-2 w-16">Delete</th>
               </tr>
@@ -638,48 +640,49 @@ function DashboardContent() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={19} className="p-8 text-center text-gray-500">
+                  <td colSpan={20} className="p-8 text-center text-gray-500">
                     Loading properties...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={19} className="p-8 text-center text-red-500">
+                  <td colSpan={20} className="p-8 text-center text-red-500">
                     Error: {error}
                   </td>
                 </tr>
               ) : propertyData.length === 0 ? (
                 <tr>
-                  <td colSpan={19} className="p-8 text-center text-gray-500">
+                  <td colSpan={20} className="p-8 text-center text-gray-500">
                     No properties found
                   </td>
                 </tr>
               ) : (
                 propertyData.map((property) => (
-                  <tr key={property.id} className="text-gray-900">
+                  <tr key={property.serial_number} className="text-gray-900">
                     <td className="p-3 border text-center"><input type="checkbox" /></td>
-                    <td className="p-3 border text-center">{property.important}</td>
-                    <td className="p-3 border text-center">{property.premium}</td>
-                    <td className="p-3 border text-center align-top whitespace-pre-line break-words">{property.specialnote}</td>
-                    <td className="p-3 border text-center align-top whitespace-pre-line break-words">{property.date}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{`${property.name}\n${property.contact || ''}`}</td>
+                    <td className="p-3 border text-center">{property.property_id}</td>
+                    <td className="p-3 border text-center">{property.property_type}</td>
+                    <td className="p-3 border text-center align-top whitespace-pre-line break-words">{property.special_note}</td>
+                    <td className="p-3 border text-center align-top whitespace-pre-line break-words">{property.date_stamp ? new Date(property.date_stamp).toLocaleDateString() : ''}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{`${property.owner_name || ''}\n${property.owner_contact || ''}`}</td>
                     <td className="p-3 border align-top whitespace-pre-line break-words">{property.address}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.premise}</td>
                     <td className="p-3 border align-top whitespace-pre-line break-words bg-amber-400">{property.area}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.rent}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.sub_property_type}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words bg-yellow-300">{property.size}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.furnishing_status}</td>
                     <td className="p-3 border align-top whitespace-pre-line break-words bg-green-400">{property.availability}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.condition}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words bg-yellow-300">{property.sqft}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.key}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.brokerage}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.status}</td>
-                    <td className="p-3 border text-center"><input type="checkbox" checked={property.rentedout || false} readOnly /></td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.floor}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.tenant_preference}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.age}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.rent_or_sell_price}</td>
+                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.deposit}</td>
+                    <td className="p-3 border text-center"><input type="checkbox" checked={property.rent_sold_out || false} readOnly /></td>
                     <td className="p-3 border text-center sticky right-16 bg-white z-10 border-l-2 w-16">
                       <FaWrench 
                         className="text-blue-600 text-xl cursor-pointer hover:text-blue-800 transition" 
                         title="Edit" 
                         onClick={() => {
-                          setSelectedRow(property.id);
+                          setSelectedRow(property.serial_number);
                           setShowEditModal(true);
                         }}
                       />
@@ -689,7 +692,7 @@ function DashboardContent() {
                         className="text-black text-xl cursor-pointer hover:text-red-700 transition" 
                         title="Delete" 
                         onClick={() => {
-                          setSelectedRow(property.id);
+                          setSelectedRow(property.serial_number);
                           setShowDeleteModal(true);
                         }}
                       />
