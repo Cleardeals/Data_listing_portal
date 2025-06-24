@@ -9,7 +9,7 @@ export interface PropertyData {
   area: string | null;
   address: string | null;
   sub_property_type: string | null;
-  size: number | null;
+  size: string | null;
   furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A' | null;
   availability: string | null;
   floor: string | null;

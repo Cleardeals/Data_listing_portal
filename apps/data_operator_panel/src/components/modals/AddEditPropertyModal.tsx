@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useDynamicOptions } from '../../lib/dynamicOptions';
 
 // Define PropertyData type matching the new schema
 type PropertyData = {
@@ -10,7 +11,7 @@ type PropertyData = {
   address: string;
   property_type: 'Res_resale' | 'Res_rental' | 'Com_resale' | 'Com_rental' | 'N/A';
   sub_property_type: string;
-  size: number | string;
+  size: string;
   furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A';
   availability: string;
   floor: string;
@@ -21,31 +22,6 @@ type PropertyData = {
   deposit: string;
   special_note: string;
 };
-
-// Area options based on the new schema
-const areaOptions = [
-  'Aundh', 'Balewadi', 'Baner', 'Bavdhan', 'Bhosari', 'Bibwewadi', 'Budhwar Peth',
-  'Chakan', 'Dhanori', 'Dhanraj Road', 'Deccan Gymkhana', 'Dhayari', 'Hadapsar',
-  'Hinjewadi', 'Kalyani Nagar', 'Karve Nagar', 'Katraj', 'Kharadi', 'Kondhwa',
-  'Koregaon Park', 'Kothrud', 'Lohegaon', 'Lullanagar', 'Magarpatta', 'Marunji',
-  'Model Colony', 'Mohammedwadi', 'Moshi', 'Mundhwa', 'NIBM Road', 'Narayan Peth',
-  'Pashan', 'Pimple Saudagar', 'Pimple Gurav', 'Pimple Nilakh', 'Pimpri Chinchwad',
-  'Ravet', 'Sadashiv Peth', 'Sahakar Nagar', 'Shaniwar Peth', 'Shivajinagar',
-  'Sinhagad Road', 'Swargate', 'Talegaon', 'Tathawade', 'Undri', 'Uruli Kanchan',
-  'Viman Nagar', 'Vishrantwadi', 'Wagholi', 'Wakad', 'Wanwadi', 'Warje',
-  'Wadgaon Sheri', 'Yerawada', 'Chinchwad', 'Sus', 'Kate Wasti', 'Nigdi',
-  'Susgav', 'Suisgaon', 'Rahatani', 'Akurdi', 'Punawale', 'N/A'
-];
-
-// Sub property type options
-const subPropertyTypeOptions = [
-  '1 BHK', '1.5 BHK', '1 Rk', '1RK', '1 RK', '1BHK',
-  '2 BHK', '2.5 BHK', '2.5BHK', '2 BHk', '2BHK',
-  '3 BHK', '3.5 BHK', '3BHK',
-  '4 BHK', '4.5 BHK',
-  '5 BHK', '6 BHK', '8 BHK', '10 BHK',
-  'N/A'
-];
 
 // Define the AddEditPropertyModal component
 export const AddEditPropertyModal = ({ 
@@ -61,6 +37,9 @@ export const AddEditPropertyModal = ({
   initialData: PropertyData | null; 
   onSubmit: (data: PropertyData) => void;
 }) => {
+  // Use dynamic options hook for live data from Supabase
+  const { options: dynamicOptions, loading: optionsLoading, error: optionsError } = useDynamicOptions(true);
+  
   const [data, setData] = useState<PropertyData>(initialData || {
     owner_name: '',
     owner_contact: '',
@@ -70,7 +49,7 @@ export const AddEditPropertyModal = ({
     sub_property_type: 'N/A',
     size: '',
     furnishing_status: 'N/A',
-    availability: '',
+    availability: 'N/A',
     floor: '',
     tenant_preference: 'N/A',
     additional_details: '',
@@ -91,7 +70,7 @@ export const AddEditPropertyModal = ({
       sub_property_type: 'N/A',
       size: '',
       furnishing_status: 'N/A',
-      availability: '',
+      availability: 'N/A',
       floor: '',
       tenant_preference: 'N/A',
       additional_details: '',
@@ -158,13 +137,18 @@ export const AddEditPropertyModal = ({
                 value={data.property_type}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
+                disabled={optionsLoading}
               >
-                <option value="N/A">N/A</option>
-                <option value="Res_resale">Residential Resale</option>
-                <option value="Res_rental">Residential Rental</option>
-                <option value="Com_resale">Commercial Resale</option>
-                <option value="Com_rental">Commercial Rental</option>
+                {dynamicOptions.propertyTypes.map((type: string) => (
+                  <option key={type} value={type}>
+                    {type === 'Res_resale' ? 'Residential Resale' :
+                     type === 'Res_rental' ? 'Residential Rental' :
+                     type === 'Com_resale' ? 'Commercial Resale' :
+                     type === 'Com_rental' ? 'Commercial Rental' : type}
+                  </option>
+                ))}
               </select>
+              {optionsError && <p className="text-red-500 text-xs mt-1">Error loading options</p>}
             </div>
 
             {/* Area */}
@@ -175,11 +159,13 @@ export const AddEditPropertyModal = ({
                 value={data.area}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
+                disabled={optionsLoading}
               >
-                {areaOptions.map(area => (
+                {dynamicOptions.areas.map((area: string) => (
                   <option key={area} value={area}>{area}</option>
                 ))}
               </select>
+              {optionsError && <p className="text-red-500 text-xs mt-1">Error loading options</p>}
             </div>
 
             {/* Address */}
@@ -203,18 +189,20 @@ export const AddEditPropertyModal = ({
                 value={data.sub_property_type}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
+                disabled={optionsLoading}
               >
-                {subPropertyTypeOptions.map(type => (
+                {dynamicOptions.subPropertyTypes.map((type: string) => (
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
+              {optionsError && <p className="text-red-500 text-xs mt-1">Error loading options</p>}
             </div>
 
             {/* Size */}
             <div>
               <label className="block mb-2 text-gray-800 font-medium">Size (sq ft)</label>
               <input
-                type="number"
+                type="text"
                 name="size"
                 value={data.size}
                 onChange={handleInputChange}
@@ -231,12 +219,13 @@ export const AddEditPropertyModal = ({
                 value={data.furnishing_status}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
+                disabled={optionsLoading}
               >
-                <option value="N/A">N/A</option>
-                <option value="Furnished">Furnished</option>
-                <option value="Semi-Furnished">Semi-Furnished</option>
-                <option value="Unfurnished">Unfurnished</option>
+                {dynamicOptions.furnishingStatuses.map((status: string) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
               </select>
+              {optionsError && <p className="text-red-500 text-xs mt-1">Error loading options</p>}
             </div>
 
             {/* Floor */}
@@ -260,15 +249,13 @@ export const AddEditPropertyModal = ({
                 value={data.tenant_preference}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
+                disabled={optionsLoading}
               >
-                <option value="N/A">N/A</option>
-                <option value="All">All</option>
-                <option value="Family Only">Family Only</option>
-                <option value="Bachelors (Men Only)">Bachelors (Men Only)</option>
-                <option value="Bachelors (Women Only)">Bachelors (Women Only)</option>
-                <option value="Bachelors (Men/Women)">Bachelors (Men/Women)</option>
-                <option value="Both">Both</option>
+                {dynamicOptions.tenantPreferences.map((preference: string) => (
+                  <option key={preference} value={preference}>{preference}</option>
+                ))}
               </select>
+              {optionsError && <p className="text-red-500 text-xs mt-1">Error loading options</p>}
             </div>
 
             {/* Age */}
@@ -313,14 +300,18 @@ export const AddEditPropertyModal = ({
             {/* Availability */}
             <div>
               <label className="block mb-2 text-gray-800 font-medium">Availability</label>
-              <input
-                type="text"
+              <select
                 name="availability"
                 value={data.availability}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
-                placeholder="When available"
-              />
+                disabled={optionsLoading}
+              >
+                {dynamicOptions.availabilities.map((availability: string) => (
+                  <option key={availability} value={availability}>{availability}</option>
+                ))}
+              </select>
+              {optionsError && <p className="text-red-500 text-xs mt-1">Error loading options</p>}
             </div>
 
             {/* Additional Details */}

@@ -38,8 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await authService.signOut();
           }
         }
-      } catch (err) {
-        console.error('Error initializing auth:', err);
+      } catch {
         await authService.signOut();
       } finally {
         setLoading(false);
@@ -53,28 +52,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const result = await authService.sendOTP(email);
       return result;
-    } catch (error) {
-      console.error('AuthContext: login error:', error);
+    } catch {
       return { success: false, message: 'Failed to send OTP' };
     }
   };
 
   const verifyOTP = async (email: string, otp: string) => {
-    console.log('AuthContext: Starting verifyOTP...', { email, otpLength: otp.length });
     try {
       setLoading(true);
       const result = await authService.verifyOTP(email, otp);
-      console.log('AuthContext: AuthService result:', result);
       
       if (result.success && result.session) {
-        console.log('AuthContext: Setting user...', result.session.user);
         setUser(result.session.user);
         return { success: true, message: result.message, user: result.session.user };
       }
-      console.log('AuthContext: Verification failed:', result.message);
       return { success: false, message: result.message };
-    } catch (error) {
-      console.error('AuthContext: verifyOTP error:', error);
+    } catch {
       return { success: false, message: 'Failed to verify OTP' };
     } finally {
       setLoading(false);
@@ -86,8 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       await authService.signOut();
       setUser(null);
-    } catch (err) {
-      console.error('Error during logout:', err);
+    } catch {
+      // Error during logout
     } finally {
       setLoading(false);
     }

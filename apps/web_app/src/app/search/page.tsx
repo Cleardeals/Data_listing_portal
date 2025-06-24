@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { supabase } from "../../lib/supabase";
+import { useDynamicOptions } from "../../lib/dynamicOptions";
 
 // Extract rent utility function
 const extractRent = (rentString: string) => {
@@ -123,7 +124,6 @@ function FilterForm({ onSearch }: {
     area: string[];
     availability: string[];
     availabilityType: string[];
-    premium: string[];
     budgetMin: string;
     budgetMax: string;
     sqftFrom: string;
@@ -131,6 +131,9 @@ function FilterForm({ onSearch }: {
     premise: string;
   }) => void;
 }) {
+  // Use dynamic options hook for live data from Supabase
+  const { options: dynamicOptions, loading: optionsLoading, error: optionsError } = useDynamicOptions(true);
+  
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
 
@@ -140,59 +143,12 @@ function FilterForm({ onSearch }: {
     area: [] as string[],
     availability: [] as string[],
     availabilityType: [] as string[],
-    premium: [] as string[],
     budgetMin: "",
     budgetMax: "",
     sqftFrom: "",
     sqftTo: "",
     premise: "",
   });
-
-  const propertyType = [
-    "Res_resale",
-    "Res_rental", 
-    "Com_resale",
-    "Com_rental",
-    "N/A"
-  ];
-
-  const conditions = [
-    "Furnished",
-    "Semi-Furnished", 
-    "Unfurnished",
-    "N/A"
-  ];
-  const areas = [
-    "Aundh", "Balewadi", "Baner", "Bavdhan", "Bhosari", "Bibwewadi", "Budhwar Peth",
-    "Chakan", "Dhanori", "Dhanraj Road", "Deccan Gymkhana", "Dhayari", "Hadapsar",
-    "Hinjewadi", "Kalyani Nagar", "Karve Nagar", "Katraj", "Kharadi", "Kondhwa",
-    "Koregaon Park", "Kothrud", "Lohegaon", "Lullanagar", "Magarpatta", "Marunji",
-    "Model Colony", "Mohammedwadi", "Moshi", "Mundhwa", "NIBM Road", "Narayan Peth",
-    "Pashan", "Pimple Saudagar", "Pimple Gurav", "Pimple Nilakh", "Pimpri Chinchwad",
-    "Ravet", "Sadashiv Peth", "Sahakar Nagar", "Shaniwar Peth", "Shivajinagar",
-    "Sinhagad Road", "Swargate", "Talegaon", "Tathawade", "Undri", "Uruli Kanchan",
-    "Viman Nagar", "Vishrantwadi", "Wagholi", "Wakad", "Wanwadi", "Warje",
-    "Wadgaon Sheri", "Yerawada", "Chinchwad", "Sus", "Kate Wasti", "Nigdi",
-    "Susgav", "Suisgaon", "Rahatani", "Akurdi", "Punawale", "N/A"
-  ];
-  const availabilities = [
-    "1 BHK", "1.5 BHK", "1 Rk", "1RK", "1 RK", "1BHK",
-    "2 BHK", "2.5 BHK", "2.5BHK", "2 BHk", "2BHK",
-    "3 BHK", "3.5 BHK", "3BHK",
-    "4 BHK", "4.5 BHK",
-    "5 BHK", "6 BHK", "8 BHK", "10 BHK",
-    "N/A"
-  ];
-  const availabilityTypes = [
-    "All",
-    "Bachelors (Men Only)",
-    "Bachelors (Men/Women)", 
-    "Bachelors (Women Only)",
-    "Both",
-    "Family Only",
-    "N/A"
-  ];
-  const descriptionOptions = ["For Family", "For Executive", "For Bachelors"];
 
   const handleCheckboxChange = (
     section: keyof Pick<
@@ -202,7 +158,6 @@ function FilterForm({ onSearch }: {
       | "area"
       | "availability"
       | "availabilityType"
-      | "premium"
     >,
     value: string
   ) => {
@@ -253,7 +208,7 @@ function FilterForm({ onSearch }: {
                     {/* Dropdown Menu */}
                     {showDropdown && (
                       <div className="absolute w-full mt-2 bg-slate-800 border border-white/20 rounded-md shadow-lg z-10">
-                        {propertyType.map((type) => (
+                        {!optionsLoading && dynamicOptions.propertyTypes.map((type: string) => (
                           <div
                             key={type}
                             className="px-4 py-2 hover:bg-blue-600/50 cursor-pointer text-white"
@@ -263,9 +218,18 @@ function FilterForm({ onSearch }: {
                               setShowDropdown(false);
                             }}
                           >
-                            {type}
+                            {type === 'Res_resale' ? 'Residential Resale' :
+                             type === 'Res_rental' ? 'Residential Rental' :
+                             type === 'Com_resale' ? 'Commercial Resale' :
+                             type === 'Com_rental' ? 'Commercial Rental' : type}
                           </div>
                         ))}
+                        {optionsLoading && (
+                          <div className="px-4 py-2 text-white/60">Loading...</div>
+                        )}
+                        {optionsError && (
+                          <div className="px-4 py-2 text-red-400">Error loading options</div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -277,7 +241,7 @@ function FilterForm({ onSearch }: {
                   Conditions:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
-                  {conditions.map((type) => (
+                  {!optionsLoading && dynamicOptions.furnishingStatuses.map((type: string) => (
                     <div key={type} className="flex items-center space-x-2">
                       <Checkbox
                         id={type}
@@ -291,6 +255,12 @@ function FilterForm({ onSearch }: {
                       </Label>
                     </div>
                   ))}
+                  {optionsLoading && (
+                    <div className="text-white/60">Loading...</div>
+                  )}
+                  {optionsError && (
+                    <div className="text-red-400">Error loading options</div>
+                  )}
                 </td>
               </tr>
               {/* areas */}
@@ -299,7 +269,7 @@ function FilterForm({ onSearch }: {
                   Area:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
-                  {areas.map((type) => (
+                  {!optionsLoading && dynamicOptions.areas.map((type: string) => (
                     <div key={type} className="flex items-center space-x-2">
                       <Checkbox
                         id={type}
@@ -313,6 +283,12 @@ function FilterForm({ onSearch }: {
                       </Label>
                     </div>
                   ))}
+                  {optionsLoading && (
+                    <div className="text-white/60">Loading...</div>
+                  )}
+                  {optionsError && (
+                    <div className="text-red-400">Error loading options</div>
+                  )}
                 </td>
               </tr>
               {/* availabilities */}
@@ -321,7 +297,7 @@ function FilterForm({ onSearch }: {
                   Availability:
                 </th>
                 <td className="flex flex-wrap items-center gap-4 px-4 py-2">
-                  {availabilities.map((type) => (
+                  {!optionsLoading && dynamicOptions.subPropertyTypes.map((type: string) => (
                     <div key={type} className="flex items-center space-x-2">
                       <Checkbox
                         id={type}
@@ -335,6 +311,12 @@ function FilterForm({ onSearch }: {
                       </Label>
                     </div>
                   ))}
+                  {optionsLoading && (
+                    <div className="text-white/60">Loading...</div>
+                  )}
+                  {optionsError && (
+                    <div className="text-red-400">Error loading options</div>
+                  )}
                 </td>
               </tr>
               {/* availabilityType */}
@@ -343,7 +325,7 @@ function FilterForm({ onSearch }: {
                   Availability Type:
                 </th>
                 <td className="flex  flex-wrap items-center gap-4 px-4 py-2">
-                  {availabilityTypes.map((type) => (
+                  {!optionsLoading && dynamicOptions.tenantPreferences.map((type: string) => (
                     <div key={type} className="flex items-center space-x-2">
                       <Checkbox
                         id={type}
@@ -357,28 +339,12 @@ function FilterForm({ onSearch }: {
                       </Label>
                     </div>
                   ))}
-                </td>
-              </tr>
-              {/* premium */}
-              <tr className="border-b border-white/20">
-                <th className="border-r border-white/20 px-4 py-2 text-left font-semibold bg-[#167f92] text-white">
-                  Premium:
-                </th>
-                <td className="flex flex-wrap items-center gap-4 px-4 py-2">
-                  {descriptionOptions.map((type) => (
-                    <div key={type} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={type}
-                        checked={filters.premium.includes(type)}
-                        onCheckedChange={() =>
-                          handleCheckboxChange("premium", type)
-                        }
-                      />
-                      <Label htmlFor={type} className="text-sm text-white">
-                        {type}
-                      </Label>
-                    </div>
-                  ))}
+                  {optionsLoading && (
+                    <div className="text-white/60">Loading...</div>
+                  )}
+                  {optionsError && (
+                    <div className="text-red-400">Error loading options</div>
+                  )}
                 </td>
               </tr>
               {/* budget */}
@@ -533,7 +499,6 @@ export default function SearchPage() {
     area: string[];
     availability: string[];
     availabilityType: string[];
-    premium: string[];
     budgetMin: string;
     budgetMax: string;
     sqftFrom: string;
@@ -553,10 +518,6 @@ export default function SearchPage() {
           (property.area && filters.area.includes(property.area))) &&
         (filters.availability.length === 0 ||
           (property.sub_property_type && filters.availability.includes(property.sub_property_type))) &&
-        (filters.premium.length === 0 ||
-          filters.premium.some((desc) =>
-            property.additional_details?.toLowerCase().includes(desc.toLowerCase())
-          )) &&
         (!filters.budgetMin ||
           parseInt(filters.budgetMin) <= extractRent(String(property.rent_or_sell_price))) &&
         (!filters.budgetMax ||

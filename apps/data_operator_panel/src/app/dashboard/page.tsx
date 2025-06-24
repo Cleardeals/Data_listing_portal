@@ -57,7 +57,6 @@ function DashboardContent() {
       // Check if we have a session before fetching
       const session = await supabase.auth.getSession();
       if (!session.data.session) {
-        console.log('No active session found during fetch properties');
         // We'll let the ProtectedRoute handle the redirection
         return;
       }
@@ -84,15 +83,12 @@ function DashboardContent() {
         .range(from, to);
 
       if (supabaseError) {
-        console.error('Supabase error fetching properties:', supabaseError);
         throw supabaseError;
       }
 
       setPropertyData(data || []);
-      console.log(`Fetched ${data?.length || 0} properties for page ${page} (total: ${count})`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
-      console.error('Error fetching properties:', err);
     } finally {
       setLoading(false);
     }
@@ -125,12 +121,10 @@ function DashboardContent() {
               table: 'propertydata'
             },
             (payload) => {
-              console.log('Real-time change received:', payload);
               handleRealtimeChange(payload as RealtimePostgresChangesPayload<SupabasePropertyData>);
             }
           )
           .subscribe((status) => {
-            console.log('Realtime subscription status:', status);
             if (status === 'SUBSCRIBED') {
               setRealtimeStatus('connected');
               reconnectAttemptRef.current = false;
@@ -139,9 +133,7 @@ function DashboardContent() {
               // If we get disconnected, attempt to reconnect after a delay - only once
               if (!reconnectAttemptRef.current) {
                 reconnectAttemptRef.current = true;
-                console.log('Scheduling reconnect attempt');
                 setTimeout(() => {
-                  console.log('Attempting to reconnect...');
                   setupRealtime();
                 }, 5000);
               }
@@ -152,8 +144,7 @@ function DashboardContent() {
 
         setRealtimeChannel(channel);
         return channel;
-      } catch (err) {
-        console.error('Error setting up realtime:', err);
+      } catch {
         setRealtimeStatus('disconnected');
         setError('Failed to establish real-time connection. Please refresh the page.');
         return null;
@@ -167,8 +158,8 @@ function DashboardContent() {
       if (channel) {
         try {
           supabase.removeChannel(channel);
-        } catch (err) {
-          console.error('Error removing channel:', err);
+        } catch {
+          // Error removing channel
         }
       }
     };

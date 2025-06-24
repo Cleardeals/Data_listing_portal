@@ -8,7 +8,7 @@ export interface SupabasePropertyData {
   area: string | null;
   address: string | null;
   sub_property_type: string | null;
-  size: number | null;
+  size: string | null;
   furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A' | null;
   availability: string | null;
   floor: string | null;
@@ -29,7 +29,7 @@ export interface PropertyFormData {
   address: string;
   property_type: 'Res_resale' | 'Res_rental' | 'Com_resale' | 'Com_rental' | 'N/A';
   sub_property_type: string;
-  size: number | string;
+  size: string;
   furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A';
   availability: string;
   floor: string;

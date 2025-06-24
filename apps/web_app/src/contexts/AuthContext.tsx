@@ -34,7 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session from Supabase:', error);
           await authService.signOut();
           return;
         }
@@ -65,8 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             expires_at: session.expires_at || 0
           };
           authService.storeSession(authSession);
-          
-          console.log('Session restored from Supabase:', user);
         } else {
           // No Supabase session, check our stored session as fallback
           const storedSession = authService.getStoredSession();
@@ -74,15 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const tokenResult = await authService.verifyToken(storedSession.access_token);
             if (tokenResult.valid) {
               setUser(storedSession.user);
-              console.log('Session restored from storage:', storedSession.user);
             } else {
               // Token is invalid, clear it
               await authService.signOut();
             }
           }
         }
-      } catch (err) {
-        console.error('Error initializing auth:', err);
+      } catch {
         await authService.signOut();
       } finally {
         setLoading(false);
@@ -94,7 +89,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener to handle session changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
         
         if (event === 'SIGNED_IN' && session) {
           const userRole = session.user.user_metadata?.role || 'Unverified Customer';
@@ -152,29 +146,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Don't set global loading for OTP sending - let components handle their own loading
       const result = await authService.sendOTP(email);
       return result;
-    } catch (error) {
-      console.error('AuthContext: login error:', error);
+    } catch {
       return { success: false, message: 'Failed to send OTP' };
     }
   };
 
   const verifyOTP = async (email: string, otp: string) => {
-    console.log('AuthContext: Starting verifyOTP...', { email, otpLength: otp.length });
     try {
       // Only set loading during verification since this changes auth state
       setLoading(true);
       const result = await authService.verifyOTP(email, otp);
-      console.log('AuthContext: AuthService result:', result);
       
       if (result.success && result.session) {
-        console.log('AuthContext: Setting user...', result.session.user);
         setUser(result.session.user);
         return { success: true, message: result.message, user: result.session.user };
       }
-      console.log('AuthContext: Verification failed:', result.message);
       return { success: false, message: result.message };
-    } catch (error) {
-      console.error('AuthContext: verifyOTP error:', error);
+    } catch {
       return { success: false, message: 'Failed to verify OTP' };
     } finally {
       setLoading(false);
@@ -186,8 +174,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       await authService.signOut();
       setUser(null);
-    } catch (err) {
-      console.error('Error during logout:', err);
+    } catch {
+      // Error during logout
     } finally {
       setLoading(false);
     }
@@ -202,8 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Session refresh failed, logout user
         await logout();
       }
-    } catch (error) {
-      console.error('Error refreshing session:', error);
+    } catch {
       await logout();
     }
   };
