@@ -46,8 +46,8 @@ function DashboardContent() {
   const [pageSize, setPageSize] = useState<number>(50);
   const [totalCount, setTotalCount] = useState<number>(0);
   
-  // Sort state
-  const [sortColumn, setSortColumn] = useState<'serial_number' | 'rent_or_sell_price' | null>(null);
+  // Sort state - default to serial_number ascending
+  const [sortColumn, setSortColumn] = useState<'serial_number' | 'rent_or_sell_price' | null>('serial_number');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Track reconnection attempts with ref instead of state to avoid re-renders
@@ -90,8 +90,8 @@ function DashboardContent() {
       if (sortColumn) {
         query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
       } else {
-        // Default sort by date_stamp descending
-        query = query.order('date_stamp', { ascending: false });
+        // Default sort by serial_number ascending
+        query = query.order('serial_number', { ascending: true });
       }
 
       const { data, error: supabaseError } = await query.range(from, to);
