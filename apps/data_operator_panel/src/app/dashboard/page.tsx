@@ -18,7 +18,7 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/
 
 function DashboardContent() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshSession } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
@@ -52,6 +52,37 @@ function DashboardContent() {
 
   // Track reconnection attempts with ref instead of state to avoid re-renders
   const reconnectAttemptRef = React.useRef(false);
+  const sessionMonitorRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Session monitoring function
+  const monitorSession = React.useCallback(async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session) {
+        console.log('Session expired or invalid, logging out...');
+        await logout();
+        router.push('/auth/login');
+        return;
+      }
+      
+      // Check if session is about to expire (within 10 minutes)
+      const expiresAt = session.expires_at;
+      if (expiresAt) {
+        const timeUntilExpiry = (expiresAt * 1000) - Date.now();
+        const tenMinutesInMs = 10 * 60 * 1000;
+        
+        if (timeUntilExpiry <= tenMinutesInMs && timeUntilExpiry > 0) {
+          console.log('Session expiring soon, attempting refresh...');
+          await refreshSession();
+        }
+      }
+    } catch (error) {
+      console.error('Error monitoring session:', error);
+      await logout();
+      router.push('/auth/login');
+    }
+  }, [logout, router, refreshSession]);
 
   // Fetch properties from Supabase with pagination and sorting
   const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
@@ -201,6 +232,39 @@ function DashboardContent() {
       }
     };
   }, [fetchProperties]); // Remove the dependency on realtimeStatus
+
+  // Setup session monitoring
+  React.useEffect(() => {
+    if (user) {
+      // Check session immediately
+      monitorSession();
+      
+      // Set up interval to check session every 5 minutes
+      const interval = setInterval(monitorSession, 5 * 60 * 1000);
+      sessionMonitorRef.current = interval;
+      
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    } else {
+      // Clear interval if user logs out
+      if (sessionMonitorRef.current) {
+        clearInterval(sessionMonitorRef.current);
+        sessionMonitorRef.current = null;
+      }
+    }
+  }, [user, monitorSession]);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      if (sessionMonitorRef.current) {
+        clearInterval(sessionMonitorRef.current);
+      }
+    };
+  }, []);
 
   // Handle real-time changes
   const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<SupabasePropertyData>) => {
