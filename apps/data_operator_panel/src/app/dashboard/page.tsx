@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { FaBell, FaUserCircle, FaFilter, FaTrash, FaWrench, FaPlus, FaSearch, FaRobot, FaSignOutAlt, FaTimes } from "react-icons/fa";
+import { FaBell, FaUserCircle, FaFilter, FaPlus, FaSearch, FaRobot, FaSignOutAlt, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -10,6 +10,7 @@ import { MdAddCall } from "react-icons/md";
 import { EditConfirmationModal } from "@/components/modals/EditConfirmationModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import Pagination from "@/components/ui/pagination";
+import SortControls from "@/components/SortControls";
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { SupabasePropertyData } from "@/lib/propertyData";
 import { supabase } from "../../lib/supabase";
@@ -44,11 +45,15 @@ function DashboardContent() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
   const [totalCount, setTotalCount] = useState<number>(0);
+  
+  // Sort state
+  const [sortColumn, setSortColumn] = useState<'serial_number' | 'rent_or_sell_price' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Track reconnection attempts with ref instead of state to avoid re-renders
   const reconnectAttemptRef = React.useRef(false);
 
-  // Fetch properties from Supabase with pagination
+  // Fetch properties from Supabase with pagination and sorting
   const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
     try {
       setLoading(true);
@@ -76,11 +81,20 @@ function DashboardContent() {
       const from = (page - 1) * size;
       const to = from + size - 1;
 
-      const { data, error: supabaseError } = await supabase
+      // Build query with sorting
+      let query = supabase
         .from('propertydata')
-        .select('*')
-        .order('date_stamp', { ascending: false })
-        .range(from, to);
+        .select('*');
+
+      // Apply sorting if specified
+      if (sortColumn) {
+        query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
+      } else {
+        // Default sort by date_stamp descending
+        query = query.order('date_stamp', { ascending: false });
+      }
+
+      const { data, error: supabaseError } = await query.range(from, to);
 
       if (supabaseError) {
         throw supabaseError;
@@ -92,7 +106,7 @@ function DashboardContent() {
     } finally {
       setLoading(false);
     }
-  }, []);  // Pagination handlers
+  }, [sortColumn, sortDirection]);  // Pagination handlers
   const handlePageChange = React.useCallback(async (page: number) => {
     setCurrentPage(page);
     await fetchProperties(page, pageSize);
@@ -103,6 +117,29 @@ function DashboardContent() {
     setCurrentPage(1);
     fetchProperties(1, newPageSize);
   }, [fetchProperties]);
+
+  // Sort handler
+  const handleSort = (column: 'serial_number' | 'rent_or_sell_price') => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+    // Reset to first page when sorting changes
+    setCurrentPage(1);
+    fetchProperties(1, pageSize);
+  };
+
+  // Clear sort handler
+  const handleClearSort = () => {
+    setSortColumn(null);
+    setSortDirection('asc');
+    setCurrentPage(1);
+    fetchProperties(1, pageSize);
+  };
 
   useEffect(() => {
     // Fetch property data when component mounts
@@ -557,68 +594,81 @@ function DashboardContent() {
           </button>
         </div>
         {/* Filter Buttons */}
-        <div className="flex items-center justify-center mt-4 gap-2" style={{ minWidth: 900 }}>
+        <div className="flex items-center justify-center mt-6 gap-3 flex-wrap">
           <button 
             onClick={() => fetchProperties()}
-            className="px-6 py-2 rounded-full border border-blue-200 bg-blue-100 text-black hover:bg-blue-200 transition" 
+            className="px-6 py-2.5 rounded-lg border border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 hover:from-blue-100 hover:to-blue-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
             style={{ minWidth: 146 }}
           >
-            All Properties
+            📋 All Properties
           </button>
           <button 
             onClick={() => handleQuickFilter('available')}
-            className="px-6 py-2 rounded-full border border-green-200 bg-green-100 text-black hover:bg-green-200 transition" 
+            className="px-6 py-2.5 rounded-lg border border-green-300 bg-gradient-to-r from-green-50 to-green-100 text-green-800 hover:from-green-100 hover:to-green-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
             style={{ minWidth: 146 }}
           >
-            Available
+            ✅ Available
           </button>
           <button 
             onClick={() => handleQuickFilter('rented')}
-            className="px-6 py-2 rounded-full border border-red-200 bg-red-100 text-black hover:bg-red-200 transition" 
+            className="px-6 py-2.5 rounded-lg border border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-800 hover:from-red-100 hover:to-red-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
             style={{ minWidth: 146 }}
           >
-            Rented Out
+            🏠 Rented Out
           </button>
           <button 
             onClick={() => handleQuickFilter('important')}
-            className="px-6 py-2 rounded-full border border-yellow-200 bg-yellow-100 text-black hover:bg-yellow-200 transition" 
+            className="px-6 py-2.5 rounded-lg border border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-800 hover:from-yellow-100 hover:to-yellow-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
             style={{ minWidth: 146 }}
           >
-            Important
+            ⭐ Important
           </button>
           <button 
             onClick={() => handleQuickFilter('premium')}
-            className="px-6 py-2 rounded-full border border-purple-200 bg-purple-100 text-black hover:bg-purple-200 transition" 
+            className="px-6 py-2.5 rounded-lg border border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-800 hover:from-purple-100 hover:to-purple-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
             style={{ minWidth: 146 }}
           >
-            Premium
+            💎 Premium
           </button>
           <button 
             onClick={() => handleQuickFilter('today')}
-            className="px-6 py-2 rounded-full border border-orange-200 bg-orange-100 text-black hover:bg-orange-200 transition" 
+            className="px-6 py-2.5 rounded-lg border border-orange-300 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-800 hover:from-orange-100 hover:to-orange-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
             style={{ minWidth: 146 }}
           >
-            Today&apos;s Entries
+            📅 Today&apos;s Entries
           </button>
-          <div className="flex items-center gap-4 ml-4">
-            <BulkUploadButton />
-            <button 
-              onClick={() => setShowAddForm(true)} 
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg flex items-center gap-2 hover:bg-blue-600 transition"
-            >
-              <FaPlus /> Add Property
-            </button>
-            {/* Real-time Status Indicator */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100">
-              <div className={`w-2 h-2 rounded-full ${
-                realtimeStatus === 'connected' ? 'bg-green-500' : 
-                realtimeStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
-              }`}></div>
-              <span className="text-xs text-gray-600">
-                {realtimeStatus === 'connected' ? 'Live' : 
-                 realtimeStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
-              </span>
-            </div>
+        </div>
+        
+        {/* Sort Controls */}
+        <div className="mt-6">
+          <SortControls
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onClearSort={handleClearSort}
+            className="mx-auto max-w-4xl"
+          />
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex items-center justify-center mt-4 gap-4">
+          <BulkUploadButton />
+          <button 
+            onClick={() => setShowAddForm(true)} 
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg flex items-center gap-2 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+          >
+            <FaPlus className="w-4 h-4" /> Add Property
+          </button>
+          {/* Real-time Status Indicator */}
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 shadow-sm">
+            <div className={`w-3 h-3 rounded-full ${
+              realtimeStatus === 'connected' ? 'bg-green-500 animate-pulse' : 
+              realtimeStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+            }`}></div>
+            <span className="text-sm text-gray-700 font-medium">
+              {realtimeStatus === 'connected' ? '🟢 Live' : 
+               realtimeStatus === 'connecting' ? '🟡 Connecting...' : '🔴 Disconnected'}
+            </span>
           </div>
         </div>
 
@@ -638,109 +688,248 @@ function DashboardContent() {
         )}
 
         {/* Data Table */}
-        <div className="flex justify-center mt-8 overflow-x-auto">
-          <table className="border-collapse overflow-hidden shadow text-sm font-medium min-w-[1400px]">
-            <thead>
-              <tr className="bg-[#167F92] text-white">
-                <th className="p-3 border"> <input type="checkbox" /> </th>
-                <th className="p-3 border">Property ID</th>
-                <th className="p-3 border">Property Type</th>
-                <th className="p-3 border">Special Note</th>
-                <th className="p-3 border">Date</th>
-                <th className="p-3 border">Owner & Contact</th>
-                <th className="p-3 border">Address</th>
-                <th className="p-3 border">Area</th>
-                <th className="p-3 border">Sub Property Type</th>
-                <th className="p-3 border">Size (sq ft)</th>
-                <th className="p-3 border">Furnishing</th>
-                <th className="p-3 border">Availability</th>
-                <th className="p-3 border">Floor</th>
-                <th className="p-3 border">Tenant Preference</th>
-                <th className="p-3 border">Age</th>
-                <th className="p-3 border">Price</th>
-                <th className="p-3 border">Deposit</th>
-                <th className="p-3 border">Rent/Sold Out?</th>
-                <th className="p-3 border sticky right-16 bg-[#167F92] z-10 border-l-2 w-16">Edit</th>
-                <th className="p-3 border sticky right-0 bg-[#167F92] z-10 border-l-2 w-16">Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={20} className="p-8 text-center text-gray-500">
-                    Loading properties...
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={20} className="p-8 text-center text-red-500">
-                    Error: {error}
-                  </td>
-                </tr>
-              ) : propertyData.length === 0 ? (
-                <tr>
-                  <td colSpan={20} className="p-8 text-center text-gray-500">
-                    No properties found
-                  </td>
-                </tr>
-              ) : (
-                propertyData.map((property) => (
-                  <tr key={property.serial_number} className="text-gray-900">
-                    <td className="p-3 border text-center"><input type="checkbox" /></td>
-                    <td className="p-3 border text-center">{property.property_id}</td>
-                    <td className="p-3 border text-center">{property.property_type}</td>
-                    <td className="p-3 border text-center align-top whitespace-pre-line break-words">{property.special_note}</td>
-                    <td className="p-3 border text-center align-top whitespace-pre-line break-words">{property.date_stamp ? new Date(property.date_stamp).toLocaleDateString() : ''}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{`${property.owner_name || ''}\n${property.owner_contact || ''}`}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.address}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words bg-amber-400">{property.area}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.sub_property_type}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words bg-yellow-300">{property.size}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.furnishing_status}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words bg-green-400">{property.availability}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.floor}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.tenant_preference}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.age}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.rent_or_sell_price}</td>
-                    <td className="p-3 border align-top whitespace-pre-line break-words">{property.deposit}</td>
-                    <td className="p-3 border text-center"><input type="checkbox" checked={property.rent_sold_out || false} readOnly /></td>
-                    <td className="p-3 border text-center sticky right-16 bg-white z-10 border-l-2 w-16">
-                      <FaWrench 
-                        className="text-blue-600 text-xl cursor-pointer hover:text-blue-800 transition" 
-                        title="Edit" 
-                        onClick={() => {
-                          setSelectedRow(property.serial_number);
-                          setShowEditModal(true);
-                        }}
-                      />
-                    </td>
-                    <td className="p-3 border text-center sticky right-0 bg-white z-10 border-l-2 w-16">
-                      <FaTrash 
-                        className="text-black text-xl cursor-pointer hover:text-red-700 transition" 
-                        title="Delete" 
-                        onClick={() => {
-                          setSelectedRow(property.serial_number);
-                          setShowDeleteModal(true);
-                        }}
-                      />
-                    </td>
+        <div className="mt-8 mx-4">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[1600px]">
+                <thead>
+                  <tr className="bg-gradient-to-r from-slate-800 to-slate-700 text-white">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-20">
+                      Serial #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Property ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Property Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-48">Special Note</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Owner Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Contact</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-56">Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Area</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Sub Property Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Size (sq ft)</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Furnishing</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Availability</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-24">Floor</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Tenant Preference</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-24">Age</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">
+                      Price
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Deposit</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-48">Additional Details</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Rent/Sold Out?</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-20 sticky right-20 bg-gradient-to-r from-slate-800 to-slate-700 z-10">Edit</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider w-20 sticky right-0 bg-gradient-to-r from-slate-800 to-slate-700 z-10">Delete</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={22} className="px-6 py-12 text-center text-gray-500 text-sm">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                          <span>Loading properties...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={22} className="px-6 py-12 text-center text-red-500 text-sm">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <span className="text-red-600">⚠️ Error: {error}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : propertyData.length === 0 ? (
+                    <tr>
+                      <td colSpan={22} className="px-6 py-12 text-center text-gray-500 text-sm">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <span className="text-gray-400">📋 No properties found</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    propertyData.map((property, index) => (
+                      <tr key={property.serial_number} className={`text-gray-900 hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">#{property.serial_number}</span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className="font-mono text-sm text-blue-600 font-medium">{property.property_id}</span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                            property.property_type === 'Res_resale' ? 'bg-blue-100 text-blue-800' :
+                            property.property_type === 'Res_rental' ? 'bg-green-100 text-green-800' :
+                            property.property_type === 'Com_resale' ? 'bg-purple-100 text-purple-800' :
+                            property.property_type === 'Com_rental' ? 'bg-orange-100 text-orange-800' : 
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {property.property_type === 'Res_resale' ? 'Residential Resale' :
+                             property.property_type === 'Res_rental' ? 'Residential Rental' :
+                             property.property_type === 'Com_resale' ? 'Commercial Resale' :
+                             property.property_type === 'Com_rental' ? 'Commercial Rental' : 
+                             property.property_type || '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 align-top">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            {property.special_note ? (
+                              <span className="whitespace-pre-line break-words">{property.special_note}</span>
+                            ) : (
+                              <span className="text-gray-400 italic">No notes</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className="text-sm text-gray-600">
+                            {property.date_stamp ? new Date(property.date_stamp).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            }) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm font-semibold text-gray-900 max-w-xs overflow-hidden">
+                            {property.owner_name || <span className="text-gray-400 italic">No name</span>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            {property.owner_contact ? (
+                              <a href={`tel:${property.owner_contact}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                                {property.owner_contact}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 italic">No contact</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            <span className="whitespace-pre-line break-words">{property.address}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <span className="inline-block px-2 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded">
+                            {property.area}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            <span className="whitespace-pre-line break-words">{property.sub_property_type}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className="inline-block px-2 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded">
+                            {property.size || '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            <span className="whitespace-pre-line break-words">{property.furnishing_status}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <span className="inline-block px-2 py-1 text-sm font-medium bg-green-100 text-green-800 rounded">
+                            {property.availability}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className="text-sm text-gray-700">{property.floor}</span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            <span className="whitespace-pre-line break-words">{property.tenant_preference}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <span className="text-sm text-gray-700">{property.age}</span>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm font-bold text-green-600 max-w-xs overflow-hidden">
+                            <span className="whitespace-pre-line break-words">{property.rent_or_sell_price}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            <span className="whitespace-pre-line break-words">{property.deposit}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200">
+                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
+                            {property.additional_details ? (
+                              <span className="whitespace-pre-line break-words">{property.additional_details}</span>
+                            ) : (
+                              <span className="text-gray-400 italic">No details</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center">
+                          <div className="flex justify-center">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(property.rent_sold_out)}
+                              readOnly
+                              className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-200 text-center sticky right-20 bg-inherit z-10">
+                          <button
+                            onClick={() => {
+                              setSelectedRow(property.serial_number);
+                              setShowEditModal(true);
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                            title="Edit Property"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-center sticky right-0 bg-inherit z-10">
+                          <button
+                            onClick={() => {
+                              setSelectedRow(property.serial_number);
+                              setShowDeleteModal(true);
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                            title="Delete Property"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         {/* Pagination */}
         {!loading && totalCount > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalItems={totalCount}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            className="mt-6"
-          />
+          <div className="mt-6 mx-4">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <Pagination
+                currentPage={currentPage}
+                totalItems={totalCount}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                className="flex justify-center"
+              />
+              <div className="mt-3 text-center text-sm text-gray-600">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} properties
+              </div>
+            </div>
+          </div>
         )}
         
         <AddEditPropertyModal

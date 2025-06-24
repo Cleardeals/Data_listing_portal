@@ -1,8 +1,8 @@
-// Database interface matching new Supabase schema
+// Database interface matching exact Supabase schema
 export interface PropertyData {
   serial_number: number;
   property_id: string;
-  property_type: 'Res_resale' | 'Res_rental' | 'Com_resale' | 'Com_rental' | 'N/A' | null;
+  property_type: string | null;
   special_note: string | null;
   owner_name: string | null;
   owner_contact: string | null;
@@ -10,10 +10,10 @@ export interface PropertyData {
   address: string | null;
   sub_property_type: string | null;
   size: string | null;
-  furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A' | null;
+  furnishing_status: string | null;
   availability: string | null;
   floor: string | null;
-  tenant_preference: 'All' | 'Bachelors (Men Only)' | 'Bachelors (Men/Women)' | 'Bachelors (Women Only)' | 'Both' | 'Family Only' | 'N/A' | null;
+  tenant_preference: string | null;
   additional_details: string | null;
   age: string | null;
   rent_or_sell_price: string | null;

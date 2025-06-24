@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Pagination from "@/components/ui/pagination";
+import SortControls from "@/components/SortControls";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -25,6 +26,10 @@ const Page = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
   const [totalCount, setTotalCount] = useState<number>(0);
+  
+  // Sort state
+  const [sortColumn, setSortColumn] = useState<'serial_number' | 'rent_or_sell_price' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Fetch properties from Supabase with pagination
   const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
@@ -55,11 +60,20 @@ const Page = () => {
       const from = (page - 1) * size;
       const to = from + size - 1;
 
-      const { data, error: supabaseError } = await supabase
+      // Build query with sorting
+      let query = supabase
         .from('propertydata')
-        .select('*')
-        .order('date_stamp', { ascending: false })
-        .range(from, to);
+        .select('*');
+
+      // Apply sorting if specified
+      if (sortColumn) {
+        query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
+      } else {
+        // Default sort by date_stamp descending
+        query = query.order('date_stamp', { ascending: false });
+      }
+
+      const { data, error: supabaseError } = await query.range(from, to);
 
       if (supabaseError) {
         throw supabaseError;
@@ -81,7 +95,7 @@ const Page = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sortColumn, sortDirection]);
 
   // Pagination handlers
   const handlePageChange = React.useCallback(async (page: number) => {
@@ -94,6 +108,29 @@ const Page = () => {
     setCurrentPage(1);
     fetchProperties(1, newPageSize);
   }, [fetchProperties]);
+
+  // Sort handler
+  const handleSort = (column: 'serial_number' | 'rent_or_sell_price') => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+    // Reset to first page when sorting changes
+    setCurrentPage(1);
+    fetchProperties(1, pageSize);
+  };
+
+  // Clear sort handler
+  const handleClearSort = () => {
+    setSortColumn(null);
+    setSortDirection('asc');
+    setCurrentPage(1);
+    fetchProperties(1, pageSize);
+  };
 
   // Load properties on component mount and setup real-time subscription
   useEffect(() => {
@@ -444,6 +481,17 @@ const Page = () => {
             </div>
           </div>
 
+          {/* Sort Controls */}
+          <div className="mb-6">
+            <SortControls
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              onClearSort={handleClearSort}
+              className="mx-auto max-w-4xl"
+            />
+          </div>
+
           {/* Error Display */}
           {error && (
             <div className="card-hover-3d mx-auto max-w-md p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/50 text-red-300 rounded-xl mb-6">
@@ -480,11 +528,25 @@ const Page = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gradient-to-r from-blue-600/80 to-cyan-600/80 text-white">
-                      {['⭐', '📝 Special Note', '📅 Date', '👤 Owner & Contact', '📍 Address', '🏠 Property Type', '📍 Area', '💰 Price', '🗓️ Availability', '📏 Size', '🏠 Additional Details', '📅 Age', '💰 Deposit', '🏠 Sold/Rented Out?', '📋'].map((heading) => (
-                        <th key={heading} className="px-4 py-4 text-left font-semibold border-r border-white/20 last:border-r-0">
-                          {heading}
-                        </th>
-                      ))}
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">
+                        🔢 S.No.
+                      </th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📝 Special Note</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📅 Date</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">👤 Owner & Contact</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📍 Address</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏠 Property Type</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📍 Area</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">
+                        💰 Price
+                      </th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🗓️ Availability</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📏 Size</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏠 Additional Details</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📅 Age</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">💰 Deposit</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏠 Sold/Rented Out?</th>
+                      <th className="px-4 py-4 text-left font-semibold">📋</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -502,13 +564,8 @@ const Page = () => {
                       filteredProperties.map((property, index) => (
                         <React.Fragment key={property.serial_number}>
                           <tr className={`hover:bg-white/10 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white/5' : 'bg-transparent'}`}>
-                            <td className="px-4 py-4 border-r border-white/10 text-center">
-                              <input
-                                type="checkbox"
-                                checked={Boolean(property.special_note && property.special_note.trim().length > 0)}
-                                readOnly
-                                className="w-4 h-4 text-yellow-500 bg-transparent border-2 border-white/30 rounded focus:ring-yellow-500 focus:ring-2"
-                              />
+                            <td className="px-4 py-4 border-r border-white/10 text-center text-white/90 font-mono">
+                              {property.serial_number}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
                               <div className="truncate" title={property.special_note || ''}>

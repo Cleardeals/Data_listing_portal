@@ -1,7 +1,7 @@
 export interface SupabasePropertyData {
   serial_number: number;
   property_id: string;
-  property_type: 'Res_resale' | 'Res_rental' | 'Com_resale' | 'Com_rental' | 'N/A' | null;
+  property_type: string | null;
   special_note: string | null;
   owner_name: string | null;
   owner_contact: string | null;
@@ -9,10 +9,10 @@ export interface SupabasePropertyData {
   address: string | null;
   sub_property_type: string | null;
   size: string | null;
-  furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A' | null;
+  furnishing_status: string | null;
   availability: string | null;
   floor: string | null;
-  tenant_preference: 'All' | 'Bachelors (Men Only)' | 'Bachelors (Men/Women)' | 'Bachelors (Women Only)' | 'Both' | 'Family Only' | 'N/A' | null;
+  tenant_preference: string | null;
   additional_details: string | null;
   age: string | null;
   rent_or_sell_price: string | null;
@@ -27,13 +27,13 @@ export interface PropertyFormData {
   owner_contact: string;
   area: string;
   address: string;
-  property_type: 'Res_resale' | 'Res_rental' | 'Com_resale' | 'Com_rental' | 'N/A';
+  property_type: string;
   sub_property_type: string;
   size: string;
-  furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A';
+  furnishing_status: string;
   availability: string;
   floor: string;
-  tenant_preference: 'All' | 'Bachelors (Men Only)' | 'Bachelors (Men/Women)' | 'Bachelors (Women Only)' | 'Both' | 'Family Only' | 'N/A';
+  tenant_preference: string;
   additional_details: string;
   age: string;
   rent_or_sell_price: string;

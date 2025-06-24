@@ -3,19 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { useDynamicOptions } from '../../lib/dynamicOptions';
 
-// Define PropertyData type matching the new schema
+// Define PropertyData type matching the exact database schema
 type PropertyData = {
   owner_name: string;
   owner_contact: string;
   area: string;
   address: string;
-  property_type: 'Res_resale' | 'Res_rental' | 'Com_resale' | 'Com_rental' | 'N/A';
+  property_type: string;
   sub_property_type: string;
   size: string;
-  furnishing_status: 'Furnished' | 'Unfurnished' | 'Semi-Furnished' | 'N/A';
+  furnishing_status: string;
   availability: string;
   floor: string;
-  tenant_preference: 'All' | 'Bachelors (Men Only)' | 'Bachelors (Men/Women)' | 'Bachelors (Women Only)' | 'Both' | 'Family Only' | 'N/A';
+  tenant_preference: string;
   additional_details: string;
   age: string;
   rent_or_sell_price: string;
