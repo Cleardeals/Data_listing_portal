@@ -9,6 +9,7 @@ import { AddEditPropertyModal } from "@/components/modals/AddEditPropertyModal";
 import { MdAddCall } from "react-icons/md";
 import { EditConfirmationModal } from "@/components/modals/EditConfirmationModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
+import Pagination from "@/components/ui/pagination";
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { SupabasePropertyData } from "@/lib/propertyData";
 import { supabase } from "../../lib/supabase";
@@ -38,9 +39,17 @@ function DashboardContent() {
   });
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   const [, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
-  // Fetch properties from Supabase
-  const fetchProperties = async () => {
+  // Track reconnection attempts with ref instead of state to avoid re-renders
+  const reconnectAttemptRef = React.useRef(false);
+
+  // Fetch properties from Supabase with pagination
+  const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
     try {
       setLoading(true);
       setError(null);
@@ -53,10 +62,26 @@ function DashboardContent() {
         return;
       }
       
+      // First, get the total count
+      const { count, error: countError } = await supabase
+        .from('propertydata')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        throw countError;
+      }
+
+      setTotalCount(count || 0);
+
+      // Then fetch the paginated data
+      const from = (page - 1) * size;
+      const to = from + size - 1;
+
       const { data, error: supabaseError } = await supabase
         .from('propertydata')
         .select('*')
-        .order('date_stamp', { ascending: false });
+        .order('date_stamp', { ascending: false })
+        .range(from, to);
 
       if (supabaseError) {
         console.error('Supabase error fetching properties:', supabaseError);
@@ -64,21 +89,28 @@ function DashboardContent() {
       }
 
       setPropertyData(data || []);
-      console.log(`Fetched ${data?.length || 0} properties successfully`);
+      console.log(`Fetched ${data?.length || 0} properties for page ${page} (total: ${count})`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);  // Pagination handlers
+  const handlePageChange = React.useCallback(async (page: number) => {
+    setCurrentPage(page);
+    await fetchProperties(page, pageSize);
+  }, [fetchProperties, pageSize]);
 
-  // Track reconnection attempts with ref instead of state to avoid re-renders
-  const reconnectAttemptRef = React.useRef(false);
-  
+  const handlePageSizeChange = React.useCallback((newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    fetchProperties(1, newPageSize);
+  }, [fetchProperties]);
+
   useEffect(() => {
     // Fetch property data when component mounts
-    fetchProperties();
+    fetchProperties(1, 50);
 
     // Setup real-time subscription
     const setupRealtime = () => {
@@ -140,7 +172,7 @@ function DashboardContent() {
         }
       }
     };
-  }, []); // Remove the dependency on realtimeStatus
+  }, [fetchProperties]); // Remove the dependency on realtimeStatus
 
   // Handle real-time changes
   const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<SupabasePropertyData>) => {
@@ -210,6 +242,8 @@ function DashboardContent() {
       if (error) throw error;
 
       setShowAddForm(false);
+      // Refresh current page to show the new property
+      await fetchProperties(currentPage, pageSize);
       console.log('Successfully added new property');
     } catch (err: unknown) {
       console.error('Error adding property:', err);
@@ -249,6 +283,8 @@ function DashboardContent() {
 
       setShowEditForm(false);
       setEditData(null);
+      // Refresh current page to show the updated property
+      await fetchProperties(currentPage, pageSize);
       console.log('Successfully updated property');
     } catch (err: unknown) {
       console.error('Error updating property:', err);
@@ -303,8 +339,8 @@ function DashboardContent() {
 
         console.log(`Successfully deleted row ${selectedRow}`);
         
-        // Update local state immediately, don't rely solely on real-time updates
-        setPropertyData(prevData => prevData.filter(item => item.serial_number !== selectedRow));
+        // Refresh current page to reflect the deletion
+        await fetchProperties(currentPage, pageSize);
         
         setSelectedRow(null);
       } catch (err: unknown) {
@@ -703,6 +739,18 @@ function DashboardContent() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {!loading && totalCount > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalCount}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            className="mt-6"
+          />
+        )}
         
         <AddEditPropertyModal
           open={showAddForm}

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authService, User } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -26,18 +27,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount (no magic link support)
+    // Check for existing session on mount (with proper session persistence)
     const initializeAuth = async () => {
       try {
-        // Only check for stored session - no magic link detection
-        const session = authService.getStoredSession();
-        if (session) {
-          const tokenResult = await authService.verifyToken(session.access_token);
-          if (tokenResult.valid) {
-            setUser(session.user);
-          } else {
-            // Token is invalid, clear it
-            await authService.signOut();
+        // First check Supabase session (since we now have persistSession: true)
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session from Supabase:', error);
+          await authService.signOut();
+          return;
+        }
+
+        if (session && session.user) {
+          // We have a valid Supabase session, create our user object
+          const userRole = session.user.user_metadata?.role || 'Unverified Customer';
+          const userGroup = session.user.user_metadata?.group || 'customers';
+          const isVerified = session.user.user_metadata?.is_verified || false;
+          
+          const user: User = {
+            id: session.user.id,
+            email: session.user.email!,
+            role: userRole,
+            group: userGroup,
+            is_verified: isVerified,
+            created_at: session.user.created_at,
+            email_confirmed_at: session.user.email_confirmed_at
+          };
+
+          setUser(user);
+          
+          // Also store in our custom auth service for consistency
+          const authSession = {
+            user,
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at || 0
+          };
+          authService.storeSession(authSession);
+          
+          console.log('Session restored from Supabase:', user);
+        } else {
+          // No Supabase session, check our stored session as fallback
+          const storedSession = authService.getStoredSession();
+          if (storedSession) {
+            const tokenResult = await authService.verifyToken(storedSession.access_token);
+            if (tokenResult.valid) {
+              setUser(storedSession.user);
+              console.log('Session restored from storage:', storedSession.user);
+            } else {
+              // Token is invalid, clear it
+              await authService.signOut();
+            }
           }
         }
       } catch (err) {
@@ -49,6 +90,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initializeAuth();
+
+    // Set up auth state listener to handle session changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' && session) {
+          const userRole = session.user.user_metadata?.role || 'Unverified Customer';
+          const userGroup = session.user.user_metadata?.group || 'customers';
+          const isVerified = session.user.user_metadata?.is_verified || false;
+          
+          const user: User = {
+            id: session.user.id,
+            email: session.user.email!,
+            role: userRole,
+            group: userGroup,
+            is_verified: isVerified,
+            created_at: session.user.created_at,
+            email_confirmed_at: session.user.email_confirmed_at
+          };
+
+          setUser(user);
+          
+          // Store in our custom auth service for consistency
+          const authSession = {
+            user,
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at || 0
+          };
+          authService.storeSession(authSession);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          authService.clearSession();
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          // Update our stored session with the new tokens
+          // Get current user from the existing session
+          const storedSession = authService.getStoredSession();
+          if (storedSession) {
+            const authSession = {
+              user: storedSession.user,
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+              expires_at: session.expires_at || 0
+            };
+            authService.storeSession(authSession);
+          }
+        }
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string) => {

@@ -5,10 +5,13 @@ import { PropertyData, supabaseHelpers } from "@/lib/dummyProperties";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Pagination from "@/components/ui/pagination";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 const Page = () => {
+  const { loading: authLoading, isAuthenticated } = useAuth();
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<PropertyData[]>([]);
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -17,35 +20,94 @@ const Page = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
-  // Fetch properties from Supabase
-  const fetchProperties = async () => {
+  // Fetch properties from Supabase with pagination
+  const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
     try {
       setLoading(true);
       setError(null);
       
+      // Check if we have a session before fetching
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        console.log('No active session found during fetch properties');
+        // We'll let the ProtectedRoute handle the redirection
+        return;
+      }
+      
+      // First, get the total count
+      const { count, error: countError } = await supabase
+        .from('propertydata')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        throw countError;
+      }
+
+      setTotalCount(count || 0);
+
+      // Then fetch the paginated data
+      const from = (page - 1) * size;
+      const to = from + size - 1;
+
       const { data, error: supabaseError } = await supabase
         .from('propertydata')
         .select('*')
-        .order('date_stamp', { ascending: false });
+        .order('date_stamp', { ascending: false })
+        .range(from, to);
 
       if (supabaseError) {
         throw supabaseError;
       }
 
-      setProperties(data || []);
-      setFilteredProperties(data || []);
+      if (page === 1) {
+        setProperties(data || []);
+        setFilteredProperties(data || []);
+      } else {
+        // For real-time updates, we might want to merge data
+        setProperties(data || []);
+        setFilteredProperties(data || []);
+      }
+      
+      console.log(`Fetched ${data?.length || 0} properties for page ${page} (total: ${count})`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Pagination handlers
+  const handlePageChange = React.useCallback(async (page: number) => {
+    setCurrentPage(page);
+    await fetchProperties(page, pageSize);
+  }, [fetchProperties, pageSize]);
+
+  const handlePageSizeChange = React.useCallback((newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    fetchProperties(1, newPageSize);
+  }, [fetchProperties]);
 
   // Load properties on component mount and setup real-time subscription
   useEffect(() => {
-    fetchProperties();
+    // Wait for auth context to finish loading before fetching data
+    if (authLoading) return;
+    
+    // Only fetch data if user is authenticated
+    if (!isAuthenticated) {
+      console.log('User not authenticated, skipping data fetch');
+      setLoading(false);
+      return;
+    }
+
+    fetchProperties(1, 50);
 
     // Setup real-time subscription
     const setupRealtime = () => {
@@ -86,7 +148,7 @@ const Page = () => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchProperties, authLoading, isAuthenticated]);
 
   // Handle real-time changes
   const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<PropertyData>) => {
@@ -393,7 +455,7 @@ const Page = () => {
                 </div>
               </div>
               <Button 
-                onClick={fetchProperties} 
+                onClick={() => fetchProperties(1, 50)} 
                 className="btn-3d bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white mt-3 w-full"
               >
                 🔄 Retry
@@ -545,6 +607,18 @@ const Page = () => {
                 </table>
               </div>
             </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && totalCount > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalCount}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              className="mt-6"
+            />
           )}
         </div>
       </div>
