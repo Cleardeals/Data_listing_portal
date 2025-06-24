@@ -533,16 +533,21 @@ const Page = () => {
                       </th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📝 Special Note</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📅 Date</th>
-                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">👤 Owner & Contact</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">👤 Owner Name</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📞 Owner Contact</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📍 Address</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏠 Property Type</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏡 Sub Type</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📍 Area</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">
                         💰 Price
                       </th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🗓️ Availability</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📏 Size</th>
-                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏠 Additional Details</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">� Floor</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🪑 Furnishing</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">👥 Tenant Preference</th>
+                      <th className="px-4 py-4 text-left font-semibold border-r border-white/20">�🏠 Additional Details</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">📅 Age</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">💰 Deposit</th>
                       <th className="px-4 py-4 text-left font-semibold border-r border-white/20">🏠 Sold/Rented Out?</th>
@@ -552,7 +557,7 @@ const Page = () => {
                   <tbody>
                     {filteredProperties.length === 0 ? (
                       <tr>
-                        <td colSpan={15} className="text-center py-16">
+                        <td colSpan={20} className="text-center py-16">
                           <div className="text-white/60">
                             <div className="text-6xl mb-4">🏠</div>
                             <p className="text-xl">No properties found</p>
@@ -576,9 +581,13 @@ const Page = () => {
                               {property.date_stamp || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
-                              <div className="whitespace-pre-line text-sm">
-                                <div className="font-semibold">{property.owner_name || '-'}</div>
-                                {property.owner_contact && <div className="text-white/70">{property.owner_contact}</div>}
+                              <div className="truncate font-semibold" title={property.owner_name || ''}>
+                                {property.owner_name || '-'}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
+                              <div className="truncate text-white/70" title={property.owner_contact || ''}>
+                                {property.owner_contact || '-'}
                               </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
@@ -587,7 +596,14 @@ const Page = () => {
                               </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90">
-                              {property.property_type || '-'}
+                              {property.property_type === 'Res_resale' ? 'Residential Resale' :
+                               property.property_type === 'Res_rental' ? 'Residential Rental' :
+                               property.property_type === 'Com_resale' ? 'Commercial Resale' :
+                               property.property_type === 'Com_rental' ? 'Commercial Rental' :
+                               property.property_type || '-'}
+                            </td>
+                            <td className="px-4 py-4 border-r border-white/10 text-white/90">
+                              {property.sub_property_type || '-'}
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90">
                               {property.area || '-'}
@@ -602,6 +618,17 @@ const Page = () => {
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90">
                               {property.size || 'N/A'}
+                            </td>
+                            <td className="px-4 py-4 border-r border-white/10 text-white/90">
+                              {property.floor || '-'}
+                            </td>
+                            <td className="px-4 py-4 border-r border-white/10 text-white/90">
+                              {property.furnishing_status || '-'}
+                            </td>
+                            <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
+                              <div className="truncate" title={property.tenant_preference || ''}>
+                                {property.tenant_preference || '-'}
+                              </div>
                             </td>
                             <td className="px-4 py-4 border-r border-white/10 text-white/90 max-w-xs">
                               <div className="whitespace-pre-line text-sm truncate" title={property.additional_details || ''}>
@@ -635,7 +662,7 @@ const Page = () => {
                           </tr>
                           {expandedDescriptionId === property.serial_number && (
                             <tr>
-                              <td colSpan={15} className="px-6 py-4 bg-white/10 border-t border-white/20">
+                              <td colSpan={20} className="px-6 py-4 bg-white/10 border-t border-white/20">
                                 <div className="backdrop-blur-sm bg-white/5 rounded-lg p-4 border border-white/20">
                                   {property.special_note && (
                                     <div className="mb-3">
