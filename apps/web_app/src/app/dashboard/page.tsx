@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AreaWisePropertyChart from "@/components/AreaWisePropertyChart";
+import PropertyStatsGrid from "@/components/PropertyStatsGrid";
+import { usePropertyStats } from "@/hooks/usePropertyStats";
 
 // Icon components moved from PropertyStats.tsx
 const HomeIcon = ({ className }: { className?: string }) => (
@@ -26,93 +28,10 @@ const GridIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// PropertyStat component moved from PropertyStats.tsx
-type PropertyStatProps = {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  bgColor: string;
-  textColor: string;
-  Link: string;
-};
-
-const PropertyStat = ({ label, value, icon, bgColor, textColor, Link: link }: PropertyStatProps) => {
-  return (
-    <Link href={link} className="block w-full">
-      <div className={cn("flex items-center w-full h-26", bgColor)}>
-        <div className="flex items-center p-2 pl-3 ">
-          <div className={cn("text-white", textColor)}>
-            {icon}
-          </div>
-        </div>
-        <div className="flex flex-col px-3 py-2">
-          <span className="text-lg font-medium text-white">{label}</span>
-          <span className="text-base font-bold text-white">{value}</span>
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-// Inline implementation of PropertyStats component
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PropertyStats = ({ className }: { className?: string }) => {
-  return (
-    <div className={cn("flex items-center justify-between space-x-1 bg-white p-1 shadow-sm h-32", className)}>
-      <div className="flex items-center justify-center px-2 w-full">
-        <span className="text-xl font-medium text-gray-700">Active Property</span>
-      </div>
-      <PropertyStat
-        label="Residential Rent"
-        value="₹ 1,155+"
-        icon={<HomeIcon />}
-        bgColor="bg-[#1abc9c]"
-        textColor="text-white"
-        Link="/tableview"
-      />
-      
-      <PropertyStat
-        label="Residential Sell"
-        value="₹ 16,513+"
-        icon={<HomeIcon />}
-        bgColor="bg-[#27ae60]"
-        textColor="text-white"
-        Link="/tableview"
-      />
-      
-      <PropertyStat
-        label="Commercial Rent"
-        value="₹ 4,663+"
-        icon={<BuildingIcon />}
-        bgColor="bg-[#f39c12]"
-        textColor="text-white"
-        Link="/tableview"
-      />
-      
-      <PropertyStat
-        label="Commercial Sell"
-        value="₹ 7,086+"
-        icon={<BuildingIcon />}
-        bgColor="bg-[#e74c3c]"
-        textColor="text-white"
-        Link="/tableview"
-      />
-      
-      <PropertyStat
-        label="Total Active"
-        value="₹ 29,397+"
-        icon={<GridIcon />}
-        bgColor="bg-[#95a5a6]"
-        textColor="text-white"
-        Link="/tableview"
-      />
-    </div>
-  );
-};
-
 // Main Dashboard page component
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { stats, loading } = usePropertyStats();
 
   return (
     <ProtectedRoute>
@@ -142,7 +61,7 @@ export default function DashboardPage() {
             </div>
           )}
           
-          {/* Enhanced Property Stats */}
+          {/* Enhanced Property Stats Overview */}
           <div className="card-hover-3d backdrop-blur-3d bg-white/5 border border-white/20 rounded-2xl p-2 mb-6">
             <div className="flex items-center justify-between space-x-2">
               <div className="flex items-center justify-center px-4 py-8 rounded-xl backdrop-blur-sm bg-white/10">
@@ -154,7 +73,9 @@ export default function DashboardPage() {
                   <HomeIcon className="group-hover:scale-110 transition-transform" />
                   <div>
                     <div className="text-lg font-semibold">Residential Rent</div>
-                    <div className="text-2xl font-bold">₹ 1,155+</div>
+                    <div className="text-2xl font-bold">
+                      {loading ? '...' : stats.residential_rent.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -164,7 +85,9 @@ export default function DashboardPage() {
                   <HomeIcon className="group-hover:scale-110 transition-transform" />
                   <div>
                     <div className="text-lg font-semibold">Residential Sell</div>
-                    <div className="text-2xl font-bold">₹ 16,513+</div>
+                    <div className="text-2xl font-bold">
+                      {loading ? '...' : stats.residential_sell.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -174,7 +97,9 @@ export default function DashboardPage() {
                   <BuildingIcon className="group-hover:scale-110 transition-transform" />
                   <div>
                     <div className="text-lg font-semibold">Commercial Rent</div>
-                    <div className="text-2xl font-bold">₹ 4,663+</div>
+                    <div className="text-2xl font-bold">
+                      {loading ? '...' : stats.commercial_rent.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -184,7 +109,9 @@ export default function DashboardPage() {
                   <BuildingIcon className="group-hover:scale-110 transition-transform" />
                   <div>
                     <div className="text-lg font-semibold">Commercial Sell</div>
-                    <div className="text-2xl font-bold">₹ 7,086+</div>
+                    <div className="text-2xl font-bold">
+                      {loading ? '...' : stats.commercial_sell.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -194,7 +121,9 @@ export default function DashboardPage() {
                   <GridIcon className="group-hover:scale-110 transition-transform" />
                   <div>
                     <div className="text-lg font-semibold">Total Active</div>
-                    <div className="text-2xl font-bold">₹ 29,397+</div>
+                    <div className="text-2xl font-bold">
+                      {loading ? '...' : stats.total.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -202,66 +131,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Enhanced KPI Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-2xl p-6 pulse-glow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <span className="text-green-400 text-sm font-medium">+12.5%</span>
-              </div>
-              <h3 className="text-white/90 text-sm font-medium mb-1">Total Properties</h3>
-              <p className="text-2xl font-bold text-white">29,397+</p>
-              <p className="text-xs text-white/60 mt-1">Active listings</p>
-            </div>
-
-            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <span className="text-green-400 text-sm font-medium">+8.2%</span>
-              </div>
-              <h3 className="text-white/90 text-sm font-medium mb-1">Total Value</h3>
-              <p className="text-2xl font-bold text-white">₹2.4B+</p>
-              <p className="text-xs text-white/60 mt-1">Market value</p>
-            </div>
-
-            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <span className="text-green-400 text-sm font-medium">+15.3%</span>
-              </div>
-              <h3 className="text-white/90 text-sm font-medium mb-1">Active Users</h3>
-              <p className="text-2xl font-bold text-white">12,847</p>
-              <p className="text-xs text-white/60 mt-1">This month</p>
-            </div>
-
-            <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-400/30 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <span className="text-green-400 text-sm font-medium">+5.7%</span>
-              </div>
-              <h3 className="text-white/90 text-sm font-medium mb-1">Transactions</h3>
-              <p className="text-2xl font-bold text-white">1,256</p>
-              <p className="text-xs text-white/60 mt-1">This week</p>
-            </div>
-          </div>
+          <PropertyStatsGrid className="mb-8" />
 
           {/* Enhanced Quick Actions Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 max-w-none px-2">
             <div className="group">
               <Link href="/search" className="block">
                 <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-2xl p-6 text-center group-hover:bg-blue-500/20 transition-all duration-500">
@@ -303,159 +176,11 @@ export default function DashboardPage() {
                 </div>
               </Link>
             </div>
-            
-            <div className="group">
-              <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-400/30 rounded-2xl p-6 text-center group-hover:bg-orange-500/20 transition-all duration-500 cursor-pointer">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Market Analytics</h3>
-                <p className="text-white/70 text-sm">Real-time market insights & trends</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Market Insights Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
-              <h3 className="text-2xl font-bold text-gradient-animate mb-6">Market Trends</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-green-400 rounded-full pulse-glow"></div>
-                    <span className="text-white font-medium">Residential Demand</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-green-400">+24%</div>
-                    <div className="text-xs text-white/60">vs last month</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-blue-400 rounded-full pulse-glow"></div>
-                    <span className="text-white font-medium">Commercial Growth</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-blue-400">+18%</div>
-                    <div className="text-xs text-white/60">vs last month</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-orange-400 rounded-full pulse-glow"></div>
-                    <span className="text-white font-medium">Price Appreciation</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-orange-400">+12%</div>
-                    <div className="text-xs text-white/60">vs last quarter</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-gradient-animate mb-6">Recent Activity</h3>
-              <div className="space-y-3">
-                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <div className="text-white text-sm font-medium">New listing in Gandhinagar</div>
-                    <div className="text-white/60 text-xs">2 hours ago</div>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <div className="text-white text-sm font-medium">Property sold in Bopal</div>
-                    <div className="text-white/60 text-xs">4 hours ago</div>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <div className="text-white text-sm font-medium">Price update in Gota</div>
-                    <div className="text-white/60 text-xs">6 hours ago</div>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <div className="text-white text-sm font-medium">New commercial space</div>
-                    <div className="text-white/60 text-xs">8 hours ago</div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Area-wise Property Breakdown Chart */}
-          <div className="mb-8">
+          <div className="mb-4">
             <AreaWisePropertyChart className="w-full" />
-          </div>
-
-          {/* Today's and Yesterday's Property Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Today's Property */}
-            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
-              <h2 className="text-2xl lg:text-3xl font-bold text-gradient-animate mb-6">
-                Today&apos;s Properties
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <Link href="/residential_rent_page" className="group">
-                  <div className="btn-3d bg-gradient-to-br from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center group-hover:scale-105">
-                    <div className="text-sm lg:text-base font-medium mb-2">Residential Rent</div>
-                    <div className="text-xl lg:text-3xl font-bold">0</div>
-                  </div>
-                </Link>
-                <div className="btn-3d bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Residential Sell</div>
-                  <div className="text-xl lg:text-3xl font-bold">0</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Rent</div>
-                  <div className="text-xl lg:text-3xl font-bold">0</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Sell</div>
-                  <div className="text-xl lg:text-3xl font-bold">0</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Total Property</div>
-                  <div className="text-xl lg:text-3xl font-bold">0</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Yesterday's Property */}
-            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6">
-              <h2 className="text-2xl lg:text-3xl font-bold text-gradient-animate mb-6">
-                Yesterday&apos;s Properties
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <div className="btn-3d bg-gradient-to-br from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Residential Rent</div>
-                  <div className="text-xl lg:text-3xl font-bold">37</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Residential Sell</div>
-                  <div className="text-xl lg:text-3xl font-bold">55</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Rent</div>
-                  <div className="text-xl lg:text-3xl font-bold">22</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Commercial Sell</div>
-                  <div className="text-xl lg:text-3xl font-bold">6</div>
-                </div>
-                <div className="btn-3d bg-gradient-to-br from-slate-600 to-gray-600 hover:from-slate-700 hover:to-gray-700 text-white p-4 rounded-xl transition-all duration-300 text-center hover:scale-105 cursor-pointer">
-                  <div className="text-sm lg:text-base font-medium mb-2">Total</div>
-                  <div className="text-xl lg:text-3xl font-bold">120</div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Footer with Grid Background */}
