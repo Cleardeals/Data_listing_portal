@@ -22,7 +22,8 @@ const Pagination: React.FC<PaginationProps> = ({
   const pagination = calculatePagination(currentPage, pageSize, totalItems);
   const pageNumbers = generatePageNumbers(currentPage, pagination.totalPages);
 
-  if (pagination.totalPages <= 1) return null;
+  // Always show pagination info, even for single page, to provide feedback
+  if (totalItems === 0) return null;
 
   return (
     <div className={`flex items-center justify-between mt-6 ${className}`}>
@@ -32,54 +33,56 @@ const Pagination: React.FC<PaginationProps> = ({
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center space-x-2">
-        {/* Previous button */}
-        <Button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!pagination.hasPreviousPage}
-          variant="outline"
-          size="sm"
-          className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Previous
-        </Button>
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center space-x-2">
+          {/* Previous button */}
+          <Button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={!pagination.hasPreviousPage}
+            variant="outline"
+            size="sm"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </Button>
 
-        {/* Page numbers */}
-        <div className="flex items-center space-x-1">
-          {pageNumbers.map((page, index) => (
-            page === 'ellipsis' ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-white/50">
-                ...
-              </span>
-            ) : (
-              <Button
-                key={page}
-                onClick={() => onPageChange(page)}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                className={
-                  currentPage === page
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                }
-              >
-                {page}
-              </Button>
-            )
-          ))}
+          {/* Page numbers */}
+          <div className="flex items-center space-x-1">
+            {pageNumbers.map((page, index) => (
+              page === 'ellipsis' ? (
+                <span key={`ellipsis-${index}`} className="px-2 text-white/50">
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  className={
+                    currentPage === page
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  }
+                >
+                  {page}
+                </Button>
+              )
+            ))}
+          </div>
+
+          {/* Next button */}
+          <Button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!pagination.hasNextPage}
+            variant="outline"
+            size="sm"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </Button>
         </div>
-
-        {/* Next button */}
-        <Button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!pagination.hasNextPage}
-          variant="outline"
-          size="sm"
-          className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Next
-        </Button>
-      </div>
+      )}
 
       {/* Page size selector */}
       {onPageSizeChange && (

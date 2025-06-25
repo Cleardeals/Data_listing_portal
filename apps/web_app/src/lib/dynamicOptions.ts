@@ -13,6 +13,28 @@ export interface DynamicOptions {
   ages: string[];
 }
 
+// Cache for dynamic options
+interface CacheEntry {
+  data: DynamicOptions;
+  timestamp: number;
+}
+
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+let globalOptionsCache: CacheEntry | null = null;
+
+// Helper functions for cache management
+const isCacheValid = (): boolean => {
+  if (!globalOptionsCache) return false;
+  return Date.now() - globalOptionsCache.timestamp < CACHE_DURATION;
+};
+
+const setCache = (data: DynamicOptions): void => {
+  globalOptionsCache = {
+    data,
+    timestamp: Date.now()
+  };
+};
+
 // Service class for fetching dynamic options from Supabase
 export class DynamicOptionsService {
   private static instance: DynamicOptionsService;
@@ -91,9 +113,17 @@ export class DynamicOptionsService {
     }
   }
 
-  // Fetch all dynamic options at once
+  // Fetch all dynamic options at once with caching
   async getAllOptions(): Promise<DynamicOptions> {
     try {
+      // Check cache first
+      if (isCacheValid() && globalOptionsCache) {
+
+        return globalOptionsCache.data;
+      }
+
+
+
       const [
         propertyTypes,
         areas,
@@ -120,7 +150,7 @@ export class DynamicOptionsService {
         return uniqueValues.includes('N/A') ? uniqueValues : ['N/A', ...uniqueValues];
       };
 
-      return {
+      const options: DynamicOptions = {
         propertyTypes: ensureUniqueWithNA(propertyTypes),
         areas: ensureUniqueWithNA(areas),
         subPropertyTypes: ensureUniqueWithNA(subPropertyTypes),
@@ -130,6 +160,10 @@ export class DynamicOptionsService {
         floors: ensureUniqueWithNA(floors),
         ages: ensureUniqueWithNA(ages)
       };
+
+      // Cache the results
+      setCache(options);
+      return options;
     } catch {
       return {
         propertyTypes: ['N/A'],

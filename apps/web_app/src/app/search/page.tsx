@@ -1,140 +1,21 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent, useEffect } from "react";
-import { PropertyData } from "@/lib/dummyProperties";
+import { useState, ChangeEvent, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { supabase } from "../../lib/supabase";
 import { useDynamicOptions } from "../../lib/dynamicOptions";
 import { usePropertyStats } from "@/hooks/usePropertyStats";
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-
-// Extract rent utility function
-const extractRent = (rentString: string) => {
-  const numberPart = parseFloat(rentString.replace(/[^\d.]/g, ""));
-  return rentString.toLowerCase().includes("thd")
-    ? numberPart * 1000
-    : numberPart;
-};
-
-// SearchResults component integrated directly
-function SearchResults({ 
-  properties, 
-  loading, 
-  error 
-}: { 
-  properties: PropertyData[];
-  loading: boolean;
-  error: string | null;
-}) {
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="pulse-glow w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-spin border-4 border-transparent mr-4"></div>
-        <div className="text-xl text-white/80">Loading properties...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="text-xl text-red-400">⚠️ Error: {error}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {properties.length > 0 ? (
-        <>
-          <div className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white/80 text-center">
-            🏠 Found <span className="text-cyan-400 font-bold">{properties.length}</span> {properties.length === 1 ? 'property' : 'properties'}
-          </div>
-          {properties.map((property) => (
-            <div key={property.serial_number} className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <h2 className="text-xl font-bold text-gradient-animate mb-3">
-                    👤 {property.owner_name} {property.owner_contact}
-                  </h2>
-                  <p className="text-white/80 mb-3 bg-white/10 rounded-lg p-3 border border-white/20">
-                    📝 {property.special_note}
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2 text-green-400 font-semibold bg-green-500/10 rounded-lg p-2 border border-green-500/20">
-                      <span>💰</span>
-                      <span>Price: {property.rent_or_sell_price}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-blue-400 bg-blue-500/10 rounded-lg p-2 border border-blue-500/20">
-                      <span>🏠</span>
-                      <span>Type: {property.sub_property_type}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-purple-400 bg-purple-500/10 rounded-lg p-2 border border-purple-500/20">
-                      <span>📍</span>
-                      <span>Area: {property.area}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 text-orange-400 bg-orange-500/10 rounded-lg p-2 border border-orange-500/20">
-                    <span>🛋️</span>
-                    <span>Furnishing: {property.furnishing_status}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-cyan-400 bg-cyan-500/10 rounded-lg p-2 border border-cyan-500/20">
-                    <span>📐</span>
-                    <span>Size: {property.size || 'NA'} sqft</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-pink-400 bg-pink-500/10 rounded-lg p-2 border border-pink-500/20">
-                    <span>�</span>
-                    <span>Deposit: {property.deposit}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-emerald-400 bg-emerald-500/10 rounded-lg p-2 border border-emerald-500/20">
-                    <span>📊</span>
-                    <span>Availability: {property.availability}</span>
-                  </div>
-                  {property.additional_details && (
-                    <div className="flex items-center space-x-2 text-yellow-400 bg-yellow-500/10 rounded-lg p-2 border border-yellow-500/20">
-                      <span>ℹ️</span>
-                      <span>Details: {property.additional_details}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </>
-      ) : (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-6 pulse-glow">🏠</div>
-          <p className="text-white/80 text-2xl mb-2">No properties found</p>
-          <p className="text-white/60 text-lg">Try adjusting your search filters</p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // FilterForm component integrated directly
-function FilterForm({ onSearch }: { 
-  onSearch: (filters: {
-    propertyType: string[];
-    condition: string[];
-    area: string[];
-    availability: string[];
-    availabilityType: string[];
-    budgetMin: string;
-    budgetMax: string;
-    sqftFrom: string;
-    sqftTo: string;
-    premise: string;
-  }) => void;
-}) {
-  // Use dynamic options hook for live data from Supabase
-  const { options: dynamicOptions, loading: optionsLoading, error: optionsError } = useDynamicOptions(true);
+function FilterForm() {
+  const router = useRouter();
+  
+  // Use dynamic options hook WITHOUT real-time updates to prevent flickering
+  const { options: dynamicOptions, loading: optionsLoading, error: optionsError } = useDynamicOptions(false);
   
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedPropertyType, setSelectedPropertyType] = useState("");
@@ -181,7 +62,44 @@ function FilterForm({ onSearch }: {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSearch(filters);
+    
+    // Create URL search params for the filters
+    const searchParams = new URLSearchParams();
+    
+    // Add non-empty filters to search params
+    if (filters.propertyType.length > 0) {
+      searchParams.set('propertyType', filters.propertyType.join(','));
+    }
+    if (filters.condition.length > 0) {
+      searchParams.set('condition', filters.condition.join(','));
+    }
+    if (filters.area.length > 0) {
+      searchParams.set('area', filters.area.join(','));
+    }
+    if (filters.availability.length > 0) {
+      searchParams.set('availability', filters.availability.join(','));
+    }
+    if (filters.availabilityType.length > 0) {
+      searchParams.set('availabilityType', filters.availabilityType.join(','));
+    }
+    if (filters.budgetMin) {
+      searchParams.set('budgetMin', filters.budgetMin);
+    }
+    if (filters.budgetMax) {
+      searchParams.set('budgetMax', filters.budgetMax);
+    }
+    if (filters.sqftFrom) {
+      searchParams.set('sqftFrom', filters.sqftFrom);
+    }
+    if (filters.sqftTo) {
+      searchParams.set('sqftTo', filters.sqftTo);
+    }
+    if (filters.premise) {
+      searchParams.set('premise', filters.premise);
+    }
+    
+    // Redirect to table view with filters
+    router.push(`/tableview?${searchParams.toString()}`);
   };
 
   return (
@@ -446,185 +364,9 @@ function FilterForm({ onSearch }: {
 
 export default function SearchPage() {
   const [showSearch, setShowSearch] = useState(true);
-  const [searchResult, setSearchResult] = useState<PropertyData[]>([]);
-  const [properties, setProperties] = useState<PropertyData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   
   // Use property stats hook for Enhanced Property Stats Overview
   const { stats, loading: statsLoading } = usePropertyStats();
-
-  // Fetch properties from Supabase - same filtering as dashboard (only active properties)
-  const fetchProperties = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Fetch all active records using pagination to avoid Supabase limits (same as dashboard)
-      let allData: PropertyData[] = [];
-      let hasMore = true;
-      let offset = 0;
-      const batchSize = 1000;
-
-      while (hasMore) {
-        const { data, error: supabaseError } = await supabase
-          .from('propertydata')
-          .select('*')
-          .not('rent_sold_out', 'eq', true) // Only active properties (same filter as dashboard)
-          .order('date_stamp', { ascending: false })
-          .range(offset, offset + batchSize - 1);
-
-        if (supabaseError) {
-          throw supabaseError;
-        }
-
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          offset += batchSize;
-          hasMore = data.length === batchSize; // If we got less than batchSize, we're done
-        } else {
-          hasMore = false;
-        }
-      }
-
-      setProperties(allData);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch properties');
-      console.error('Error fetching properties:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load properties on component mount with real-time subscription (no periodic refresh)
-  useEffect(() => {
-    fetchProperties();
-    
-    // Setup real-time subscription for live database changes
-    const channel = supabase
-      .channel('property-changes-search')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'propertydata'
-        },
-        (payload) => {
-          handleRealtimeChange(payload as RealtimePostgresChangesPayload<PropertyData>);
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on component unmount
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // Handle real-time database changes without full refresh
-  const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<PropertyData>) => {
-    const { eventType, new: newRecord, old: oldRecord } = payload;
-    
-    // Only update if it affects active properties (same filter as our fetch)
-    const isActiveProperty = (record: PropertyData) => !record.rent_sold_out;
-    
-    setProperties(currentProperties => {
-      switch (eventType) {
-        case 'INSERT':
-          if (newRecord && isActiveProperty(newRecord)) {
-            // Add new active property to the list
-            const exists = currentProperties.some(p => p.serial_number === newRecord.serial_number);
-            if (!exists) {
-              return [newRecord, ...currentProperties];
-            }
-          }
-          return currentProperties;
-          
-        case 'UPDATE':
-          if (newRecord) {
-            if (isActiveProperty(newRecord)) {
-              // Update existing property or add if it became active
-              const existingIndex = currentProperties.findIndex(p => p.serial_number === newRecord.serial_number);
-              if (existingIndex >= 0) {
-                return currentProperties.map(p => 
-                  p.serial_number === newRecord.serial_number ? newRecord : p
-                );
-              } else {
-                // Property became active, add it
-                return [newRecord, ...currentProperties];
-              }
-            } else {
-              // Property became inactive, remove it
-              return currentProperties.filter(p => p.serial_number !== newRecord.serial_number);
-            }
-          }
-          return currentProperties;
-          
-        case 'DELETE':
-          if (oldRecord) {
-            return currentProperties.filter(p => p.serial_number !== oldRecord.serial_number);
-          }
-          return currentProperties;
-          
-        default:
-          return currentProperties;
-      }
-    });
-  };
-
-  // Initialize search results with all properties when properties load
-  // Also update search results when properties change from real-time updates
-  useEffect(() => {
-    if (properties.length > 0) {
-      // If no specific search has been performed, show all properties
-      setSearchResult(prevResults => {
-        // If we have existing search results, preserve the filtering logic
-        if (prevResults.length === 0 || prevResults.length === properties.length) {
-          return properties;
-        }
-        // Otherwise, keep the current filtered results but update with new data
-        return prevResults;
-      });
-    }
-  }, [properties]);
-  
-  const handleSearch = (filters: {
-    propertyType: string[];
-    condition: string[];
-    area: string[];
-    availability: string[];
-    availabilityType: string[];
-    budgetMin: string;
-    budgetMax: string;
-    sqftFrom: string;
-    sqftTo: string;
-    premise: string;
-  }) => {
-    // Reset error state when performing search
-    setError(null);
-    
-    const filtered = properties.filter((property) => {
-      return (
-        (filters.propertyType.length === 0 ||
-          (property.property_type && filters.propertyType.includes(property.property_type))) &&
-        (filters.condition.length === 0 ||
-          (property.furnishing_status && filters.condition.includes(property.furnishing_status))) &&
-        (filters.area.length === 0 || 
-          (property.area && filters.area.includes(property.area))) &&
-        (filters.availability.length === 0 ||
-          (property.sub_property_type && filters.availability.includes(property.sub_property_type))) &&
-        (!filters.budgetMin ||
-          parseInt(filters.budgetMin) <= extractRent(String(property.rent_or_sell_price))) &&
-        (!filters.budgetMax ||
-          parseInt(filters.budgetMax) >= extractRent(String(property.rent_or_sell_price))) &&
-        (!filters.premise ||
-          property.address?.toLowerCase().includes(filters.premise.toLowerCase()))
-      );
-    });
-    setSearchResult(filtered);
-    setShowSearch(false); // Hide search panel after search
-  };
   
   return (
     <ProtectedRoute>
@@ -690,34 +432,12 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* Error display */}
-            {error && (
-              <div className="mb-6 card-hover-3d backdrop-blur-3d bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-red-500/20 rounded-full">
-                    <span className="text-2xl">⚠️</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold mb-1">Error loading properties</p>
-                    <p className="text-red-200">{error}</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={fetchProperties}
-                  className="btn-3d bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 mt-4"
-                >
-                  🔄 Retry Loading
-                </Button>
-              </div>
-            )}
-            
             {/* Enhanced Control Panel */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
               <div className="flex flex-wrap gap-3">
                 <div className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-2">
-                  <span className="text-white/70 text-sm">Showing:</span>
-                  <span className="text-cyan-400 font-bold ml-2">{searchResult.length}</span>
-                  <span className="text-white/70 text-sm ml-1">properties</span>
+                  <span className="text-white/70 text-sm">Search Portal:</span>
+                  <span className="text-cyan-400 font-bold ml-2">Configure & Filter</span>
                 </div>
               </div>
               
@@ -731,13 +451,13 @@ export default function SearchPage() {
             
             <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8">
               {showSearch ? (
-                <FilterForm onSearch={handleSearch} />
+                <FilterForm />
               ) : (
-                <SearchResults 
-                  properties={searchResult} 
-                  loading={loading}
-                  error={error}
-                />
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-6 pulse-glow">🔍</div>
+                  <p className="text-white/80 text-2xl mb-2">Search Panel</p>
+                  <p className="text-white/60 text-lg">Configure your search filters and click search to view results in table format</p>
+                </div>
               )}
             </div>
           </div>

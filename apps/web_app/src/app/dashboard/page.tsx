@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import AreaWisePropertyChart from "@/components/AreaWisePropertyChart";
-import PropertyStatsGrid from "@/components/PropertyStatsGrid";
+import LazyAreaChart from "@/components/LazyAreaChart";
+import LazyStatsGrid from "@/components/LazyStatsGrid";
 import { usePropertyStats } from "@/hooks/usePropertyStats";
 
 // Icon components moved from PropertyStats.tsx
@@ -31,7 +31,21 @@ const GridIcon = ({ className }: { className?: string }) => (
 // Main Dashboard page component
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { stats, loading } = usePropertyStats();
+  const { stats, loading, error, clearCache } = usePropertyStats();
+
+  // Add error display for property stats
+  const ErrorDisplay = () => (
+    <div className="card-hover-3d backdrop-blur-3d bg-red-500/10 border border-red-400/30 rounded-2xl p-4 mb-6 text-center">
+      <div className="text-red-300 mb-2">⚠️ Error Loading Stats</div>
+      <p className="text-sm text-red-200 mb-3">{error}</p>
+      <button 
+        onClick={() => clearCache()}
+        className="btn-3d bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg text-sm"
+      >
+        Retry
+      </button>
+    </div>
+  );
 
   return (
     <ProtectedRoute>
@@ -44,6 +58,9 @@ export default function DashboardPage() {
         </div>
         
         <div className="relative z-10 flex flex-col w-full gap-6 p-6">
+          {/* Error Display */}
+          {error && <ErrorDisplay />}
+          
           {/* Welcome Message */}
           {user && (
             <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6 mb-6">
@@ -131,7 +148,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Enhanced KPI Summary Cards */}
-          <PropertyStatsGrid className="mb-8" />
+          <LazyStatsGrid className="mb-8" />
 
           {/* Enhanced Quick Actions Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 max-w-none px-2">
@@ -180,7 +197,7 @@ export default function DashboardPage() {
 
           {/* Area-wise Property Breakdown Chart */}
           <div className="mb-4">
-            <AreaWisePropertyChart className="w-full" />
+            <LazyAreaChart className="w-full" />
           </div>
 
           {/* Footer with Grid Background */}

@@ -33,6 +33,29 @@ interface PropertyStats {
   averagePrice: number;
 }
 
+// Cache for property stats with timestamp
+interface CacheEntry {
+  data: PropertyStats;
+  timestamp: number;
+}
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let globalCache: CacheEntry | null = null;
+
+// Helper function to check if cache is valid
+const isCacheValid = (): boolean => {
+  if (!globalCache) return false;
+  return Date.now() - globalCache.timestamp < CACHE_DURATION;
+};
+
+// Helper function to set cache
+const setCache = (data: PropertyStats): void => {
+  globalCache = {
+    data,
+    timestamp: Date.now()
+  };
+};
+
 export const usePropertyStats = () => {
   const [stats, setStats] = useState<PropertyStats>({
     total: 0,
@@ -161,6 +184,28 @@ export const usePropertyStats = () => {
       setLoading(true);
       setError(null);
 
+      // Check cache first
+      if (isCacheValid() && globalCache) {
+
+        setStats(globalCache.data);
+        setLoading(false);
+        return;
+      }
+
+
+
+      // Check authentication first
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error('Authentication error: Please log in again');
+      }
+
+      if (!session) {
+        console.warn('No active session found');
+        throw new Error('No active session found');
+      }
+
       // Fetch all records using pagination to avoid Supabase limits
       let allData: PropertyData[] = [];
       let hasMore = true;
@@ -175,6 +220,7 @@ export const usePropertyStats = () => {
           .range(offset, offset + batchSize - 1); // Fetch in batches
 
         if (supabaseError) {
+          console.error('Supabase query error:', supabaseError);
           throw supabaseError;
         }
 
@@ -187,8 +233,11 @@ export const usePropertyStats = () => {
         }
       }
 
+
       const calculatedStats = calculateStats(allData);
 
+      // Cache the results
+      setCache(calculatedStats);
       setStats(calculatedStats);
     } catch (err) {
       console.error('Error fetching property stats:', err);
@@ -199,9 +248,12 @@ export const usePropertyStats = () => {
   }, [calculateStats]);
 
   useEffect(() => {
-    fetchPropertyStats();
+    // Add a small delay to avoid multiple rapid calls
+    const timeoutId = setTimeout(() => {
+      fetchPropertyStats();
+    }, 100);
 
-    // Set up real-time subscription
+    // Set up real-time subscription with debouncing
     const channel = supabase
       .channel('property-stats-changes')
       .on(
@@ -212,13 +264,20 @@ export const usePropertyStats = () => {
           table: 'propertydata'
         },
         () => {
-          // Refetch stats when data changes
-          fetchPropertyStats();
+          // Invalidate cache and refetch stats when data changes
+          globalCache = null;
+          // Debounce the refetch to avoid excessive calls
+          setTimeout(() => {
+            fetchPropertyStats();
+          }, 1000);
         }
       )
-      .subscribe();
+      .subscribe(() => {
+
+      });
 
     return () => {
+      clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, [fetchPropertyStats]);
@@ -227,6 +286,10 @@ export const usePropertyStats = () => {
     stats,
     loading,
     error,
-    refetch: fetchPropertyStats
+    refetch: fetchPropertyStats,
+    clearCache: () => {
+      globalCache = null;
+      fetchPropertyStats();
+    }
   };
 };
