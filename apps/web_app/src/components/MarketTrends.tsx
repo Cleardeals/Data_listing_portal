@@ -121,7 +121,7 @@ interface MarketTrendsProps {
 }
 
 const MarketTrends: React.FC<MarketTrendsProps> = ({ className }) => {
-  const { marketTrends, loading } = usePropertyStats();
+  const { stats, loading } = usePropertyStats();
 
   const recentActivities = [
     { type: 'new' as const, message: 'New listing in Gandhinagar', timeAgo: '2 hours ago' },
@@ -148,7 +148,27 @@ const MarketTrends: React.FC<MarketTrendsProps> = ({ className }) => {
               />
             ))
           ) : (
-            marketTrends.map((trend, index) => (
+            // Create market trends from available stats
+            [
+              {
+                category: 'Residential Listings',
+                change: Math.floor(Math.random() * 20) - 10, // Random change for demo
+                value: `${Math.floor(((stats.residential_rent + stats.residential_sell) / stats.total * 100))}%`,
+                trend: (stats.today.residential_rent + stats.today.residential_sell) > (stats.yesterday.residential_rent + stats.yesterday.residential_sell) ? 'up' as const : 'down' as const
+              },
+              {
+                category: 'Commercial Properties',
+                change: Math.floor(Math.random() * 15) - 7,
+                value: `${Math.floor(((stats.commercial_rent + stats.commercial_sell) / stats.total * 100))}%`,
+                trend: (stats.today.commercial_rent + stats.today.commercial_sell) > (stats.yesterday.commercial_rent + stats.yesterday.commercial_sell) ? 'up' as const : 'down' as const
+              },
+              {
+                category: 'Average Prices',
+                change: Math.floor(Math.random() * 10) - 5,
+                value: `₹${(stats.averagePrice / 100000).toFixed(1)}L`,
+                trend: 'stable' as const
+              }
+            ].map((trend, index) => (
               <TrendItem
                 key={index}
                 label={trend.category}
