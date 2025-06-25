@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { supabase } from "../../lib/supabase";
 import { useDynamicOptions } from "../../lib/dynamicOptions";
+import { usePropertyStats } from "@/hooks/usePropertyStats";
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Extract rent utility function
 const extractRent = (rentString: string) => {
@@ -448,23 +450,44 @@ export default function SearchPage() {
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use property stats hook for Enhanced Property Stats Overview
+  const { stats, loading: statsLoading } = usePropertyStats();
 
-  // Fetch properties from Supabase
+  // Fetch properties from Supabase - same filtering as dashboard (only active properties)
   const fetchProperties = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const { data, error: supabaseError } = await supabase
-        .from('propertydata')
-        .select('*')
-        .order('date_stamp', { ascending: false });
+      // Fetch all active records using pagination to avoid Supabase limits (same as dashboard)
+      let allData: PropertyData[] = [];
+      let hasMore = true;
+      let offset = 0;
+      const batchSize = 1000;
 
-      if (supabaseError) {
-        throw supabaseError;
+      while (hasMore) {
+        const { data, error: supabaseError } = await supabase
+          .from('propertydata')
+          .select('*')
+          .not('rent_sold_out', 'eq', true) // Only active properties (same filter as dashboard)
+          .order('date_stamp', { ascending: false })
+          .range(offset, offset + batchSize - 1);
+
+        if (supabaseError) {
+          throw supabaseError;
+        }
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          offset += batchSize;
+          hasMore = data.length === batchSize; // If we got less than batchSize, we're done
+        } else {
+          hasMore = false;
+        }
       }
 
-      setProperties(data || []);
+      setProperties(allData);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
@@ -473,23 +496,96 @@ export default function SearchPage() {
     }
   };
 
-  // Load properties on component mount and set up auto-refresh
+  // Load properties on component mount with real-time subscription (no periodic refresh)
   useEffect(() => {
     fetchProperties();
     
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchProperties();
-    }, 30000);
+    // Setup real-time subscription for live database changes
+    const channel = supabase
+      .channel('property-changes-search')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'propertydata'
+        },
+        (payload) => {
+          handleRealtimeChange(payload as RealtimePostgresChangesPayload<PropertyData>);
+        }
+      )
+      .subscribe();
 
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
+    // Cleanup subscription on component unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
+  // Handle real-time database changes without full refresh
+  const handleRealtimeChange = (payload: RealtimePostgresChangesPayload<PropertyData>) => {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+    
+    // Only update if it affects active properties (same filter as our fetch)
+    const isActiveProperty = (record: PropertyData) => !record.rent_sold_out;
+    
+    setProperties(currentProperties => {
+      switch (eventType) {
+        case 'INSERT':
+          if (newRecord && isActiveProperty(newRecord)) {
+            // Add new active property to the list
+            const exists = currentProperties.some(p => p.serial_number === newRecord.serial_number);
+            if (!exists) {
+              return [newRecord, ...currentProperties];
+            }
+          }
+          return currentProperties;
+          
+        case 'UPDATE':
+          if (newRecord) {
+            if (isActiveProperty(newRecord)) {
+              // Update existing property or add if it became active
+              const existingIndex = currentProperties.findIndex(p => p.serial_number === newRecord.serial_number);
+              if (existingIndex >= 0) {
+                return currentProperties.map(p => 
+                  p.serial_number === newRecord.serial_number ? newRecord : p
+                );
+              } else {
+                // Property became active, add it
+                return [newRecord, ...currentProperties];
+              }
+            } else {
+              // Property became inactive, remove it
+              return currentProperties.filter(p => p.serial_number !== newRecord.serial_number);
+            }
+          }
+          return currentProperties;
+          
+        case 'DELETE':
+          if (oldRecord) {
+            return currentProperties.filter(p => p.serial_number !== oldRecord.serial_number);
+          }
+          return currentProperties;
+          
+        default:
+          return currentProperties;
+      }
+    });
+  };
+
   // Initialize search results with all properties when properties load
+  // Also update search results when properties change from real-time updates
   useEffect(() => {
     if (properties.length > 0) {
-      setSearchResult(properties);
+      // If no specific search has been performed, show all properties
+      setSearchResult(prevResults => {
+        // If we have existing search results, preserve the filtering logic
+        if (prevResults.length === 0 || prevResults.length === properties.length) {
+          return properties;
+        }
+        // Otherwise, keep the current filtered results but update with new data
+        return prevResults;
+      });
     }
   }, [properties]);
   
@@ -554,7 +650,7 @@ export default function SearchPage() {
               </h1>
               <p className="text-white/70 text-xl mb-8">Discover your perfect property with AI-powered search filters</p>
               
-              {/* Modern Stats Cards */}
+              {/* Modern Stats Cards with integrated property stats data */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl p-6">
                   <div className="flex items-center justify-center mb-3">
@@ -562,32 +658,34 @@ export default function SearchPage() {
                       <span className="text-3xl">🏠</span>
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{properties.length}</h3>
-                  <p className="text-blue-200">Total Properties</p>
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    {statsLoading ? '...' : stats.total.toLocaleString()}
+                  </h3>
+                  <p className="text-blue-200">Total Active Properties</p>
                 </div>
                 
                 <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-6">
                   <div className="flex items-center justify-center mb-3">
                     <div className="p-3 bg-green-500/20 rounded-full">
-                      <span className="text-3xl">✅</span>
+                      <span className="text-3xl">🏘️</span>
                     </div>
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    {properties.filter(p => p.availability === 'Available').length}
+                    {statsLoading ? '...' : (stats.residential_rent + stats.residential_sell).toLocaleString()}
                   </h3>
-                  <p className="text-green-200">Available Now</p>
+                  <p className="text-green-200">Residential Properties</p>
                 </div>
                 
                 <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-xl p-6">
                   <div className="flex items-center justify-center mb-3">
                     <div className="p-3 bg-purple-500/20 rounded-full">
-                      <span className="text-3xl">⭐</span>
+                      <span className="text-3xl">🏢</span>
                     </div>
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    {properties.filter(p => p.special_note && p.special_note.trim().length > 0).length}
+                    {statsLoading ? '...' : (stats.commercial_rent + stats.commercial_sell).toLocaleString()}
                   </h3>
-                  <p className="text-purple-200">Featured</p>
+                  <p className="text-purple-200">Commercial Properties</p>
                 </div>
               </div>
             </div>

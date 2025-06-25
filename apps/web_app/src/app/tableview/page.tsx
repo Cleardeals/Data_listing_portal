@@ -9,6 +9,7 @@ import Pagination from "@/components/ui/pagination";
 import SortControls from "@/components/SortControls";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePropertyStats } from "@/hooks/usePropertyStats";
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 const Page = () => {
@@ -22,6 +23,9 @@ const Page = () => {
   const [error, setError] = useState<string | null>(null);
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   
+  // Use property stats hook for Enhanced Property Stats Overview
+  const { stats, loading: statsLoading } = usePropertyStats();
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(50);
@@ -31,7 +35,7 @@ const Page = () => {
   const [sortColumn, setSortColumn] = useState<'serial_number' | 'rent_or_sell_price' | null>('serial_number');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Fetch properties from Supabase with pagination
+  // Fetch properties from Supabase with pagination - same filtering as dashboard (only active properties)
   const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
     try {
       setLoading(true);
@@ -44,10 +48,11 @@ const Page = () => {
         return;
       }
       
-      // First, get the total count
+      // First, get the total count of active properties only (same filter as dashboard)
       const { count, error: countError } = await supabase
         .from('propertydata')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .not('rent_sold_out', 'eq', true); // Only active properties
 
       if (countError) {
         throw countError;
@@ -55,14 +60,15 @@ const Page = () => {
 
       setTotalCount(count || 0);
 
-      // Then fetch the paginated data
+      // Then fetch the paginated data with same filter as dashboard
       const from = (page - 1) * size;
       const to = from + size - 1;
 
       // Build query with sorting
       let query = supabase
         .from('propertydata')
-        .select('*');
+        .select('*')
+        .not('rent_sold_out', 'eq', true); // Only active properties (same filter as dashboard)
 
       // Apply sorting if specified
       if (sortColumn) {
@@ -362,36 +368,38 @@ const Page = () => {
             </h1>
             <p className="text-white/70 text-xl mb-8">Comprehensive property portfolio management system</p>
             
-            {/* Property Statistics Dashboard */}
+            {/* Property Statistics Dashboard with integrated property stats data */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl p-4">
                 <div className="text-3xl mb-2">🏠</div>
-                <div className="text-2xl font-bold text-white">{filteredProperties.length}</div>
-                <div className="text-blue-200 text-sm">Total Properties</div>
+                <div className="text-2xl font-bold text-white">
+                  {statsLoading ? '...' : stats.total.toLocaleString()}
+                </div>
+                <div className="text-blue-200 text-sm">Total Active Properties</div>
               </div>
               
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">✅</div>
+                <div className="text-3xl mb-2">🏘️</div>
                 <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.availability === 'Available').length}
+                  {statsLoading ? '...' : (stats.residential_rent + stats.residential_sell).toLocaleString()}
                 </div>
-                <div className="text-green-200 text-sm">Available</div>
+                <div className="text-green-200 text-sm">Residential Properties</div>
               </div>
               
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">⭐</div>
+                <div className="text-3xl mb-2">🏢</div>
                 <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.special_note && p.special_note.trim().length > 0).length}
+                  {statsLoading ? '...' : (stats.commercial_rent + stats.commercial_sell).toLocaleString()}
                 </div>
-                <div className="text-yellow-200 text-sm">With Special Notes</div>
+                <div className="text-yellow-200 text-sm">Commercial Properties</div>
               </div>
               
               <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-xl p-4">
-                <div className="text-3xl mb-2">🔑</div>
+                <div className="text-3xl mb-2">📊</div>
                 <div className="text-2xl font-bold text-white">
-                  {filteredProperties.filter(p => p.rent_sold_out).length}
+                  {statsLoading ? '...' : filteredProperties.length.toLocaleString()}
                 </div>
-                <div className="text-red-200 text-sm">Sold/Rented Out</div>
+                <div className="text-red-200 text-sm">Currently Displayed</div>
               </div>
             </div>
           </div>
