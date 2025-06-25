@@ -40,7 +40,6 @@ const Page = () => {
       // Check if we have a session before fetching
       const session = await supabase.auth.getSession();
       if (!session.data.session) {
-        console.log('No active session found during fetch properties');
         // We'll let the ProtectedRoute handle the redirection
         return;
       }
@@ -88,7 +87,6 @@ const Page = () => {
         setFilteredProperties(data || []);
       }
       
-      console.log(`Fetched ${data?.length || 0} properties for page ${page} (total: ${count})`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
       console.error('Error fetching properties:', err);
@@ -139,7 +137,6 @@ const Page = () => {
     
     // Only fetch data if user is authenticated
     if (!isAuthenticated) {
-      console.log('User not authenticated, skipping data fetch');
       setLoading(false);
       return;
     }
@@ -158,12 +155,10 @@ const Page = () => {
             table: 'propertydata'
           },
           (payload) => {
-            console.log('Real-time change received in tableview:', payload);
             handleRealtimeChange(payload as RealtimePostgresChangesPayload<PropertyData>);
           }
         )
         .subscribe((status) => {
-          console.log('Tableview realtime subscription status:', status);
           if (status === 'SUBSCRIBED') {
             setRealtimeStatus('connected');
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {

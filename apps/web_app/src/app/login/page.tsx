@@ -75,11 +75,8 @@ export default function LoginPage() {
     setSuccess('');
     setIsLoading(true);
     
-    console.log('Starting OTP verification...', { email, otp: otp.length, otpValue: otp });
-    
     try {
       const result = await verifyOTP(email, otp);
-      console.log('OTP verification result:', result);
       
       if (result.success) {
         setSuccess('Login successful! Redirecting...');

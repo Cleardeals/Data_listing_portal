@@ -75,8 +75,6 @@ export default function AreaWisePropertyChart({ className = '' }: AreaWiseProper
         }
       }
 
-      console.log(`📊 Fetched ${allData.length} total property records`);
-
       allData.forEach((property) => {
         const area = property.area?.trim() || 'Unknown';
         areaCounts[area] = (areaCounts[area] || 0) + 1;
@@ -91,14 +89,6 @@ export default function AreaWisePropertyChart({ className = '' }: AreaWiseProper
           percentage: parseFloat(((count / total) * 100).toFixed(1))
         }))
         .sort((a, b) => b.count - a.count); // Sort by count, no limit
-
-      console.log('🔍 Area Data Debug:', {
-        totalRawData: allData.length,
-        uniqueAreas: Object.keys(areaCounts).length,
-        processedDataLength: processedData.length,
-        first5Areas: processedData.slice(0, 5).map(a => a.area),
-        totalProperties: total
-      });
 
       setAreaData(processedData);
       setTotalProperties(total);

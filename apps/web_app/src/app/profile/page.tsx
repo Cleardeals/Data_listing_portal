@@ -43,9 +43,7 @@ function ProfilePageContent() {
           table: 'users',
           filter: `id=eq.${user.id}`
         },
-        (payload: Record<string, unknown>) => {
-          console.log('User verification status changed:', payload);
-          
+        () => {
           // Refresh the auth session to get latest user data
           if (refreshSession) {
             refreshSession();

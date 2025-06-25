@@ -79,9 +79,6 @@ export const usePropertyStats = () => {
     const areaCounts: { [key: string]: number } = {};
     let totalValue = 0;
     let validPrices = 0;
-    let uncategorizedCount = 0;
-
-    console.log(`Processing ${data.length} properties for stats calculation`);
 
     data.forEach((property) => {
       // Count by property type using the exact categorization from search page
@@ -115,11 +112,6 @@ export const usePropertyStats = () => {
           yesterdayStats.total++;
         }
       } else {
-        uncategorizedCount++;
-        if (uncategorizedCount <= 5) { // Log first 5 uncategorized items
-          console.log(`Uncategorized property type: "${propertyType}" (Serial: ${property.serial_number})`);
-        }
-        
         // Count uncategorized properties in today/yesterday stats as well
         const propertyDate = supabaseHelpers.formatDateForComparison(property.date_stamp);
         if (propertyDate === today) {
@@ -153,9 +145,6 @@ export const usePropertyStats = () => {
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-
-    console.log(`Stats Summary: Total properties: ${baseStats.total}, Categorized: ${baseStats.total - uncategorizedCount}, Uncategorized: ${uncategorizedCount}, Raw data count: ${data.length}`);
-    console.log(`Breakdown: Res_rental: ${baseStats.residential_rent}, Res_resale: ${baseStats.residential_sell}, Com_rental: ${baseStats.commercial_rent}, Com_resale: ${baseStats.commercial_sell}`);
 
     return {
       ...baseStats,
@@ -198,10 +187,6 @@ export const usePropertyStats = () => {
         }
       }
 
-      console.log(`Fetched ${allData.length} total properties from Supabase`);
-      console.log(`Properties with rent_sold_out=true: ${allData.filter(p => p.rent_sold_out === true).length}`);
-      console.log(`Properties with rent_sold_out=false: ${allData.filter(p => p.rent_sold_out === false).length}`);
-      console.log(`Properties with rent_sold_out=null/undefined: ${allData.filter(p => p.rent_sold_out == null).length}`);
       const calculatedStats = calculateStats(allData);
 
       setStats(calculatedStats);

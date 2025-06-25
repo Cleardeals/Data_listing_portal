@@ -85,7 +85,6 @@ export class AuthService {
     try {
       // Use admin client to check if user exists - only on server side
       if (!supabaseAdmin) {
-        console.log('Admin client not available, treating as new user');
         return null;
       }
 
@@ -115,18 +114,14 @@ export class AuthService {
 
   // Verify OTP and sign in (OTP only)
   async verifyOTP(email: string, otp: string): Promise<{ success: boolean; session?: AuthSession; message: string }> {
-    console.log('AuthService: Starting verifyOTP...', { email, otp });
     try {
       // Clean the OTP (remove spaces, ensure it's digits)
       const cleanOTP = otp.replace(/\s/g, '').trim();
-      console.log('AuthService: Cleaned OTP:', cleanOTP);
       
       if (cleanOTP.length < 4 || cleanOTP.length > 8 || !/^\d+$/.test(cleanOTP)) {
-        console.log('AuthService: Invalid OTP format');
         return { success: false, message: 'Please enter a valid verification code (4-8 digits)' };
       }
       
-      console.log('AuthService: Calling supabase.auth.verifyOtp...');
       // Only verify email OTP - no magic link support
       const { data, error } = await supabase.auth.verifyOtp({
         email: email,
@@ -134,10 +129,7 @@ export class AuthService {
         type: 'email'
       });
 
-      console.log('AuthService: Supabase response:', { data, error });
-
       if (error) {
-        console.log('AuthService: Supabase error:', error.message);
         // Provide more specific error messages
         if (error.message.includes('expired')) {
           return { success: false, message: 'Verification code has expired. Please request a new one.' };
@@ -151,18 +143,13 @@ export class AuthService {
       }
 
       if (!data.user || !data.session) {
-        console.log('AuthService: No user or session in response');
         return { success: false, message: 'Authentication failed. Please try again.' };
       }
-
-      console.log('AuthService: Successfully got user and session');
 
       // Set user role and metadata from user_metadata
       const userRole = data.user.user_metadata?.role || 'Unverified Customer';
       const userGroup = data.user.user_metadata?.group || 'customers';
       const isVerified = data.user.user_metadata?.is_verified || false;
-      
-      console.log('AuthService: User metadata:', { userRole, userGroup, isVerified });
 
       // If this is a new user (no role set), update their metadata with default values
       if (!data.user.user_metadata?.role) {
@@ -199,11 +186,8 @@ export class AuthService {
         expires_at: data.session.expires_at || 0
       };
 
-      console.log('AuthService: Created session object');
-
       // Store session in localStorage
       this.storeSession(session);
-      console.log('AuthService: Stored session, returning success');
 
       return { success: true, session, message: 'Login successful' };
     } catch (error: unknown) {
