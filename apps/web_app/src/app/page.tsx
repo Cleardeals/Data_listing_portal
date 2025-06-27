@@ -108,7 +108,7 @@ export default function Home() {
               PropertyHub provides amazing collaboration opportunities for buyers, sellers, and real estate professionals alike.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <Link href="/search" className="group bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-5 rounded-2xl font-semibold text-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-cyan-500/25 btn-3d">
+              <Link href="/tableview" className="group bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-5 rounded-2xl font-semibold text-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-cyan-500/25 btn-3d">
                 <span className="flex items-center gap-3">
                   Explore Properties
                   <svg className="w-6 h-6 transform group-hover:translate-x-2 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
@@ -244,8 +244,8 @@ export default function Home() {
                     <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                   </svg>
                 ),
-                title: "Advanced Search",
-                description: "Find your perfect property with powerful filters including location, price, amenities, and more.",
+                title: "Property Database",
+                description: "Explore comprehensive property listings with advanced filters, real-time data, and detailed analytics.",
                 gradient: "from-blue-500 to-cyan-500",
                 delay: "animate-delay-200"
               },
@@ -369,8 +369,8 @@ export default function Home() {
             {[
               {
                 step: "01",
-                title: "Search & Discover",
-                description: "Browse thousands of verified properties with advanced AI-powered filters. Use our smart recommendations to find properties that match your exact needs and budget.",
+                title: "Explore & Filter",
+                description: "Browse thousands of verified properties with advanced filters and real-time data. Use our comprehensive database to find properties that match your exact requirements.",
                 icon: (
                   <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -448,7 +448,7 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               {[
-                { icon: "🔍", title: "Search", time: "Day 1" },
+                { icon: "🔍", title: "Explore", time: "Day 1" },
                 { icon: "❤️", title: "Shortlist", time: "Day 2-3" },
                 { icon: "🏠", title: "Visit", time: "Day 4-7" },
                 { icon: "📝", title: "Apply", time: "Day 8-10" },
@@ -507,7 +507,7 @@ export default function Home() {
           
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-            <Link href="/search" className="group bg-white text-blue-900 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-2xl btn-3d">
+            <Link href="/tableview" className="group bg-white text-blue-900 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-2xl btn-3d">
               <span className="flex items-center gap-3">
                 Start Exploring
                 <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
@@ -662,9 +662,9 @@ export default function Home() {
               <h4 className="font-bold text-xl mb-8 text-white">Services</h4>
               <ul className="space-y-4">
                 {[
-                  { name: "Buy Property", href: "/search?type=buy" },
+                  { name: "Buy Property", href: "/tableview" },
                   { name: "Sell Property", href: "/post-property" },
-                  { name: "Rent Property", href: "/search?type=rent" },
+                  { name: "Rent Property", href: "/tableview" },
                   { name: "Property Management", href: "/services/management" }
                 ].map((service) => (
                   <li key={service.name}>

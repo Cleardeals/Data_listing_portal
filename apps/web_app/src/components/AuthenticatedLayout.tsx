@@ -110,7 +110,6 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
                 <div className="hidden lg:ml-12 lg:flex lg:space-x-1">
                   {[
                     { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-                    { href: "/search", label: "Search", icon: "🔍" },
                     { href: "/tableview", label: "Properties", icon: "📋" }
                   ].map((item) => (
                     <Link
@@ -187,7 +186,6 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
               <div className="px-4 pt-4 pb-6 space-y-2">
                 {[
                   { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-                  { href: "/search", label: "Search", icon: "🔍" },
                   { href: "/tableview", label: "Properties", icon: "📋" }
                 ].map((item) => (
                   <Link

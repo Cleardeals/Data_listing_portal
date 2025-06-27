@@ -289,7 +289,7 @@ export default function TableViewPage() {
       setLoading(false);
       setBackgroundLoading(false);
     }
-  }, []);
+  }, [setBackgroundLoading]);
 
   // Debug function to test basic connectivity
   const testSupabaseConnection = useCallback(async () => {
@@ -511,243 +511,367 @@ export default function TableViewPage() {
         
         <div className="relative z-10 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 mb-4">
-                Property Database
+            {/* Enhanced Header Section with Search Page Style */}
+            <div className="text-center mb-12">
+              <h1 className="text-5xl lg:text-6xl font-bold text-gradient-animate mb-6">
+                🔍 Property Database Explorer
               </h1>
-              <p className="text-xl text-white/80 max-w-2xl mx-auto">
-                Search and explore our comprehensive property listings
+              <p className="text-white/70 text-xl mb-8 max-w-3xl mx-auto">
+                Discover your perfect property with advanced filters and real-time data insights
               </p>
             </div>
 
-            {/* Stats Overview */}
+            {/* Enhanced Stats Overview with Search Page Style */}
             {!statsLoading && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-white">{stats.total.toLocaleString()}</div>
-                  <div className="text-sm text-white/70">Total Properties</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-xl p-6 text-center">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-blue-500/20 rounded-full">
+                      <span className="text-3xl">🏠</span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-2">{stats.total.toLocaleString()}</div>
+                  <div className="text-sm text-blue-200">Total Properties</div>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-400">{stats.residential_rent.toLocaleString()}</div>
-                  <div className="text-sm text-white/70">Residential Rental</div>
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-6 text-center">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-green-500/20 rounded-full">
+                      <span className="text-3xl">🏘️</span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-green-400 mb-2">{stats.residential_rent.toLocaleString()}</div>
+                  <div className="text-sm text-green-200">Residential Rental</div>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-green-400">{stats.residential_sell.toLocaleString()}</div>
-                  <div className="text-sm text-white/70">Residential Sale</div>
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-xl p-6 text-center">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-purple-500/20 rounded-full">
+                      <span className="text-3xl">🏡</span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-purple-400 mb-2">{stats.residential_sell.toLocaleString()}</div>
+                  <div className="text-sm text-purple-200">Residential Sale</div>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-400">{stats.commercial_rent.toLocaleString()}</div>
-                  <div className="text-sm text-white/70">Commercial Rental</div>
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-400/30 rounded-xl p-6 text-center">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-orange-500/20 rounded-full">
+                      <span className="text-3xl">🏢</span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-orange-400 mb-2">{stats.commercial_rent.toLocaleString()}</div>
+                  <div className="text-sm text-orange-200">Commercial Rental</div>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-orange-400">{stats.commercial_sell.toLocaleString()}</div>
-                  <div className="text-sm text-white/70">Commercial Sale</div>
+                <div className="card-hover-3d backdrop-blur-3d bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 rounded-xl p-6 text-center">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-yellow-500/20 rounded-full">
+                      <span className="text-3xl">🏬</span>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-yellow-400 mb-2">{stats.commercial_sell.toLocaleString()}</div>
+                  <div className="text-sm text-yellow-200">Commercial Sale</div>
                 </div>
               </div>
             )}
 
-            {/* Filter Toggle and Results Info */}
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-4">
-                <Button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {showFilters ? 'Hide Filters' : 'Show Filters'}
-                </Button>
+            {/* Enhanced Control Panel */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+              <div className="flex flex-wrap gap-3">
+                <div className="card-hover-3d backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-2">
+                  <span className="text-white/70 text-sm">Database Portal:</span>
+                  <span className="text-cyan-400 font-bold ml-2">Filter & Explore</span>
+                </div>
+                {hasActiveFilters && (
+                  <div className="backdrop-blur-sm bg-orange-500/20 border border-orange-400/30 rounded-lg px-4 py-2">
+                    <span className="text-orange-200 text-sm">Active Filters: </span>
+                    <span className="text-orange-400 font-bold">
+                      {Object.values(filters).flat().filter(v => v && v.length > 0).length}
+                    </span>
+                  </div>
+                )}
                 
                 {/* Background Loading Indicator */}
                 {backgroundLoading && (
-                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                  <div className="flex items-center gap-2 backdrop-blur-sm bg-blue-500/20 border border-blue-400/30 rounded-lg px-4 py-2">
                     <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin"></div>
-                    <span>Syncing...</span>
+                    <span className="text-blue-200 text-sm">Syncing...</span>
                   </div>
                 )}
                 
                 {/* Cache Statistics (Development) */}
                 {process.env.NODE_ENV === 'development' && (
-                  <div className="text-xs text-white/50">
-                    Cache: {cache.getCacheStats().hitRate.toFixed(2)}% hit rate, {cache.getCacheStats().entries} entries
-                    | Has changes: {hasUnappliedChanges ? 'YES' : 'NO'} | Loading: {loading ? 'YES' : 'NO'}
+                  <div className="backdrop-blur-sm bg-gray-500/20 border border-gray-400/30 rounded-lg px-4 py-2">
+                    <span className="text-gray-300 text-xs">
+                      Cache: {cache.getCacheStats().hitRate.toFixed(2)}% hit rate, {cache.getCacheStats().entries} entries
+                    </span>
                   </div>
                 )}
               </div>
               
-              <div className="text-white/70">
-                Showing {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
-                {hasActiveFilters && ' (filtered)'}
+              <div className="flex items-center gap-4">
+                <div className="text-white/70 text-sm">
+                  Showing {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
+                  {hasActiveFilters && ' (filtered)'}
+                </div>
+                
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="btn-3d bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 px-6 py-3"
+                >
+                  {showFilters ? "🔍 Hide Filters Panel" : "⚙️ Show Filters Panel"}
+                </Button>
               </div>
             </div>
 
-            {/* Filters Panel */}
+            {/* Enhanced Filters Panel with Search Page UI */}
             {showFilters && (
-              <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Property Type */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Property Type</label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {dynamicOptions.propertyTypes.map((type) => (
-                        <label key={type} className="flex items-center space-x-2 text-white/80">
-                          <input
-                            type="checkbox"
-                            checked={pendingFilters.propertyType.includes(type)}
-                            onChange={() => handleFilterChange('propertyType', type)}
-                            className="rounded border-white/20"
-                          />
-                          <span>{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Condition */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Furnishing Status</label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {dynamicOptions.furnishingStatuses.map((status) => (
-                        <label key={status} className="flex items-center space-x-2 text-white/80">
-                          <input
-                            type="checkbox"
-                            checked={pendingFilters.condition.includes(status)}
-                            onChange={() => handleFilterChange('condition', status)}
-                            className="rounded border-white/20"
-                          />
-                          <span>{status}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Area */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Area</label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {dynamicOptions.areas.map((area) => (
-                        <label key={area} className="flex items-center space-x-2 text-white/80">
-                          <input
-                            type="checkbox"
-                            checked={pendingFilters.area.includes(area)}
-                            onChange={() => handleFilterChange('area', area)}
-                            className="rounded border-white/20"
-                          />
-                          <span>{area}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Availability */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Availability</label>
-                    <div className="space-y-2">
-                      {dynamicOptions.availabilities.map((availability) => (
-                        <label key={availability} className="flex items-center space-x-2 text-white/80">
-                          <input
-                            type="checkbox"
-                            checked={pendingFilters.availability.includes(availability)}
-                            onChange={() => handleFilterChange('availability', availability)}
-                            className="rounded border-white/20"
-                          />
-                          <span>{availability}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tenant Preference */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Tenant Preference</label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {dynamicOptions.tenantPreferences.map((preference) => (
-                        <label key={preference} className="flex items-center space-x-2 text-white/80">
-                          <input
-                            type="checkbox"
-                            checked={pendingFilters.availabilityType.includes(preference)}
-                            onChange={() => handleFilterChange('availabilityType', preference)}
-                            className="rounded border-white/20"
-                          />
-                          <span>{preference}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Budget Range */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Budget Range</label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="number"
-                        value={pendingFilters.budgetMin}
-                        onChange={(e) => handleFilterChange('budgetMin', e.target.value)}
-                        placeholder="Min"
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      />
-                      <input
-                        type="number"
-                        value={pendingFilters.budgetMax}
-                        onChange={(e) => handleFilterChange('budgetMax', e.target.value)}
-                        placeholder="Max"
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Square Feet Range */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Square Feet</label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="number"
-                        value={pendingFilters.sqftFrom}
-                        onChange={(e) => handleFilterChange('sqftFrom', e.target.value)}
-                        placeholder="From"
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      />
-                      <input
-                        type="number"
-                        value={pendingFilters.sqftTo}
-                        onChange={(e) => handleFilterChange('sqftTo', e.target.value)}
-                        placeholder="To"
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Search */}
-                  <div>
-                    <label className="block text-white font-medium mb-3">Search</label>
-                    <input
-                      type="text"
-                      value={pendingFilters.premise}
-                      onChange={(e) => handleFilterChange('premise', e.target.value)}
-                      placeholder="Search properties..."
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
-                    />
-                  </div>
+              <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8 mb-8">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 mb-2">
+                    🔍 Advanced Property Filters
+                  </h2>
+                  <p className="text-white/70">Configure your search criteria to find the perfect property</p>
                 </div>
 
-                <div className="flex space-x-4 mt-6">
-                  <Button
-                    onClick={clearAndApplyFilters}
-                    className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
-                  >
-                    Clear All Filters
-                  </Button>
-                  
-                  <Button
-                    onClick={applyFilters}
-                    disabled={!hasUnappliedChanges || loading}
-                    className={`${
-                      hasUnappliedChanges && !loading
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                    } px-6 py-2 rounded-lg font-medium transition-colors`}
-                  >
-                    {loading ? 'Applying...' : 'Apply Filters'}
-                  </Button>
+                <div className="w-full overflow-hidden">
+                  <table className="w-full border-collapse border border-white/20 rounded-lg overflow-hidden">
+                    <tbody>
+                      {/* Property Type */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white w-1/4">
+                          Property Type:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-3">
+                            {dynamicOptions.propertyTypes.map((type) => (
+                              <label key={type} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={pendingFilters.propertyType.includes(type)}
+                                  onChange={() => handleFilterChange('propertyType', type)}
+                                  className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-sm">
+                                  {type === 'Res_resale' ? 'Residential Resale' :
+                                   type === 'Res_rental' ? 'Residential Rental' :
+                                   type === 'Com_resale' ? 'Commercial Resale' :
+                                   type === 'Com_rental' ? 'Commercial Rental' : type}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Furnishing Status */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Furnishing Status:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-3">
+                            {dynamicOptions.furnishingStatuses.map((status) => (
+                              <label key={status} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={pendingFilters.condition.includes(status)}
+                                  onChange={() => handleFilterChange('condition', status)}
+                                  className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-sm">{status}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Area */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Area:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
+                            {dynamicOptions.areas.map((area) => (
+                              <label key={area} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={pendingFilters.area.includes(area)}
+                                  onChange={() => handleFilterChange('area', area)}
+                                  className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-sm">{area}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Availability */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Availability:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-3">
+                            {dynamicOptions.availabilities.map((availability) => (
+                              <label key={availability} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={pendingFilters.availability.includes(availability)}
+                                  onChange={() => handleFilterChange('availability', availability)}
+                                  className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-sm">{availability}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Tenant Preference */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Tenant Preference:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
+                            {dynamicOptions.tenantPreferences.map((preference) => (
+                              <label key={preference} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={pendingFilters.availabilityType.includes(preference)}
+                                  onChange={() => handleFilterChange('availabilityType', preference)}
+                                  className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-sm">{preference}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Budget Range */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Budget:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="budgetMin" className="text-sm text-white/80">Min:</label>
+                              <input
+                                type="number"
+                                id="budgetMin"
+                                value={pendingFilters.budgetMin}
+                                onChange={(e) => handleFilterChange('budgetMin', e.target.value)}
+                                placeholder="Min Budget"
+                                className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="budgetMax" className="text-sm text-white/80">Max:</label>
+                              <input
+                                type="number"
+                                id="budgetMax"
+                                value={pendingFilters.budgetMax}
+                                onChange={(e) => handleFilterChange('budgetMax', e.target.value)}
+                                placeholder="Max Budget"
+                                className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Square Feet Range */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Square Feet:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="sqftFrom" className="text-sm text-white/80">From:</label>
+                              <input
+                                type="number"
+                                id="sqftFrom"
+                                value={pendingFilters.sqftFrom}
+                                onChange={(e) => handleFilterChange('sqftFrom', e.target.value)}
+                                placeholder="Min Sq Ft"
+                                className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="sqftTo" className="text-sm text-white/80">To:</label>
+                              <input
+                                type="number"
+                                id="sqftTo"
+                                value={pendingFilters.sqftTo}
+                                onChange={(e) => handleFilterChange('sqftTo', e.target.value)}
+                                placeholder="Max Sq Ft"
+                                className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Search/Premises */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Search Keywords:
+                        </th>
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={pendingFilters.premise}
+                            onChange={(e) => handleFilterChange('premise', e.target.value)}
+                            placeholder="Search by address, area, property type..."
+                            className="w-full px-4 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </td>
+                      </tr>
+
+                      {/* Action Buttons */}
+                      <tr>
+                        <td colSpan={2} className="px-4 py-4 text-center">
+                          <div className="flex flex-wrap justify-center gap-4">
+                            <Button
+                              onClick={clearAndApplyFilters}
+                              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                            >
+                              🗑️ Clear All Filters
+                            </Button>
+                            
+                            <Button
+                              onClick={applyFilters}
+                              disabled={!hasUnappliedChanges || loading}
+                              className={`px-8 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg transform ${
+                                hasUnappliedChanges && !loading
+                                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white hover:shadow-xl hover:scale-105'
+                                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                              }`}
+                            >
+                              {loading ? (
+                                <span className="flex items-center gap-2">
+                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                  Applying...
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-2">
+                                  🔍 Apply Filters
+                                  {hasUnappliedChanges && (
+                                    <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                                      {Object.values(pendingFilters).flat().filter(v => v && v.length > 0).length} changes
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
