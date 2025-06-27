@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import Pagination from '@/components/ui/pagination';
 import { PropertyData } from '@/lib/dummyProperties';
+import { usePropertyCache } from '@/hooks/usePropertyCache';
 
 // Filter state interface
 interface FilterState {
@@ -49,18 +50,25 @@ export default function TableViewPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   
+  // Apply Filters functionality - Pending filters for manual application
+  const [pendingFilters, setPendingFilters] = useState<FilterState>(initialFilters);
+  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Debounce and abort refs
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  // Abort controller for request cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Hooks
   const { options: dynamicOptions } = useDynamicOptions(false);
   const { stats, loading: statsLoading } = usePropertyStats();
+  const cache = usePropertyCache();
+
+  // Cache-aware loading and error states
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
@@ -76,35 +84,72 @@ export default function TableViewPage() {
            filters.premise;
   }, [filters]);
 
-  // Main fetch function with optimizations
+  // Main fetch function - simplified for debugging
   const fetchProperties = useCallback(async (
     page: number,
     size: number,
     filterState: FilterState,
-    signal?: AbortSignal
+    useCache: boolean = true
   ) => {
+    console.log('=== FETCH PROPERTIES START ===');
+    console.log('Parameters:', { page, size, filterState, useCache });
+    
     try {
       setLoading(true);
       setError(null);
 
-      // Check authentication
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
-      if (authError || !session) {
-        throw new Error('Authentication required');
+      // Validate supabase client
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
       }
 
+      // Check authentication
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw new Error(`Authentication error: ${authError.message}`);
+      }
+      if (!session) {
+        console.error('No session found');
+        throw new Error('Authentication required - no session');
+      }
+
+      console.log('Authentication OK, building query...');
+
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new abort controller for potential future use
+      abortControllerRef.current = new AbortController();
+
       // Build query
-      let query = supabase
-        .from('propertydata')
-        .select('*', { count: 'exact' })
-        .not('rent_sold_out', 'eq', true);
+      let query;
+      try {
+        query = supabase
+          .from('propertydata')
+          .select('*', { count: 'exact' })
+          .not('rent_sold_out', 'eq', true);
+        
+        if (!query) {
+          throw new Error('Query builder returned null');
+        }
+      } catch (queryError) {
+        console.error('Failed to build initial query:', queryError);
+        throw new Error(`Query building failed: ${queryError instanceof Error ? queryError.message : 'Unknown query error'}`);
+      }
 
       // Apply filters
+      console.log('Applying filters to query:', filterState);
+      
       if (filterState.propertyType.length > 0) {
+        console.log('Applying property type filter:', filterState.propertyType);
         query = query.in('property_type', filterState.propertyType);
       }
 
       if (filterState.area.length > 0) {
+        console.log('Applying area filter:', filterState.area);
         if (filterState.area.length === 1) {
           query = query.ilike('area', `%${filterState.area[0]}%`);
         } else {
@@ -114,18 +159,22 @@ export default function TableViewPage() {
       }
 
       if (filterState.availability.length > 0) {
+        console.log('Applying availability filter:', filterState.availability);
         query = query.in('availability', filterState.availability);
       }
 
       if (filterState.condition.length > 0) {
+        console.log('Applying condition filter:', filterState.condition);
         query = query.in('furnishing_status', filterState.condition);
       }
 
       if (filterState.availabilityType.length > 0) {
+        console.log('Applying availability type filter:', filterState.availabilityType);
         query = query.in('tenant_preference', filterState.availabilityType);
       }
 
       if (filterState.premise) {
+        console.log('Applying premise filter:', filterState.premise);
         query = query.or(`address.ilike.%${filterState.premise}%,sub_property_type.ilike.%${filterState.premise}%,property_type.ilike.%${filterState.premise}%,area.ilike.%${filterState.premise}%`);
       }
 
@@ -163,50 +212,135 @@ export default function TableViewPage() {
       const to = from + size - 1;
       query = query.range(from, to);
 
-      // Execute query with abort signal
-      const { data, error: supabaseError, count } = signal 
-        ? await query.abortSignal(signal)
-        : await query;
+      // Validate query before execution
+      if (!query) {
+        throw new Error('Failed to construct database query');
+      }
+
+      // Execute query
+      let result;
+      try {
+        // Note: abortSignal might not be supported in all Supabase versions
+        // Use regular query execution instead
+        result = await query;
+      } catch (queryError) {
+        console.error('Query execution failed:', queryError);
+        throw queryError;
+      }
+
+      const { data, error: supabaseError, count } = result;
 
       if (supabaseError) {
+        console.error('Supabase error:', supabaseError);
         throw supabaseError;
       }
 
-      setProperties(data || []);
-      setTotalCount(count || 0);
+      // Validate result structure
+      if (result && typeof result !== 'object') {
+        throw new Error('Invalid query result format');
+      }
+
+      const resultData = data || [];
+      const resultCount = count || 0;
+
+      console.log('Query successful, setting properties:', { resultData: resultData.length, resultCount });
+      setProperties(resultData);
+      setTotalCount(resultCount);
+
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
         return; // Request was cancelled
       }
-      console.error('Error fetching properties:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch properties');
+      
+      // Enhanced error logging
+      console.error('Error fetching properties:', {
+        error: err,
+        errorType: typeof err,
+        errorConstructor: err?.constructor?.name,
+        errorMessage: err instanceof Error ? err.message : 'Unknown error',
+        errorStack: err instanceof Error ? err.stack : undefined,
+        filters: filterState,
+        page,
+        pageSize: size,
+        useCache
+      });
+      
+      // Set user-friendly error message
+      let errorMessage = 'Failed to fetch properties';
+      if (err instanceof Error) {
+        errorMessage = err.message || 'Unknown database error';
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object') {
+        // Handle Supabase error objects
+        if ('message' in err && typeof err.message === 'string') {
+          errorMessage = err.message;
+        } else if ('details' in err && typeof err.details === 'string') {
+          errorMessage = err.details;
+        } else if ('hint' in err && typeof err.hint === 'string') {
+          errorMessage = err.hint;
+        } else {
+          errorMessage = 'Database connection error';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
+      setBackgroundLoading(false);
     }
   }, []);
 
-  // Debounced fetch for filter changes
-  const debouncedFetch = useCallback((page: number, size: number, filterState: FilterState) => {
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+  // Debug function to test basic connectivity
+  const testSupabaseConnection = useCallback(async () => {
+    try {
+      console.log('Testing Supabase connection...');
+      
+      // Test 1: Basic client check
+      if (!supabase) {
+        console.error('Supabase client is null/undefined');
+        return;
+      }
+      
+      // Test 2: Auth check
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      console.log('Auth test:', { session: !!session, authError });
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        return;
+      }
+      
+      if (!session) {
+        console.error('No session found');
+        return;
+      }
+      
+      // Test 3: Simple query
+      const { data, error } = await supabase
+        .from('propertydata')
+        .select('serial_number')
+        .limit(1);
+        
+      console.log('Simple query test:', { data, error });
+      
+    } catch (err) {
+      console.error('Connection test failed:', err);
     }
+  }, []);
 
-    // Clear existing debounce
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+  // Run connection test on mount (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && isAuthenticated && !authLoading) {
+      testSupabaseConnection();
     }
+  }, [isAuthenticated, authLoading, testSupabaseConnection]);
 
-    // Set new debounce with abort controller
-    debounceRef.current = setTimeout(() => {
-      abortControllerRef.current = new AbortController();
-      fetchProperties(page, size, filterState, abortControllerRef.current.signal);
-    }, 300);
-  }, [fetchProperties]);
-
-  // Filter handlers
+  // Filter handlers - Modified to stage filters instead of applying instantly
   const handleFilterChange = useCallback((key: keyof FilterState, value: string | string[]) => {
-    setFilters(prev => {
+    console.log('Filter change:', { key, value });
+    
+    setPendingFilters(prev => {
       const newFilters = { ...prev };
       
       if (Array.isArray(newFilters[key])) {
@@ -221,21 +355,44 @@ export default function TableViewPage() {
         (newFilters[key] as string) = value as string;
       }
       
-      // Reset to page 1 when filters change
-      setCurrentPage(1);
-      
-      // Debounced fetch with new filters
-      debouncedFetch(1, pageSize, newFilters);
-      
+      console.log('New pending filters:', newFilters);
       return newFilters;
     });
-  }, [pageSize, debouncedFetch]);
+    setHasUnappliedChanges(true);
+    console.log('Has unapplied changes set to true');
+  }, []);
 
-  const clearFilters = useCallback(() => {
-    setFilters(initialFilters);
+  // Apply filters manually - replaces instant filtering
+  const applyFilters = useCallback(() => {
+    console.log('=== APPLY FILTERS CLICKED ===');
+    console.log('Current filters:', filters);
+    console.log('Pending filters:', pendingFilters);
+    console.log('Page size:', pageSize);
+    
+    // Update filters state
+    setFilters(pendingFilters);
     setCurrentPage(1);
-    debouncedFetch(1, pageSize, initialFilters);
-  }, [pageSize, debouncedFetch]);
+    setHasUnappliedChanges(false);
+    
+    // Force a fresh fetch without cache
+    console.log('Calling fetchProperties with fresh fetch...');
+    fetchProperties(1, pageSize, pendingFilters, false);
+  }, [pendingFilters, pageSize, fetchProperties, filters]);
+
+  // Apply clear filters immediately
+  const clearAndApplyFilters = useCallback(() => {
+    console.log('Clear and apply filters clicked');
+    
+    setFilters(initialFilters);
+    setPendingFilters(initialFilters);
+    setCurrentPage(1);
+    setHasUnappliedChanges(false);
+    
+    // Clear cache when clearing filters for fresh data
+    cache.clearCache();
+    
+    fetchProperties(1, pageSize, initialFilters, false);
+  }, [pageSize, fetchProperties, cache]);
 
   // Pagination handlers
   const handlePageChange = useCallback((page: number) => {
@@ -256,7 +413,7 @@ export default function TableViewPage() {
     }
   }, [isAuthenticated, authLoading, fetchProperties, pageSize]);
 
-  // Real-time subscription with optimistic updates
+  // Real-time subscription with cache invalidation and optimistic updates
   useEffect(() => {
     if (!isAuthenticated || authLoading) return;
 
@@ -271,9 +428,13 @@ export default function TableViewPage() {
         },
         (payload) => {
           if (payload.new) {
+            // Update current properties optimistically
             setProperties(prev => prev.map(p => 
               p.serial_number === payload.new.serial_number ? payload.new as PropertyData : p
             ));
+            
+            // Mark cache as stale for background refresh
+            cache.markStale();
           }
         }
       )
@@ -285,6 +446,9 @@ export default function TableViewPage() {
           table: 'propertydata'
         },
         () => {
+          // Invalidate cache since new data might affect pagination
+          cache.invalidateCache();
+          
           // Only refetch if on first page to avoid disrupting user
           if (currentPage === 1) {
             setTimeout(() => fetchProperties(1, pageSize, filters), 1000);
@@ -299,6 +463,9 @@ export default function TableViewPage() {
           table: 'propertydata'
         },
         () => {
+          // Invalidate cache since deletion affects pagination
+          cache.invalidateCache();
+          
           // Refetch current page after delete
           setTimeout(() => fetchProperties(currentPage, pageSize, filters), 1000);
         }
@@ -308,16 +475,14 @@ export default function TableViewPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAuthenticated, authLoading, currentPage, pageSize, filters, fetchProperties]);
+  }, [isAuthenticated, authLoading, currentPage, pageSize, filters, fetchProperties, cache]);
 
   // Cleanup on unmount
   useEffect(() => {
+    const currentAbortController = abortControllerRef.current;
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      if (currentAbortController) {
+        currentAbortController.abort();
       }
     };
   }, []);
@@ -384,12 +549,30 @@ export default function TableViewPage() {
 
             {/* Filter Toggle and Results Info */}
             <div className="flex justify-between items-center mb-6">
-              <Button
-                onClick={() => setShowFilters(!showFilters)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {showFilters ? 'Hide Filters' : 'Show Filters'}
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                </Button>
+                
+                {/* Background Loading Indicator */}
+                {backgroundLoading && (
+                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                    <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin"></div>
+                    <span>Syncing...</span>
+                  </div>
+                )}
+                
+                {/* Cache Statistics (Development) */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-white/50">
+                    Cache: {cache.getCacheStats().hitRate.toFixed(2)}% hit rate, {cache.getCacheStats().entries} entries
+                    | Has changes: {hasUnappliedChanges ? 'YES' : 'NO'} | Loading: {loading ? 'YES' : 'NO'}
+                  </div>
+                )}
+              </div>
               
               <div className="text-white/70">
                 Showing {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
@@ -409,7 +592,7 @@ export default function TableViewPage() {
                         <label key={type} className="flex items-center space-x-2 text-white/80">
                           <input
                             type="checkbox"
-                            checked={filters.propertyType.includes(type)}
+                            checked={pendingFilters.propertyType.includes(type)}
                             onChange={() => handleFilterChange('propertyType', type)}
                             className="rounded border-white/20"
                           />
@@ -427,7 +610,7 @@ export default function TableViewPage() {
                         <label key={status} className="flex items-center space-x-2 text-white/80">
                           <input
                             type="checkbox"
-                            checked={filters.condition.includes(status)}
+                            checked={pendingFilters.condition.includes(status)}
                             onChange={() => handleFilterChange('condition', status)}
                             className="rounded border-white/20"
                           />
@@ -445,7 +628,7 @@ export default function TableViewPage() {
                         <label key={area} className="flex items-center space-x-2 text-white/80">
                           <input
                             type="checkbox"
-                            checked={filters.area.includes(area)}
+                            checked={pendingFilters.area.includes(area)}
                             onChange={() => handleFilterChange('area', area)}
                             className="rounded border-white/20"
                           />
@@ -463,7 +646,7 @@ export default function TableViewPage() {
                         <label key={availability} className="flex items-center space-x-2 text-white/80">
                           <input
                             type="checkbox"
-                            checked={filters.availability.includes(availability)}
+                            checked={pendingFilters.availability.includes(availability)}
                             onChange={() => handleFilterChange('availability', availability)}
                             className="rounded border-white/20"
                           />
@@ -481,7 +664,7 @@ export default function TableViewPage() {
                         <label key={preference} className="flex items-center space-x-2 text-white/80">
                           <input
                             type="checkbox"
-                            checked={filters.availabilityType.includes(preference)}
+                            checked={pendingFilters.availabilityType.includes(preference)}
                             onChange={() => handleFilterChange('availabilityType', preference)}
                             className="rounded border-white/20"
                           />
@@ -497,14 +680,14 @@ export default function TableViewPage() {
                     <div className="flex space-x-2">
                       <input
                         type="number"
-                        value={filters.budgetMin}
+                        value={pendingFilters.budgetMin}
                         onChange={(e) => handleFilterChange('budgetMin', e.target.value)}
                         placeholder="Min"
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
                       />
                       <input
                         type="number"
-                        value={filters.budgetMax}
+                        value={pendingFilters.budgetMax}
                         onChange={(e) => handleFilterChange('budgetMax', e.target.value)}
                         placeholder="Max"
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
@@ -518,14 +701,14 @@ export default function TableViewPage() {
                     <div className="flex space-x-2">
                       <input
                         type="number"
-                        value={filters.sqftFrom}
+                        value={pendingFilters.sqftFrom}
                         onChange={(e) => handleFilterChange('sqftFrom', e.target.value)}
                         placeholder="From"
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
                       />
                       <input
                         type="number"
-                        value={filters.sqftTo}
+                        value={pendingFilters.sqftTo}
                         onChange={(e) => handleFilterChange('sqftTo', e.target.value)}
                         placeholder="To"
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
@@ -538,7 +721,7 @@ export default function TableViewPage() {
                     <label className="block text-white font-medium mb-3">Search</label>
                     <input
                       type="text"
-                      value={filters.premise}
+                      value={pendingFilters.premise}
                       onChange={(e) => handleFilterChange('premise', e.target.value)}
                       placeholder="Search properties..."
                       className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50"
@@ -548,11 +731,22 @@ export default function TableViewPage() {
 
                 <div className="flex space-x-4 mt-6">
                   <Button
-                    onClick={clearFilters}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
+                    onClick={clearAndApplyFilters}
+                    className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
                   >
                     Clear All Filters
+                  </Button>
+                  
+                  <Button
+                    onClick={applyFilters}
+                    disabled={!hasUnappliedChanges || loading}
+                    className={`${
+                      hasUnappliedChanges && !loading
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                    } px-6 py-2 rounded-lg font-medium transition-colors`}
+                  >
+                    {loading ? 'Applying...' : 'Apply Filters'}
                   </Button>
                 </div>
               </div>
