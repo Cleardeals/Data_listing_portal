@@ -4,7 +4,6 @@ import React from 'react';
 import { PropertyData } from '@/lib/dummyProperties';
 import { ViewMode } from './PropertyFiltersPanel';
 import {
-  PrettyCardsView,
   CompactTableView,
   GalleryView,
   MasterTableView
@@ -25,7 +24,6 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
 }) => {
   const getViewModeTitle = () => {
     switch (viewMode) {
-      case 'pretty': return '🎨 Pretty Cards';
       case 'compact': return '📊 Compact Table';
       case 'gallery': return '🖼️ Gallery View';
       case 'master': return '📜 Master View';
@@ -35,8 +33,6 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
 
   const renderContent = () => {
     switch (viewMode) {
-      case 'pretty':
-        return <PrettyCardsView properties={properties} loading={loading} />;
       case 'compact':
         return <CompactTableView properties={properties} loading={loading} />;
       case 'gallery':

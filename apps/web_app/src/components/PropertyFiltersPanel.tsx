@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
-export type ViewMode = 'pretty' | 'master' | 'compact' | 'gallery';
+export type ViewMode = 'master' | 'compact' | 'gallery';
 
 export interface FilterState {
   propertyType: string[];
@@ -279,7 +279,6 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                     className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="compact" className="bg-gray-800">Compact Table</option>
-                    <option value="pretty" className="bg-gray-800">Pretty Cards</option>
                     <option value="gallery" className="bg-gray-800">Gallery View</option>
                     <option value="master" className="bg-gray-800">Master View</option>
                   </select>
