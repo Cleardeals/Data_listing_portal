@@ -7,6 +7,7 @@ export type ViewMode = 'master' | 'compact' | 'gallery';
 
 export interface FilterState {
   propertyType: string[];
+  subPropertyType: string[];
   condition: string[];
   area: string[];
   availability: string[];
@@ -21,6 +22,7 @@ export interface FilterState {
 
 interface DynamicOptions {
   propertyTypes: string[];
+  subPropertyTypes: string[];
   furnishingStatuses: string[];
   areas: string[];
   availabilities: string[];
@@ -85,6 +87,28 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                          type === 'Com_resale' ? 'Commercial Resale' :
                          type === 'Com_rental' ? 'Commercial Rental' : type}
                       </span>
+                    </label>
+                  ))}
+                </div>
+              </td>
+            </tr>
+
+            {/* Sub Property Type */}
+            <tr className="border-b border-white/20">
+              <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                Sub Property Type:
+              </th>
+              <td className="px-4 py-3">
+                <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
+                  {dynamicOptions.subPropertyTypes.map((subType) => (
+                    <label key={subType} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={pendingFilters.subPropertyType.includes(subType)}
+                        onChange={() => onFilterChange('subPropertyType', subType)}
+                        className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{subType}</span>
                     </label>
                   ))}
                 </div>

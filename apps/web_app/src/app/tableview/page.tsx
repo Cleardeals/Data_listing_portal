@@ -21,6 +21,7 @@ import PropertyDisplayContainer from '@/components/PropertyDisplayContainer';
 // Initial filter state
 const initialFilters: FilterState = {
   propertyType: [],
+  subPropertyType: [],
   condition: [],
   area: [],
   availability: [],
@@ -67,6 +68,7 @@ export default function TableViewPage() {
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
     const filterCheck = filters.propertyType.length > 0 ||
+           filters.subPropertyType.length > 0 ||
            filters.condition.length > 0 ||
            filters.area.length > 0 ||
            filters.availability.length > 0 ||
@@ -142,6 +144,11 @@ export default function TableViewPage() {
       if (filterState.propertyType.length > 0) {
         console.log('Applying property type filter:', filterState.propertyType);
         query = query.in('property_type', filterState.propertyType);
+      }
+
+      if (filterState.subPropertyType.length > 0) {
+        console.log('Applying sub property type filter:', filterState.subPropertyType);
+        query = query.in('sub_property_type', filterState.subPropertyType);
       }
 
       if (filterState.area.length > 0) {
