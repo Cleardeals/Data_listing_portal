@@ -20,8 +20,6 @@ interface FilterState {
   availabilityType: string[];
   budgetMin: string;
   budgetMax: string;
-  sqftFrom: string;
-  sqftTo: string;
   premise: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
@@ -36,11 +34,9 @@ const initialFilters: FilterState = {
   availabilityType: [],
   budgetMin: "",
   budgetMax: "",
-  sqftFrom: "",
-  sqftTo: "",
   premise: "",
   sortBy: "serial_number",
-  sortOrder: "desc",
+  sortOrder: "asc",
 };
 
 export default function TableViewPage() {
@@ -83,11 +79,9 @@ export default function TableViewPage() {
            filters.availabilityType.length > 0 ||
            filters.budgetMin ||
            filters.budgetMax ||
-           filters.sqftFrom ||
-           filters.sqftTo ||
            filters.premise ||
            filters.sortBy !== 'serial_number' ||
-           filters.sortOrder !== 'desc';
+           filters.sortOrder !== 'asc';
   }, [filters]);
 
   // Main fetch function - simplified for debugging
@@ -198,26 +192,12 @@ export default function TableViewPage() {
         }
       }
 
-      // Size filters
-      if (filterState.sqftFrom || filterState.sqftTo) {
-        try {
-          if (filterState.sqftFrom) {
-            query = query.gte('size::numeric', parseFloat(filterState.sqftFrom));
-          }
-          if (filterState.sqftTo) {
-            query = query.lte('size::numeric', parseFloat(filterState.sqftTo));
-          }
-        } catch {
-          console.warn('Size filter failed');
-        }
-      }
-
       // Apply ordering and pagination
       console.log('Applying sorting:', { sortBy: filterState.sortBy, sortOrder: filterState.sortOrder });
       
       // Determine the sort column and order
       let sortColumn = 'serial_number';
-      let ascending = false; // Default to descending for serial numbers
+      let ascending = true; // Default to ascending for serial numbers
       
       switch (filterState.sortBy) {
         case 'serial_number':
@@ -226,10 +206,6 @@ export default function TableViewPage() {
           break;
         case 'price':
           sortColumn = 'rent_or_sell_price';
-          ascending = filterState.sortOrder === 'asc';
-          break;
-        case 'size':
-          sortColumn = 'size';
           ascending = filterState.sortOrder === 'asc';
           break;
         case 'date':
@@ -245,9 +221,6 @@ export default function TableViewPage() {
       if (filterState.sortBy === 'price') {
         // Use raw SQL ordering for numeric price sorting
         query = query.order('rent_or_sell_price', { ascending, nullsFirst: false });
-      } else if (filterState.sortBy === 'size') {
-        // Use raw SQL ordering for numeric size sorting
-        query = query.order('size', { ascending, nullsFirst: false });
       } else {
         query = query.order(sortColumn, { ascending });
       }
@@ -420,13 +393,11 @@ export default function TableViewPage() {
     // Count string filters
     if (pendingFilters.budgetMin) count++;
     if (pendingFilters.budgetMax) count++;
-    if (pendingFilters.sqftFrom) count++;
-    if (pendingFilters.sqftTo) count++;
     if (pendingFilters.premise) count++;
     
     // Count sorting changes from default
     if (pendingFilters.sortBy !== 'serial_number') count++;
-    if (pendingFilters.sortOrder !== 'desc') count++;
+    if (pendingFilters.sortOrder !== 'asc') count++;
     
     return count;
   }, [pendingFilters]);
@@ -865,39 +836,6 @@ export default function TableViewPage() {
                         </td>
                       </tr>
 
-                      {/* Square Feet Range */}
-                      <tr className="border-b border-white/20">
-                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                          Square Feet:
-                        </th>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <label htmlFor="sqftFrom" className="text-sm text-white/80">From:</label>
-                              <input
-                                type="number"
-                                id="sqftFrom"
-                                value={pendingFilters.sqftFrom}
-                                onChange={(e) => handleFilterChange('sqftFrom', e.target.value)}
-                                placeholder="Min Sq Ft"
-                                className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <label htmlFor="sqftTo" className="text-sm text-white/80">To:</label>
-                              <input
-                                type="number"
-                                id="sqftTo"
-                                value={pendingFilters.sqftTo}
-                                onChange={(e) => handleFilterChange('sqftTo', e.target.value)}
-                                placeholder="Max Sq Ft"
-                                className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-
                       {/* Sort Options */}
                       <tr className="border-b border-white/20">
                         <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
@@ -915,7 +853,6 @@ export default function TableViewPage() {
                               >
                                 <option value="serial_number" className="bg-gray-800">Serial Number</option>
                                 <option value="price" className="bg-gray-800">Price</option>
-                                <option value="size" className="bg-gray-800">Size (Sq Ft)</option>
                                 <option value="date" className="bg-gray-800">Date Added</option>
                               </select>
                             </div>
@@ -927,8 +864,8 @@ export default function TableViewPage() {
                                 onChange={(e) => handleFilterChange('sortOrder', e.target.value as 'asc' | 'desc')}
                                 className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               >
-                                <option value="desc" className="bg-gray-800">Highest to Lowest</option>
                                 <option value="asc" className="bg-gray-800">Lowest to Highest</option>
+                                <option value="desc" className="bg-gray-800">Highest to Lowest</option>
                               </select>
                             </div>
                           </div>
