@@ -11,6 +11,9 @@ import Pagination from '@/components/ui/pagination';
 import { PropertyData } from '@/lib/dummyProperties';
 import { usePropertyCache } from '@/hooks/usePropertyCache';
 
+// View mode types
+type ViewMode = 'pretty' | 'master' | 'compact' | 'gallery';
+
 // Filter state interface
 interface FilterState {
   propertyType: string[];
@@ -23,6 +26,7 @@ interface FilterState {
   premise: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
+  viewMode: ViewMode;
 }
 
 // Initial filter state
@@ -37,6 +41,7 @@ const initialFilters: FilterState = {
   premise: "",
   sortBy: "serial_number",
   sortOrder: "asc",
+  viewMode: "compact",
 };
 
 export default function TableViewPage() {
@@ -81,7 +86,8 @@ export default function TableViewPage() {
            filters.budgetMax ||
            filters.premise ||
            filters.sortBy !== 'serial_number' ||
-           filters.sortOrder !== 'asc';
+           filters.sortOrder !== 'asc' ||
+           filters.viewMode !== 'compact';
   }, [filters]);
 
   // Main fetch function - simplified for debugging
@@ -225,6 +231,7 @@ export default function TableViewPage() {
         query = query.order(sortColumn, { ascending });
       }
       
+      // Apply pagination for all view modes
       const from = (page - 1) * size;
       const to = from + size - 1;
       query = query.range(from, to);
@@ -395,9 +402,10 @@ export default function TableViewPage() {
     if (pendingFilters.budgetMax) count++;
     if (pendingFilters.premise) count++;
     
-    // Count sorting changes from default
+    // Count sorting and view mode changes from default
     if (pendingFilters.sortBy !== 'serial_number') count++;
     if (pendingFilters.sortOrder !== 'asc') count++;
+    if (pendingFilters.viewMode !== 'compact') count++;
     
     return count;
   }, [pendingFilters]);
@@ -888,6 +896,32 @@ export default function TableViewPage() {
                         </td>
                       </tr>
 
+                      {/* View Mode Selection */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          View Mode:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <label htmlFor="viewMode" className="text-sm text-white/80">Display Style:</label>
+                            <select
+                              id="viewMode"
+                              value={pendingFilters.viewMode}
+                              onChange={(e) => handleFilterChange('viewMode', e.target.value as ViewMode)}
+                              className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="compact" className="bg-gray-800">� Compact View (Dense)</option>
+                              <option value="pretty" className="bg-gray-800">🎨 Pretty View (Cards)</option>
+                              <option value="gallery" className="bg-gray-800">🖼️ Gallery View (Visual)</option>
+                              <option value="master" className="bg-gray-800">📜 Master View (All Data)</option>
+                            </select>
+                            <span className="text-xs text-white/60 ml-2">
+                              {pendingFilters.viewMode === 'master' && '⚠️ Loads all records'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+
                       {/* Action Buttons */}
                       <tr>
                         <td colSpan={2} className="px-4 py-4 text-center">
@@ -940,50 +974,47 @@ export default function TableViewPage() {
               </div>
             )}
 
-            {/* Properties Table */}
+            {/* Properties Display - Multi-View Mode */}
             <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-white/10 border-b border-white/20">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-white font-medium">Property Type</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Area</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Sub Type</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Price</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Sq Ft</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Furnishing</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Availability</th>
-                      <th className="px-4 py-3 text-left text-white font-medium">Contact</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {properties.length > 0 ? (
-                      properties.map((property, index) => (
-                        <tr key={property.serial_number || index} className="border-b border-white/10 hover:bg-white/5">
-                          <td className="px-4 py-3 text-white/80">{property.property_type || 'N/A'}</td>
-                          <td className="px-4 py-3 text-white/80">{property.area || 'N/A'}</td>
-                          <td className="px-4 py-3 text-white/80">{property.sub_property_type || 'N/A'}</td>
-                          <td className="px-4 py-3 text-white/80">
-                            {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
-                          </td>
-                          <td className="px-4 py-3 text-white/80">{property.size || 'N/A'}</td>
-                          <td className="px-4 py-3 text-white/80">{property.furnishing_status || 'N/A'}</td>
-                          <td className="px-4 py-3 text-white/80">{property.availability || 'N/A'}</td>
-                          <td className="px-4 py-3 text-white/80">{property.owner_contact || 'N/A'}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-white/60">
-                          {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              {/* View Mode Header */}
+              <div className="bg-white/10 border-b border-white/20 px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg font-semibold text-white">
+                      {filters.viewMode === 'pretty' && '🎨 Pretty Cards'}
+                      {filters.viewMode === 'compact' && '📊 Compact Table'}
+                      {filters.viewMode === 'gallery' && '🖼️ Gallery View'}
+                      {filters.viewMode === 'master' && '📜 Master View'}
+                    </h3>
+                    <div className="text-sm text-white/70">
+                      {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
+                    </div>
+                  </div>
+                  {filters.viewMode === 'master' && properties.length > 100 && (
+                    <div className="text-xs text-yellow-400 bg-yellow-500/20 px-3 py-1 rounded-full">
+                      ⚠️ Large dataset - performance may vary
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Pagination */}
+              {/* Content based on view mode */}
+              <div className="p-6">
+                {filters.viewMode === 'pretty' && (
+                  <PrettyCardsView properties={properties} loading={loading} />
+                )}
+                {filters.viewMode === 'compact' && (
+                  <CompactTableView properties={properties} loading={loading} />
+                )}
+                {filters.viewMode === 'gallery' && (
+                  <GalleryView properties={properties} loading={loading} />
+                )}
+                {filters.viewMode === 'master' && (
+                  <MasterTableView properties={properties} loading={loading} />
+                )}
+              </div>
+
+              {/* Pagination - shown for all views */}
               {totalCount > 0 && (
                 <div className="px-6 py-4 border-t border-white/20">
                   <Pagination
@@ -1002,3 +1033,271 @@ export default function TableViewPage() {
     </ProtectedRoute>
   );
 }
+
+// View Components
+
+// Pretty Cards View
+const PrettyCardsView: React.FC<{ properties: PropertyData[]; loading: boolean }> = ({ properties, loading }) => {
+  if (loading || properties.length === 0) {
+    return (
+      <div className="text-center py-8 text-white/60">
+        {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {properties.map((property, index) => (
+        <div key={property.serial_number || index} className="card-hover-3d backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-xl p-6 transition-all duration-300 hover:scale-105 hover:border-blue-400/40">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-500/20 rounded-full">
+                <span className="text-2xl">
+                  {property.property_type?.includes('Res') ? '🏠' : '🏢'}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">{property.property_type || 'Property'}</h3>
+                <p className="text-sm text-white/70">{property.sub_property_type || 'N/A'}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold text-green-400">
+                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+              </div>
+              <div className="text-xs text-white/60">#{property.serial_number}</div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-400">📍</span>
+              <span className="text-white/80 text-sm">{property.area || 'Location not specified'}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-purple-400">📐</span>
+              <span className="text-white/80 text-sm">{property.size || 'Size not specified'}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-orange-400">🛋️</span>
+              <span className="text-white/80 text-sm">{property.furnishing_status || 'N/A'}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-green-400">✅</span>
+              <span className="text-white/80 text-sm">{property.availability || 'N/A'}</span>
+            </div>
+
+            {property.owner_contact && (
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400">📞</span>
+                <span className="text-white/80 text-sm">{property.owner_contact}</span>
+              </div>
+            )}
+          </div>
+
+          {property.additional_details && (
+            <div className="mt-4 pt-3 border-t border-white/10">
+              <p className="text-xs text-white/60 line-clamp-2">{property.additional_details}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Compact Table View
+const CompactTableView: React.FC<{ properties: PropertyData[]; loading: boolean }> = ({ properties, loading }) => (
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead className="bg-white/10 border-b border-white/20">
+        <tr>
+          <th className="px-2 py-2 text-left text-white font-medium">#</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Type</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Owner</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Area</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Price</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Size</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Status</th>
+          <th className="px-2 py-2 text-left text-white font-medium">Contact</th>
+        </tr>
+      </thead>
+      <tbody>
+        {properties.length > 0 ? (
+          properties.map((property, index) => (
+            <tr key={property.serial_number || index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+              <td className="px-2 py-2 text-white/60 font-mono text-xs">{property.serial_number}</td>
+              <td className="px-2 py-2 text-white/80">
+                <span className="text-xs">
+                  {property.property_type === 'Res_rental' ? 'Residential Rent' :
+                   property.property_type === 'Res_resale' ? 'Residential Resale' :
+                   property.property_type === 'Com_rental' ? 'Commercial Rent' :
+                   property.property_type === 'Com_resale' ? 'Commercial Resale' :
+                   property.property_type || 'N/A'}
+                </span>
+              </td>
+              <td className="px-2 py-2 text-yellow-400 text-xs">{property.owner_name || 'N/A'}</td>
+              <td className="px-2 py-2 text-white/80 text-xs">{property.area || 'N/A'}</td>
+              <td className="px-2 py-2 text-green-400 font-semibold text-xs">
+                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+              </td>
+              <td className="px-2 py-2 text-white/80 text-xs">{property.size || 'N/A'}</td>
+              <td className="px-2 py-2 text-white/80 text-xs">{property.availability || 'N/A'}</td>
+              <td className="px-2 py-2 text-cyan-400 text-xs">{property.owner_contact || 'N/A'}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={8} className="px-4 py-8 text-center text-white/60">
+              {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+);
+
+// Gallery View
+const GalleryView: React.FC<{ properties: PropertyData[]; loading: boolean }> = ({ properties, loading }) => {
+  if (loading || properties.length === 0) {
+    return (
+      <div className="text-center py-8 text-white/60">
+        {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {properties.map((property, index) => (
+        <div key={property.serial_number || index} className="card-hover-3d backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:border-blue-400/40">
+          {/* Dummy Image/Icon */}
+          <div className="h-48 bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border-b border-white/20">
+            <div className="text-center">
+              <div className="text-6xl mb-2">
+                {property.property_type?.includes('Res') ? '🏠' : '🏢'}
+              </div>
+              <div className="text-xs text-white/60">Property Image</div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-4">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="text-sm font-semibold text-white line-clamp-1">
+                {property.sub_property_type || property.property_type || 'Property'}
+              </h3>
+              <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
+                #{property.serial_number}
+              </span>
+            </div>
+
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-400 text-sm">📍</span>
+                <span className="text-white/80 text-xs line-clamp-1">{property.area || 'Location N/A'}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-purple-400 text-sm">📐</span>
+                <span className="text-white/80 text-xs">{property.size || 'Size N/A'}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="text-green-400 font-bold text-sm">
+                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'Price N/A'}
+              </div>
+              <div className="text-xs text-white/60">
+                {property.availability || 'N/A'}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Master Table View (All data)
+const MasterTableView: React.FC<{ properties: PropertyData[]; loading: boolean }> = ({ properties, loading }) => (
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead className="bg-white/10 border-b border-white/20 sticky top-0">
+        <tr>
+          <th className="px-3 py-2 text-left text-white font-medium">#</th>
+          <th className="px-3 py-2 text-left text-white font-medium">ID</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Type</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Sub Type</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Area</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Address</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Size</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Price</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Deposit</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Furnishing</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Availability</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Floor</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Age</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Tenant Pref</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Owner</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Contact</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Special Note</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Additional Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {properties.length > 0 ? (
+          properties.map((property, index) => (
+            <tr key={property.serial_number || index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+              <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.serial_number}</td>
+              <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.property_id}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">
+                {property.property_type === 'Res_rental' ? 'Residential Rent' :
+                 property.property_type === 'Res_resale' ? 'Residential Resale' :
+                 property.property_type === 'Com_rental' ? 'Commercial Rent' :
+                 property.property_type === 'Com_resale' ? 'Commercial Resale' :
+                 property.property_type || 'N/A'}
+              </td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.sub_property_type || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.area || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.address || 'N/A'}>
+                {property.address || 'N/A'}
+              </td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.size || 'N/A'}</td>
+              <td className="px-3 py-2 text-green-400 font-semibold text-xs">
+                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+              </td>
+              <td className="px-3 py-2 text-yellow-400 text-xs">
+                {property.deposit ? `₹${parseFloat(property.deposit).toLocaleString()}` : 'N/A'}
+              </td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.furnishing_status || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.availability || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.floor || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.age || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.tenant_preference || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.owner_name || 'N/A'}</td>
+              <td className="px-3 py-2 text-cyan-400 text-xs">{property.owner_contact || 'N/A'}</td>
+              <td className="px-3 py-2 text-orange-400 text-xs max-w-32 truncate" title={property.special_note || 'No special note'}>
+                {property.special_note || 'No special note'}
+              </td>
+              <td className="px-3 py-2 text-purple-400 text-xs max-w-32 truncate" title={property.additional_details || 'No additional details'}>
+                {property.additional_details || 'No additional details'}
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={18} className="px-4 py-8 text-center text-white/60">
+              {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+);
