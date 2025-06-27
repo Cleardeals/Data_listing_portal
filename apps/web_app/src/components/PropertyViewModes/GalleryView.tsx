@@ -21,7 +21,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ properties, loading }) => {
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
       {properties.map((property, index) => (
         <div key={property.serial_number || index} className="card-hover-3d backdrop-blur-sm bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-blue-400/40">
-          <div className="flex flex-row h-32">
+          <div className="flex flex-row h-40">
             {/* Image/Icon Section - Left Side */}
             <div className="w-20 h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border-r border-white/20 flex-shrink-0">
               <div className="text-center">
@@ -32,7 +32,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ properties, loading }) => {
             </div>
 
             {/* Content Section - Right Side */}
-            <div className="flex-1 p-2 flex flex-col justify-between min-w-0">
+            <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
               {/* Top Section - Title and Serial */}
               <div>
                 <div className="flex items-start justify-between mb-1">
@@ -44,8 +44,16 @@ const GalleryView: React.FC<GalleryViewProps> = ({ properties, loading }) => {
                   </span>
                 </div>
 
+                {/* Owner Name */}
+                {property.owner_name && (
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-yellow-400 text-xs">👤</span>
+                    <span className="text-white/80 text-xs truncate">{property.owner_name}</span>
+                  </div>
+                )}
+
                 {/* Property Details - Compact Grid */}
-                <div className="grid grid-cols-2 gap-1 text-xs mb-2">
+                <div className="grid grid-cols-2 gap-1.5 text-xs mb-3">
                   <div className="flex items-center gap-1 min-w-0">
                     <span className="text-blue-400 text-xs">📍</span>
                     <span className="text-white/80 truncate">{property.area || 'N/A'}</span>
@@ -69,7 +77,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ properties, loading }) => {
               </div>
 
               {/* Bottom Section - Price and Contact */}
-              <div className="border-t border-white/10 pt-1">
+              <div className="border-t border-white/10 pt-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-bold text-green-400">
