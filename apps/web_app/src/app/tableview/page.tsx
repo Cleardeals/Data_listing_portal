@@ -23,6 +23,8 @@ interface FilterState {
   sqftFrom: string;
   sqftTo: string;
   premise: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
 }
 
 // Initial filter state
@@ -37,6 +39,8 @@ const initialFilters: FilterState = {
   sqftFrom: "",
   sqftTo: "",
   premise: "",
+  sortBy: "serial_number",
+  sortOrder: "desc",
 };
 
 export default function TableViewPage() {
@@ -81,7 +85,9 @@ export default function TableViewPage() {
            filters.budgetMax ||
            filters.sqftFrom ||
            filters.sqftTo ||
-           filters.premise;
+           filters.premise ||
+           filters.sortBy !== 'serial_number' ||
+           filters.sortOrder !== 'desc';
   }, [filters]);
 
   // Main fetch function - simplified for debugging
@@ -207,7 +213,45 @@ export default function TableViewPage() {
       }
 
       // Apply ordering and pagination
-      query = query.order('serial_number', { ascending: false });
+      console.log('Applying sorting:', { sortBy: filterState.sortBy, sortOrder: filterState.sortOrder });
+      
+      // Determine the sort column and order
+      let sortColumn = 'serial_number';
+      let ascending = false; // Default to descending for serial numbers
+      
+      switch (filterState.sortBy) {
+        case 'serial_number':
+          sortColumn = 'serial_number';
+          ascending = filterState.sortOrder === 'asc';
+          break;
+        case 'price':
+          sortColumn = 'rent_or_sell_price';
+          ascending = filterState.sortOrder === 'asc';
+          break;
+        case 'size':
+          sortColumn = 'size';
+          ascending = filterState.sortOrder === 'asc';
+          break;
+        case 'date':
+          sortColumn = 'created_at';
+          ascending = filterState.sortOrder === 'asc';
+          break;
+        default:
+          sortColumn = 'serial_number';
+          ascending = filterState.sortOrder === 'asc';
+      }
+      
+      // Apply sorting with proper handling for numeric fields
+      if (filterState.sortBy === 'price') {
+        // Use raw SQL ordering for numeric price sorting
+        query = query.order('rent_or_sell_price', { ascending, nullsFirst: false });
+      } else if (filterState.sortBy === 'size') {
+        // Use raw SQL ordering for numeric size sorting
+        query = query.order('size', { ascending, nullsFirst: false });
+      } else {
+        query = query.order(sortColumn, { ascending });
+      }
+      
       const from = (page - 1) * size;
       const to = from + size - 1;
       query = query.range(from, to);
@@ -362,6 +406,31 @@ export default function TableViewPage() {
     console.log('Has unapplied changes set to true');
   }, []);
 
+  // Helper function to count pending changes
+  const countPendingChanges = useCallback(() => {
+    let count = 0;
+    
+    // Count array filters
+    count += pendingFilters.propertyType.length;
+    count += pendingFilters.condition.length;
+    count += pendingFilters.area.length;
+    count += pendingFilters.availability.length;
+    count += pendingFilters.availabilityType.length;
+    
+    // Count string filters
+    if (pendingFilters.budgetMin) count++;
+    if (pendingFilters.budgetMax) count++;
+    if (pendingFilters.sqftFrom) count++;
+    if (pendingFilters.sqftTo) count++;
+    if (pendingFilters.premise) count++;
+    
+    // Count sorting changes from default
+    if (pendingFilters.sortBy !== 'serial_number') count++;
+    if (pendingFilters.sortOrder !== 'desc') count++;
+    
+    return count;
+  }, [pendingFilters]);
+
   // Apply filters manually - replaces instant filtering
   const applyFilters = useCallback(() => {
     console.log('=== APPLY FILTERS CLICKED ===');
@@ -369,13 +438,13 @@ export default function TableViewPage() {
     console.log('Pending filters:', pendingFilters);
     console.log('Page size:', pageSize);
     
-    // Update filters state
+    // Update filters state and synchronize both states
     setFilters(pendingFilters);
     setCurrentPage(1);
     setHasUnappliedChanges(false);
     
-    // Force a fresh fetch without cache
-    console.log('Calling fetchProperties with fresh fetch...');
+    // Force a fresh fetch without cache using the pending filters
+    console.log('Calling fetchProperties with fresh fetch using pending filters...');
     fetchProperties(1, pageSize, pendingFilters, false);
   }, [pendingFilters, pageSize, fetchProperties, filters]);
 
@@ -401,10 +470,22 @@ export default function TableViewPage() {
   }, [pageSize, filters, fetchProperties]);
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {
+    console.log('=== PAGE SIZE CHANGE ===');
+    console.log('Old page size:', pageSize);
+    console.log('New page size:', newPageSize);
+    console.log('Current applied filters:', filters);
+    console.log('Pending filters:', pendingFilters);
+    console.log('Has active filters:', hasActiveFilters);
+    console.log('Has unapplied changes:', hasUnappliedChanges);
+    
     setPageSize(newPageSize);
     setCurrentPage(1);
+    
+    // Use the currently applied filters for page size change
+    // This ensures filters remain applied when changing page size
+    console.log('Using applied filters for page size change:', filters);
     fetchProperties(1, newPageSize, filters);
-  }, [filters, fetchProperties]);
+  }, [filters, fetchProperties, pageSize, pendingFilters, hasActiveFilters, hasUnappliedChanges]);
 
   // Initial load effect
   useEffect(() => {
@@ -486,6 +567,17 @@ export default function TableViewPage() {
       }
     };
   }, []);
+
+  // Debug effect to monitor filter state changes (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('=== FILTER STATE DEBUG ===');
+      console.log('Applied filters:', filters);
+      console.log('Pending filters:', pendingFilters);
+      console.log('Has unapplied changes:', hasUnappliedChanges);
+      console.log('Has active filters:', hasActiveFilters);
+    }
+  }, [filters, pendingFilters, hasUnappliedChanges, hasActiveFilters]);
 
   if (authLoading || loading) {
     return (
@@ -593,15 +685,6 @@ export default function TableViewPage() {
                   <div className="flex items-center gap-2 backdrop-blur-sm bg-blue-500/20 border border-blue-400/30 rounded-lg px-4 py-2">
                     <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin"></div>
                     <span className="text-blue-200 text-sm">Syncing...</span>
-                  </div>
-                )}
-                
-                {/* Cache Statistics (Development) */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="backdrop-blur-sm bg-gray-500/20 border border-gray-400/30 rounded-lg px-4 py-2">
-                    <span className="text-gray-300 text-xs">
-                      Cache: {cache.getCacheStats().hitRate.toFixed(2)}% hit rate, {cache.getCacheStats().entries} entries
-                    </span>
                   </div>
                 )}
               </div>
@@ -815,6 +898,43 @@ export default function TableViewPage() {
                         </td>
                       </tr>
 
+                      {/* Sort Options */}
+                      <tr className="border-b border-white/20">
+                        <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
+                          Sort By:
+                        </th>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="sortBy" className="text-sm text-white/80">Field:</label>
+                              <select
+                                id="sortBy"
+                                value={pendingFilters.sortBy}
+                                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                                className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="serial_number" className="bg-gray-800">Serial Number</option>
+                                <option value="price" className="bg-gray-800">Price</option>
+                                <option value="size" className="bg-gray-800">Size (Sq Ft)</option>
+                                <option value="date" className="bg-gray-800">Date Added</option>
+                              </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="sortOrder" className="text-sm text-white/80">Order:</label>
+                              <select
+                                id="sortOrder"
+                                value={pendingFilters.sortOrder}
+                                onChange={(e) => handleFilterChange('sortOrder', e.target.value as 'asc' | 'desc')}
+                                className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="desc" className="bg-gray-800">Highest to Lowest</option>
+                                <option value="asc" className="bg-gray-800">Lowest to Highest</option>
+                              </select>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
                       {/* Search/Premises */}
                       <tr className="border-b border-white/20">
                         <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
@@ -861,7 +981,7 @@ export default function TableViewPage() {
                                   🔍 Apply Filters
                                   {hasUnappliedChanges && (
                                     <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                                      {Object.values(pendingFilters).flat().filter(v => v && v.length > 0).length} changes
+                                      {countPendingChanges()} changes
                                     </span>
                                   )}
                                 </span>
