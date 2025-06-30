@@ -181,24 +181,26 @@ export default function TableViewPage() {
         query = query.or(`address.ilike.%${filterState.premise}%,sub_property_type.ilike.%${filterState.premise}%,property_type.ilike.%${filterState.premise}%,area.ilike.%${filterState.premise}%`);
       }
 
-      // Budget filters - Skip when sorting by price to show all records
-      if (filterState.budgetMin || filterState.budgetMax) {
+      // Check if we need comprehensive dataset (for price sorting OR budget filtering)
+      const needsComprehensiveDataset = filterState.sortBy === 'price' || 
+                                       filterState.budgetMin || 
+                                       filterState.budgetMax;
+
+      // Budget filtering note - we'll handle this client-side when comprehensive dataset is needed
+      if ((filterState.budgetMin || filterState.budgetMax) && !needsComprehensiveDataset) {
         try {
-          // Only apply budget filters when NOT sorting by price
-          // This ensures all records (including non-numeric) are shown during price sorting
-          if (filterState.sortBy !== 'price') {
-            if (filterState.budgetMin) {
-              query = query.gte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMin));
-            }
-            if (filterState.budgetMax) {
-              query = query.lte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMax));
-            }
-          } else {
-            console.log('Skipping budget filters for price sorting to show all records');
+          // Only apply server-side budget filters when NOT using comprehensive dataset
+          if (filterState.budgetMin) {
+            query = query.gte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMin));
+          }
+          if (filterState.budgetMax) {
+            query = query.lte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMax));
           }
         } catch {
-          console.warn('Budget filter failed');
+          console.warn('Server-side budget filter failed, will use client-side filtering');
         }
+      } else if (filterState.budgetMin || filterState.budgetMax) {
+        console.log('Budget filters will be applied client-side with comprehensive dataset');
       }
 
       // Apply ordering and pagination
@@ -226,17 +228,16 @@ export default function TableViewPage() {
           ascending = filterState.sortOrder === 'asc';
       }
       
-      // Apply sorting with proper handling for numeric fields
-      if (filterState.sortBy === 'price') {
-        // For price sorting, fetch ALL records from database (ignore all filters)
-        // This ensures we sort across the complete dataset and show proper price ordering
-        // regardless of any applied filters. Users expect to see the truly lowest/highest 
-        // prices in the entire database when sorting by price.
-        console.log('Price sorting requires complete dataset - fetching ALL records from database...');
+      // Apply sorting with proper handling for numeric fields OR comprehensive budget filtering
+      if (needsComprehensiveDataset) {
+        // For price sorting OR budget filtering, fetch ALL records from database (ignore all filters)
+        // This ensures we can properly handle numeric vs non-numeric values across the complete dataset
+        const reason = filterState.sortBy === 'price' ? 'price sorting' : 'budget filtering';
+        console.log(`${reason} requires complete dataset - fetching ALL records from database...`);
         
         // Create a new query that fetches ALL records, ignoring all filters
         // Use chunked fetching to bypass Supabase's 1000 record limit
-        console.log('Price sorting requires complete dataset - fetching ALL records in chunks...');
+        console.log(`${reason} requires complete dataset - fetching ALL records in chunks...`);
         
         const allData: PropertyData[] = [];
         let offset = 0;
@@ -290,12 +291,11 @@ export default function TableViewPage() {
           }
         }
         
-        console.log('Fetched complete dataset for price sorting:', {
+        console.log('Fetched complete dataset:', {
           totalDbRecords: allData.length,
           originalQueryCount: originalCount,
-          sortOrder: ascending ? 'ascending' : 'descending',
+          reason: filterState.sortBy === 'price' ? 'price sorting' : 'budget filtering',
           filtersIgnored: true,
-          queryLimit: 'limit(1000000) or range(0, 999999)',
           isLimitedBySupabase: allData.length === 1000 ? 'WARNING: Might be limited to 1000!' : 'OK',
           possibleLimitHit: allData.length % 1000 === 0 ? 'WARNING: Round number suggests limit' : 'OK'
         });
@@ -303,73 +303,157 @@ export default function TableViewPage() {
         // Add warning if we suspect we're hitting a limit
         if (allData.length === 1000) {
           console.warn('🚨 POTENTIAL ISSUE: Fetched exactly 1000 records - this might indicate a Supabase limit!');
-          console.warn('If your database has more than 1000 records, price sorting may not work correctly.');
+          console.warn('If your database has more than 1000 records, filtering/sorting may not work correctly.');
+        }
+
+        // Apply client-side budget filtering if needed
+        let filteredData = allData;
+        if (filterState.budgetMin || filterState.budgetMax) {
+          console.log('Applying client-side budget filters:', { 
+            budgetMin: filterState.budgetMin, 
+            budgetMax: filterState.budgetMax 
+          });
+          
+          const minBudget = filterState.budgetMin ? parseFloat(filterState.budgetMin) : null;
+          const maxBudget = filterState.budgetMax ? parseFloat(filterState.budgetMax) : null;
+          
+          filteredData = allData.filter(item => {
+            const price = item.rent_or_sell_price;
+            
+            // Enhanced regex to handle various number formats (including commas, spaces)
+            const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
+            const isNumeric = numericRegex.test(String(price));
+            
+            // Only filter numeric prices - non-numeric prices are excluded from budget filtering
+            if (!isNumeric) {
+              return false; // Exclude non-numeric prices from budget filtering
+            }
+            
+            // Clean and parse the price
+            const cleanPrice = String(price).replace(/[,\s]/g, '');
+            const numericPrice = parseFloat(cleanPrice);
+            
+            // Check if price is valid
+            if (isNaN(numericPrice)) {
+              return false;
+            }
+            
+            // Apply min/max constraints
+            if (minBudget !== null && numericPrice < minBudget) {
+              return false;
+            }
+            if (maxBudget !== null && numericPrice > maxBudget) {
+              return false;
+            }
+            
+            return true;
+          });
+          
+          console.log('Budget filtering results:', {
+            originalCount: allData.length,
+            filteredCount: filteredData.length,
+            excludedCount: allData.length - filteredData.length,
+            minBudget,
+            maxBudget
+          });
         }
         
-        // Sort all data with improved logic
-        const sortedAllData = [...allData].sort((a, b) => {
-          const priceA = a.rent_or_sell_price;
-          const priceB = b.rent_or_sell_price;
-          
-          // Enhanced regex to handle various number formats (including commas, spaces)
-          const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
-          const isNumericA = numericRegex.test(String(priceA));
-          const isNumericB = numericRegex.test(String(priceB));
-          
-          // Debug individual comparisons
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Comparing:', { 
-              priceA, 
-              priceB, 
-              isNumericA, 
-              isNumericB, 
-              ascending 
-            });
-          }
-          
-          // Numeric values always come before non-numeric (regardless of sort direction)
-          if (isNumericA && !isNumericB) return -1;
-          if (!isNumericA && isNumericB) return 1;
-          
-          // Both numeric - compare as numbers
-          if (isNumericA && isNumericB) {
-            // Clean the price strings (remove commas, spaces) before parsing
-            const cleanPriceA = String(priceA).replace(/[,\s]/g, '');
-            const cleanPriceB = String(priceB).replace(/[,\s]/g, '');
-            const numA = parseFloat(cleanPriceA);
-            const numB = parseFloat(cleanPriceB);
+        // Sort the data (after budget filtering if applicable)
+        let sortedAllData = filteredData;
+        if (filterState.sortBy === 'price') {
+          console.log('Applying price sorting to dataset...');
+          sortedAllData = [...filteredData].sort((a, b) => {
+            const priceA = a.rent_or_sell_price;
+            const priceB = b.rent_or_sell_price;
             
-            // Debug numeric comparison
+            // Enhanced regex to handle various number formats (including commas, spaces)
+            const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
+            const isNumericA = numericRegex.test(String(priceA));
+            const isNumericB = numericRegex.test(String(priceB));
+            
+            // Debug individual comparisons
             if (process.env.NODE_ENV === 'development') {
-              console.log('Numeric comparison:', { 
-                cleanPriceA, 
-                cleanPriceB, 
-                numA, 
-                numB, 
-                result: ascending ? numA - numB : numB - numA 
+              console.log('Comparing:', { 
+                priceA, 
+                priceB, 
+                isNumericA, 
+                isNumericB, 
+                ascending 
               });
             }
             
-            return ascending ? numA - numB : numB - numA;
-          }
-          
-          // Both non-numeric - maintain stable order
-          return 0;
-        });
+            // Numeric values always come before non-numeric (regardless of sort direction)
+            if (isNumericA && !isNumericB) return -1;
+            if (!isNumericA && isNumericB) return 1;
+            
+            // Both numeric - compare as numbers
+            if (isNumericA && isNumericB) {
+              // Clean the price strings (remove commas, spaces) before parsing
+              const cleanPriceA = String(priceA).replace(/[,\s]/g, '');
+              const cleanPriceB = String(priceB).replace(/[,\s]/g, '');
+              const numA = parseFloat(cleanPriceA);
+              const numB = parseFloat(cleanPriceB);
+              
+              // Debug numeric comparison
+              if (process.env.NODE_ENV === 'development') {
+                console.log('Numeric comparison:', { 
+                  cleanPriceA, 
+                  cleanPriceB, 
+                  numA, 
+                  numB, 
+                  result: ascending ? numA - numB : numB - numA 
+                });
+              }
+              
+              return ascending ? numA - numB : numB - numA;
+            }
+            
+            // Both non-numeric - maintain stable order
+            return 0;
+          });
+        } else {
+          // For non-price sorting, apply the appropriate sort
+          sortedAllData = [...filteredData].sort((a, b) => {
+            let valueA: string | number | null, valueB: string | number | null;
+            
+            switch (filterState.sortBy) {
+              case 'serial_number':
+                valueA = a.serial_number;
+                valueB = b.serial_number;
+                break;
+              case 'date':
+                valueA = a.date_stamp;
+                valueB = b.date_stamp;
+                break;
+              default:
+                valueA = a.serial_number;
+                valueB = b.serial_number;
+            }
+            
+            // Handle null values
+            if (valueA === null && valueB === null) return 0;
+            if (valueA === null) return 1; // null values go to end
+            if (valueB === null) return -1; // null values go to end
+            
+            if (valueA < valueB) return ascending ? -1 : 1;
+            if (valueA > valueB) return ascending ? 1 : -1;
+            return 0;
+          });
+        }
         
-        console.log('Sample sorted prices (first 10):', sortedAllData.slice(0, 10).map(item => ({
+        console.log('Sample results (first 10):', sortedAllData.slice(0, 10).map((item: PropertyData) => ({
           serial: item.serial_number,
           price: item.rent_or_sell_price
         })));
         
         if (sortedAllData.length > 10) {
-          console.log('Sample sorted prices (last 10):', sortedAllData.slice(-10).map(item => ({
+          console.log('Sample results (last 10):', sortedAllData.slice(-10).map((item: PropertyData) => ({
             serial: item.serial_number,
             price: item.rent_or_sell_price
           })));
         }
         
-        // Apply pagination to sorted data with safety checks
+        // Apply pagination to processed data with safety checks
         const startIndex = (page - 1) * size;
         const endIndex = startIndex + size;
         const maxAvailableIndex = sortedAllData.length;
@@ -379,8 +463,8 @@ export default function TableViewPage() {
         const paginatedData = sortedAllData.slice(startIndex, safeEndIndex);
         
         // Log detailed pagination info
-        console.log('Applied pagination to sorted data:', {
-          totalSortedRecords: sortedAllData.length,
+        console.log('Applied pagination to processed data:', {
+          totalProcessedRecords: sortedAllData.length,
           totalDbRecords: originalCount,
           currentPage: page,
           pageSize: size,
@@ -390,22 +474,24 @@ export default function TableViewPage() {
           pageData: paginatedData.length,
           maxPossiblePages: Math.ceil(sortedAllData.length / size),
           isLastPage: endIndex >= maxAvailableIndex,
-          usingCompleteDataset: true
+          usingCompleteDataset: true,
+          appliedBudgetFilter: !!(filterState.budgetMin || filterState.budgetMax),
+          appliedPriceSort: filterState.sortBy === 'price'
         });
         
         setProperties(paginatedData);
-        // Use the actual sorted data length for total count, not the original query count
+        // Use the actual processed data length for total count
         setTotalCount(sortedAllData.length);
         
-        // Early return since we've handled everything for price sorting
+        // Early return since we've handled everything for comprehensive dataset processing
         return;
       } else {
         query = query.order(sortColumn, { ascending });
       }
       
-      // Apply pagination for non-price sorting modes only
-      // Price sorting handles pagination after client-side sorting
-      if (filterState.sortBy !== 'price') {
+      // Apply pagination for non-comprehensive dataset modes only
+      // Comprehensive dataset (price sorting or budget filtering) handles pagination after client-side processing
+      if (!needsComprehensiveDataset) {
         const from = (page - 1) * size;
         const to = from + size - 1;
         query = query.range(from, to);
