@@ -99,9 +99,6 @@ const Pagination: React.FC<PaginationProps> = ({
             <option value="25" className="bg-gray-800">25</option>
             <option value="50" className="bg-gray-800">50</option>
             <option value="100" className="bg-gray-800">100</option>
-            <option value="200" className="bg-gray-800">200</option>
-            <option value="500" className="bg-gray-800">500</option>
-            <option value="1000" className="bg-gray-800">1000</option>
           </select>
           <span>entries</span>
         </div>
