@@ -212,7 +212,7 @@ export default function TableViewPage() {
           ascending = filterState.sortOrder === 'asc';
           break;
         case 'date':
-          sortColumn = 'created_at';
+          sortColumn = 'date_stamp';
           ascending = filterState.sortOrder === 'asc';
           break;
         default:
