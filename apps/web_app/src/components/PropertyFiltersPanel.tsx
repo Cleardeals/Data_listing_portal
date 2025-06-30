@@ -1,7 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useDynamicOptions } from '@/lib/dynamicOptions';
+import { usePropertyCache } from '@/hooks/usePropertyCache';
 
 export type ViewMode = 'master' | 'compact' | 'gallery';
 
@@ -20,36 +22,115 @@ export interface FilterState {
   viewMode: ViewMode;
 }
 
-interface DynamicOptions {
-  propertyTypes: string[];
-  subPropertyTypes: string[];
-  furnishingStatuses: string[];
-  areas: string[];
-  availabilities: string[];
-  tenantPreferences: string[];
-}
+// Initial filter state moved from page.tsx
+export const initialFilters: FilterState = {
+  propertyType: [],
+  subPropertyType: [],
+  condition: [],
+  area: [],
+  availability: [],
+  availabilityType: [],
+  budgetMin: "",
+  budgetMax: "",
+  premise: "",
+  sortBy: "serial_number",
+  sortOrder: "asc",
+  viewMode: "compact",
+};
 
 interface PropertyFiltersPanelProps {
   showFilters: boolean;
-  pendingFilters: FilterState;
-  hasUnappliedChanges: boolean;
+  // Main filter state management
+  filters: FilterState;
+  setFilters: (filters: FilterState) => void;
+  setCurrentPage: (page: number) => void;
+  pageSize: number;
   loading: boolean;
-  dynamicOptions: DynamicOptions;
-  onFilterChange: (key: keyof FilterState, value: string | string[]) => void;
-  onApplyFilters: () => void;
-  onClearAndApplyFilters: () => void;
+  // Fetch function passed from parent
+  onFetchProperties: (page: number, size: number, filterState: FilterState, useCache?: boolean) => void;
 }
 
 const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
   showFilters,
-  pendingFilters,
-  hasUnappliedChanges,
+  filters,
+  setFilters,
+  setCurrentPage,
+  pageSize,
   loading,
-  dynamicOptions,
-  onFilterChange,
-  onApplyFilters,
-  onClearAndApplyFilters,
+  onFetchProperties,
 }) => {
+  // Internal state for pending filters
+  const [pendingFilters, setPendingFilters] = useState<FilterState>(filters);
+  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
+
+  // Hooks
+  const { options: dynamicOptions } = useDynamicOptions(false);
+  const cache = usePropertyCache();
+
+  // Sync pending filters when main filters change from external sources
+  useEffect(() => {
+    setPendingFilters(filters);
+    setHasUnappliedChanges(false);
+  }, [filters]);
+
+  // Filter handlers - All changes are staged for manual application
+  const handleFilterChange = useCallback((key: keyof FilterState, value: string | string[]) => {
+    console.log('Filter change:', { key, value });
+    
+    setPendingFilters(prev => {
+      const newFilters = { ...prev };
+      
+      if (Array.isArray(newFilters[key])) {
+        const currentArray = newFilters[key] as string[];
+        const stringValue = value as string;
+        if (currentArray.includes(stringValue)) {
+          (newFilters[key] as string[]) = currentArray.filter(v => v !== stringValue);
+        } else {
+          (newFilters[key] as string[]) = [...currentArray, stringValue];
+        }
+      } else {
+        (newFilters[key] as string) = value as string;
+      }
+      
+      console.log('New pending filters:', newFilters);
+      return newFilters;
+    });
+    
+    setHasUnappliedChanges(true);
+    console.log('Filter change staged for manual application');
+  }, []);
+
+  // Apply filters manually - replaces instant filtering
+  const applyFilters = useCallback(() => {
+    console.log('=== APPLY FILTERS CLICKED ===');
+    console.log('Current filters:', filters);
+    console.log('Pending filters:', pendingFilters);
+    console.log('Page size:', pageSize);
+    
+    // Update main filters state with all pending changes
+    setFilters(pendingFilters);
+    setCurrentPage(1);
+    setHasUnappliedChanges(false);
+    
+    // Force a fresh fetch without cache using the pending filters
+    console.log('Calling fetchProperties with fresh fetch using pending filters...');
+    onFetchProperties(1, pageSize, pendingFilters, false);
+  }, [pendingFilters, pageSize, onFetchProperties, filters, setFilters, setCurrentPage]);
+
+  // Apply clear filters immediately
+  const clearAndApplyFilters = useCallback(() => {
+    console.log('Clear and apply filters clicked');
+    
+    setFilters(initialFilters);
+    setPendingFilters(initialFilters);
+    setCurrentPage(1);
+    setHasUnappliedChanges(false);
+    
+    // Clear cache when clearing filters for fresh data
+    cache.clearCache();
+    
+    onFetchProperties(1, pageSize, initialFilters, false);
+  }, [pageSize, onFetchProperties, cache, setFilters, setCurrentPage]);
   if (!showFilters) {
     return null;
   }
@@ -69,7 +150,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Property Type */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white w-1/4">
-                Property Type:
+                <div className="flex flex-col">
+                  <span>Property Type:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3">
@@ -78,7 +164,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       <input
                         type="checkbox"
                         checked={pendingFilters.propertyType.includes(type)}
-                        onChange={() => onFilterChange('propertyType', type)}
+                        onChange={() => handleFilterChange('propertyType', type)}
                         className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
                       />
                       <span className="text-sm">
@@ -96,7 +182,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Sub Property Type */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Sub Property Type:
+                <div className="flex flex-col">
+                  <span>Sub Property Type:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
@@ -105,7 +196,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       <input
                         type="checkbox"
                         checked={pendingFilters.subPropertyType.includes(subType)}
-                        onChange={() => onFilterChange('subPropertyType', subType)}
+                        onChange={() => handleFilterChange('subPropertyType', subType)}
                         className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
                       />
                       <span className="text-sm">{subType}</span>
@@ -118,7 +209,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Furnishing Status */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Furnishing Status:
+                <div className="flex flex-col">
+                  <span>Furnishing Status:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3">
@@ -127,7 +223,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       <input
                         type="checkbox"
                         checked={pendingFilters.condition.includes(status)}
-                        onChange={() => onFilterChange('condition', status)}
+                        onChange={() => handleFilterChange('condition', status)}
                         className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
                       />
                       <span className="text-sm">{status}</span>
@@ -140,7 +236,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Area */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Area:
+                <div className="flex flex-col">
+                  <span>Area:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
@@ -149,7 +250,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       <input
                         type="checkbox"
                         checked={pendingFilters.area.includes(area)}
-                        onChange={() => onFilterChange('area', area)}
+                        onChange={() => handleFilterChange('area', area)}
                         className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
                       />
                       <span className="text-sm">{area}</span>
@@ -162,7 +263,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Availability */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Availability:
+                <div className="flex flex-col">
+                  <span>Availability:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3">
@@ -171,7 +277,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       <input
                         type="checkbox"
                         checked={pendingFilters.availability.includes(availability)}
-                        onChange={() => onFilterChange('availability', availability)}
+                        onChange={() => handleFilterChange('availability', availability)}
                         className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
                       />
                       <span className="text-sm">{availability}</span>
@@ -184,7 +290,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Tenant Preference */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Tenant Preference:
+                <div className="flex flex-col">
+                  <span>Tenant Preference:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
@@ -193,7 +304,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       <input
                         type="checkbox"
                         checked={pendingFilters.availabilityType.includes(preference)}
-                        onChange={() => onFilterChange('availabilityType', preference)}
+                        onChange={() => handleFilterChange('availabilityType', preference)}
                         className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
                       />
                       <span className="text-sm">{preference}</span>
@@ -206,7 +317,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Budget Range */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Budget:
+                <div className="flex flex-col">
+                  <span>Budget:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-4">
@@ -216,7 +332,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       type="number"
                       id="budgetMin"
                       value={pendingFilters.budgetMin}
-                      onChange={(e) => onFilterChange('budgetMin', e.target.value)}
+                      onChange={(e) => handleFilterChange('budgetMin', e.target.value)}
                       placeholder="Min Budget"
                       className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -227,7 +343,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                       type="number"
                       id="budgetMax"
                       value={pendingFilters.budgetMax}
-                      onChange={(e) => onFilterChange('budgetMax', e.target.value)}
+                      onChange={(e) => handleFilterChange('budgetMax', e.target.value)}
                       placeholder="Max Budget"
                       className="w-32 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -239,7 +355,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* Sort Options */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                Sort By:
+                <div className="flex flex-col">
+                  <span>Sort By:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex flex-wrap items-center gap-4">
@@ -248,7 +369,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                     <select
                       id="sortBy"
                       value={pendingFilters.sortBy}
-                      onChange={(e) => onFilterChange('sortBy', e.target.value)}
+                      onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                       className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="serial_number" className="bg-gray-800">Serial Number</option>
@@ -261,7 +382,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                     <select
                       id="sortOrder"
                       value={pendingFilters.sortOrder}
-                      onChange={(e) => onFilterChange('sortOrder', e.target.value as 'asc' | 'desc')}
+                      onChange={(e) => handleFilterChange('sortOrder', e.target.value as 'asc' | 'desc')}
                       className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="asc" className="bg-gray-800">Lowest to Highest</option>
@@ -277,8 +398,8 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
                 <div className="flex flex-col">
                   <span>Search Keywords:</span>
-                  <span className="text-xs text-blue-200 font-normal mt-1">
-                    🔍 Enhanced Multi-Field Search
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    � Requires Apply
                   </span>
                 </div>
               </th>
@@ -287,7 +408,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                   <input
                     type="text"
                     value={pendingFilters.premise}
-                    onChange={(e) => onFilterChange('premise', e.target.value)}
+                    onChange={(e) => handleFilterChange('premise', e.target.value)}
                     placeholder="🏠 Search across: Address • Area • Property Type • Owner Name • Property ID..."
                     className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm border-2 border-blue-400/50 text-white placeholder-blue-100/90 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-blue-300 focus:bg-white/15 transition-all duration-200 hover:border-blue-300/70 hover:bg-white/12"
                   />
@@ -309,7 +430,12 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             {/* View Mode Selection */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                View Mode:
+                <div className="flex flex-col">
+                  <span>View Mode:</span>
+                  <span className="text-xs text-orange-200 font-normal mt-1">
+                    🔧 Requires Apply
+                  </span>
+                </div>
               </th>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -317,7 +443,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                   <select
                     id="viewMode"
                     value={pendingFilters.viewMode}
-                    onChange={(e) => onFilterChange('viewMode', e.target.value as ViewMode)}
+                    onChange={(e) => handleFilterChange('viewMode', e.target.value as ViewMode)}
                     className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="compact" className="bg-gray-800">Compact Table</option>
@@ -336,14 +462,14 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
               <td colSpan={2} className="px-4 py-4 text-center">
                 <div className="flex flex-wrap justify-center gap-4">
                   <Button
-                    onClick={onClearAndApplyFilters}
+                    onClick={clearAndApplyFilters}
                     className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     🗑️ Clear All Filters
                   </Button>
                   
                   <Button
-                    onClick={onApplyFilters}
+                    onClick={applyFilters}
                     disabled={!hasUnappliedChanges || loading}
                     className={`px-8 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg transform ${
                       hasUnappliedChanges && !loading

@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useDynamicOptions } from '@/lib/dynamicOptions';
 import { usePropertyStats } from '@/hooks/usePropertyStats';
 import { useAuth } from '@/contexts/AuthContext';
 import Pagination from '@/components/ui/pagination';
@@ -15,24 +14,8 @@ import BackgroundElements from '@/components/BackgroundElements';
 import PageHeader from '@/components/PageHeader';
 import PropertyStatsOverview from '@/components/PropertyStatsOverview';
 import PropertyControlPanel from '@/components/PropertyControlPanel';
-import PropertyFiltersPanel, { FilterState } from '@/components/PropertyFiltersPanel';
+import PropertyFiltersPanel, { FilterState, initialFilters } from '@/components/PropertyFiltersPanel';
 import PropertyDisplayContainer from '@/components/PropertyDisplayContainer';
-
-// Initial filter state
-const initialFilters: FilterState = {
-  propertyType: [],
-  subPropertyType: [],
-  condition: [],
-  area: [],
-  availability: [],
-  availabilityType: [],
-  budgetMin: "",
-  budgetMax: "",
-  premise: "",
-  sortBy: "serial_number",
-  sortOrder: "asc",
-  viewMode: "compact",
-};
 
 export default function TableViewPage() {
   // Auth state
@@ -45,10 +28,6 @@ export default function TableViewPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   
-  // Apply Filters functionality - Pending filters for manual application
-  const [pendingFilters, setPendingFilters] = useState<FilterState>(initialFilters);
-  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
-  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -58,7 +37,6 @@ export default function TableViewPage() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Hooks
-  const { options: dynamicOptions } = useDynamicOptions(false);
   const { stats, loading: statsLoading } = usePropertyStats();
   const cache = usePropertyCache();
 
@@ -315,8 +293,97 @@ export default function TableViewPage() {
           console.warn('If your database has more than 1000 records, filtering/sorting may not work correctly.');
         }
 
-        // Apply client-side budget filtering if needed
+        // Apply client-side filtering for ALL filter types when using comprehensive dataset
         let filteredData = allData;
+        
+        // Apply property type filter
+        if (filterState.propertyType.length > 0) {
+          console.log('Applying client-side property type filter:', filterState.propertyType);
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => 
+            filterState.propertyType.includes(item.property_type || '')
+          );
+          console.log('Property type filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply sub property type filter
+        if (filterState.subPropertyType.length > 0) {
+          console.log('Applying client-side sub property type filter:', filterState.subPropertyType);
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => 
+            filterState.subPropertyType.includes(item.sub_property_type || '')
+          );
+          console.log('Sub property type filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply area filter
+        if (filterState.area.length > 0) {
+          console.log('Applying client-side area filter:', filterState.area);
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => {
+            const itemArea = item.area || '';
+            return filterState.area.some(area => 
+              itemArea.toLowerCase().includes(area.toLowerCase())
+            );
+          });
+          console.log('Area filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply availability filter
+        if (filterState.availability.length > 0) {
+          console.log('Applying client-side availability filter:', filterState.availability);
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => 
+            filterState.availability.includes(item.availability || '')
+          );
+          console.log('Availability filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply condition (furnishing status) filter
+        if (filterState.condition.length > 0) {
+          console.log('Applying client-side furnishing status filter:', filterState.condition);
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => 
+            filterState.condition.includes(item.furnishing_status || '')
+          );
+          console.log('Furnishing status filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply availability type (tenant preference) filter
+        if (filterState.availabilityType.length > 0) {
+          console.log('Applying client-side tenant preference filter:', filterState.availabilityType);
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => 
+            filterState.availabilityType.includes(item.tenant_preference || '')
+          );
+          console.log('Tenant preference filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply budget filtering if needed
         if (filterState.budgetMin || filterState.budgetMax) {
           console.log('Applying client-side budget filters:', { 
             budgetMin: filterState.budgetMin, 
@@ -661,64 +728,6 @@ export default function TableViewPage() {
     }
   }, [isAuthenticated, authLoading, testSupabaseConnection]);
 
-  // Filter handlers - Modified to stage filters instead of applying instantly
-  const handleFilterChange = useCallback((key: keyof FilterState, value: string | string[]) => {
-    console.log('Filter change:', { key, value });
-    
-    setPendingFilters(prev => {
-      const newFilters = { ...prev };
-      
-      if (Array.isArray(newFilters[key])) {
-        const currentArray = newFilters[key] as string[];
-        const stringValue = value as string;
-        if (currentArray.includes(stringValue)) {
-          (newFilters[key] as string[]) = currentArray.filter(v => v !== stringValue);
-        } else {
-          (newFilters[key] as string[]) = [...currentArray, stringValue];
-        }
-      } else {
-        (newFilters[key] as string) = value as string;
-      }
-      
-      console.log('New pending filters:', newFilters);
-      return newFilters;
-    });
-    setHasUnappliedChanges(true);
-    console.log('Has unapplied changes set to true');
-  }, []);
-
-  // Apply filters manually - replaces instant filtering
-  const applyFilters = useCallback(() => {
-    console.log('=== APPLY FILTERS CLICKED ===');
-    console.log('Current filters:', filters);
-    console.log('Pending filters:', pendingFilters);
-    console.log('Page size:', pageSize);
-    
-    // Update filters state and synchronize both states
-    setFilters(pendingFilters);
-    setCurrentPage(1);
-    setHasUnappliedChanges(false);
-    
-    // Force a fresh fetch without cache using the pending filters
-    console.log('Calling fetchProperties with fresh fetch using pending filters...');
-    fetchProperties(1, pageSize, pendingFilters, false);
-  }, [pendingFilters, pageSize, fetchProperties, filters]);
-
-  // Apply clear filters immediately
-  const clearAndApplyFilters = useCallback(() => {
-    console.log('Clear and apply filters clicked');
-    
-    setFilters(initialFilters);
-    setPendingFilters(initialFilters);
-    setCurrentPage(1);
-    setHasUnappliedChanges(false);
-    
-    // Clear cache when clearing filters for fresh data
-    cache.clearCache();
-    
-    fetchProperties(1, pageSize, initialFilters, false);
-  }, [pageSize, fetchProperties, cache]);
-
   // Pagination handlers
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -730,9 +739,6 @@ export default function TableViewPage() {
     console.log('Old page size:', pageSize);
     console.log('New page size:', newPageSize);
     console.log('Current applied filters:', filters);
-    console.log('Pending filters:', pendingFilters);
-    console.log('Has active filters:', hasActiveFilters);
-    console.log('Has unapplied changes:', hasUnappliedChanges);
     
     setPageSize(newPageSize);
     setCurrentPage(1);
@@ -741,7 +747,7 @@ export default function TableViewPage() {
     // This ensures filters remain applied when changing page size
     console.log('Using applied filters for page size change:', filters);
     fetchProperties(1, newPageSize, filters);
-  }, [filters, fetchProperties, pageSize, pendingFilters, hasActiveFilters, hasUnappliedChanges]);
+  }, [filters, fetchProperties, pageSize]);
 
   // Initial load effect
   useEffect(() => {
@@ -829,11 +835,9 @@ export default function TableViewPage() {
     if (process.env.NODE_ENV === 'development') {
       console.log('=== FILTER STATE DEBUG ===');
       console.log('Applied filters:', filters);
-      console.log('Pending filters:', pendingFilters);
-      console.log('Has unapplied changes:', hasUnappliedChanges);
       console.log('Has active filters:', hasActiveFilters);
     }
-  }, [filters, pendingFilters, hasUnappliedChanges, hasActiveFilters]);
+  }, [filters, hasActiveFilters]);
 
   if (authLoading || loading) {
     return (
@@ -867,13 +871,12 @@ export default function TableViewPage() {
 
             <PropertyFiltersPanel
               showFilters={showFilters}
-              pendingFilters={pendingFilters}
-              hasUnappliedChanges={hasUnappliedChanges}
+              filters={filters}
+              setFilters={setFilters}
+              setCurrentPage={setCurrentPage}
+              pageSize={pageSize}
               loading={loading}
-              dynamicOptions={dynamicOptions}
-              onFilterChange={handleFilterChange}
-              onApplyFilters={applyFilters}
-              onClearAndApplyFilters={clearAndApplyFilters}
+              onFetchProperties={fetchProperties}
             />
 
             {/* Error Display */}
