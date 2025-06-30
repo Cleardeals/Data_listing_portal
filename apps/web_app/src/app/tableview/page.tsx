@@ -222,27 +222,80 @@ export default function TableViewPage() {
       
       // Apply sorting with proper handling for numeric fields
       if (filterState.sortBy === 'price') {
-        // Use raw SQL ordering for numeric price sorting
-        query = query.order('rent_or_sell_price', { ascending, nullsFirst: false });
+        // For price sorting across entire dataset, we need to fetch all data first
+        console.log('Price sorting requires full dataset - fetching all records...');
+        
+        // Remove pagination temporarily to get all matching records
+        // We'll sort client-side and then apply pagination
+        
+        // Execute query without pagination first
+        const allDataResult = await query;
+        
+        if (allDataResult.error) {
+          throw allDataResult.error;
+        }
+        
+        const allData = allDataResult.data || [];
+        const totalCount = allDataResult.count || 0;
+        
+        console.log('Fetched all data for price sorting:', allData.length, 'records');
+        
+        // Sort all data client-side
+        const sortedAllData = [...allData].sort((a, b) => {
+          const priceA = a.rent_or_sell_price;
+          const priceB = b.rent_or_sell_price;
+          
+          // Check if values are numeric
+          const isNumericA = /^[0-9]+(\.[0-9]+)?$/.test(String(priceA));
+          const isNumericB = /^[0-9]+(\.[0-9]+)?$/.test(String(priceB));
+          
+          // Numeric values always come before non-numeric
+          if (isNumericA && !isNumericB) return -1;
+          if (!isNumericA && isNumericB) return 1;
+          
+          // Both numeric - compare as numbers
+          if (isNumericA && isNumericB) {
+            const numA = parseFloat(String(priceA));
+            const numB = parseFloat(String(priceB));
+            return ascending ? numA - numB : numB - numA;
+          }
+          
+          // Both non-numeric - no specific order (as requested)
+          return 0;
+        });
+        
+        // Apply pagination to sorted data
+        const startIndex = (page - 1) * size;
+        const endIndex = startIndex + size;
+        const paginatedData = sortedAllData.slice(startIndex, endIndex);
+        
+        console.log('Applied pagination to sorted data:', {
+          totalRecords: sortedAllData.length,
+          startIndex,
+          endIndex,
+          pageData: paginatedData.length
+        });
+        
+        setProperties(paginatedData);
+        setTotalCount(totalCount);
+        
+        // Early return since we've handled everything for price sorting
+        return;
       } else {
         query = query.order(sortColumn, { ascending });
       }
       
-      // Apply pagination for all view modes
-      const from = (page - 1) * size;
-      const to = from + size - 1;
-      query = query.range(from, to);
-
-      // Validate query before execution
-      if (!query) {
-        throw new Error('Failed to construct database query');
+      // Apply pagination for non-price sorting modes only
+      // Price sorting handles pagination after client-side sorting
+      if (filterState.sortBy !== 'price') {
+        const from = (page - 1) * size;
+        const to = from + size - 1;
+        query = query.range(from, to);
       }
 
-      // Execute query
+      // Execute query for non-price sorting
       let result;
       try {
-        // Note: abortSignal might not be supported in all Supabase versions
-        // Use regular query execution instead
         result = await query;
       } catch (queryError) {
         console.error('Query execution failed:', queryError);
@@ -264,7 +317,12 @@ export default function TableViewPage() {
       const resultData = data || [];
       const resultCount = count || 0;
 
-      console.log('Query successful, setting properties:', { resultData: resultData.length, resultCount });
+      console.log('Query successful, setting properties:', { 
+        resultData: resultData.length, 
+        resultCount,
+        sortBy: filterState.sortBy,
+        sortOrder: filterState.sortOrder
+      });
       setProperties(resultData);
       setTotalCount(resultCount);
 
