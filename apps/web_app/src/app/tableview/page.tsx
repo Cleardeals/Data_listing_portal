@@ -27,6 +27,7 @@ export default function TableViewPage() {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
+  const [activeDateFilter, setActiveDateFilter] = useState<'today' | 'yesterday' | 'all'>('all');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,16 +57,18 @@ export default function TableViewPage() {
            !!filters.premise ||
            filters.sortBy !== 'serial_number' ||
            filters.sortOrder !== 'asc' ||
-           filters.viewMode !== 'compact';
+           filters.viewMode !== 'compact' ||
+           activeDateFilter !== 'all';
     return filterCheck;
-  }, [filters]);
+  }, [filters, activeDateFilter]);
 
   // Main fetch function - simplified for debugging
   const fetchProperties = useCallback(async (
     page: number,
     size: number,
     filterState: FilterState,
-    useCache: boolean = true
+    useCache: boolean = true,
+    dateFilter: 'today' | 'yesterday' | 'all' = 'all'
   ) => {
     console.log('=== FETCH PROPERTIES START ===');
     console.log('Parameters:', { page, size, filterState, useCache });
@@ -154,11 +157,48 @@ export default function TableViewPage() {
         query = query.in('tenant_preference', filterState.availabilityType);
       }
 
-      // Check if we need comprehensive dataset (for price sorting OR budget filtering OR premise search)
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        console.log('Applying date filter:', dateFilter);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        // Format dates to YYYY-MM-DD for database comparison
+        const todayString = today.toISOString().split('T')[0];
+        const yesterdayString = yesterday.toISOString().split('T')[0];
+        
+        // Format for DD/MM/YYYY comparison
+        const todayDDMMYYYY = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+        const yesterdayDDMMYYYY = `${yesterday.getDate().toString().padStart(2, '0')}/${(yesterday.getMonth() + 1).toString().padStart(2, '0')}/${yesterday.getFullYear()}`;
+        
+        if (dateFilter === 'today') {
+          // Filter for today's date - handle multiple date formats
+          query = query.or(
+            `date_stamp.eq.${todayString},date_stamp.eq.${todayDDMMYYYY},date_stamp::date.eq.${todayString}`
+          );
+        } else if (dateFilter === 'yesterday') {
+          // Filter for yesterday's date - handle multiple date formats
+          query = query.or(
+            `date_stamp.eq.${yesterdayString},date_stamp.eq.${yesterdayDDMMYYYY},date_stamp::date.eq.${yesterdayString}`
+          );
+        }
+        
+        console.log('Date filter applied:', { 
+          dateFilter, 
+          todayString, 
+          yesterdayString, 
+          todayDDMMYYYY, 
+          yesterdayDDMMYYYY 
+        });
+      }
+
+      // Check if we need comprehensive dataset (for price sorting OR budget filtering OR premise search OR date filtering)
       const needsComprehensiveDataset = filterState.sortBy === 'price' || 
                                        filterState.budgetMin || 
                                        filterState.budgetMax ||
-                                       filterState.premise;
+                                       filterState.premise ||
+                                       dateFilter !== 'all';
 
       // Premise filtering - we'll handle this client-side when comprehensive dataset is needed
       if (filterState.premise && !needsComprehensiveDataset) {
@@ -212,12 +252,13 @@ export default function TableViewPage() {
       
       // Apply sorting with proper handling for numeric fields OR comprehensive budget filtering OR premise search
       if (needsComprehensiveDataset) {
-        // For price sorting OR budget filtering OR premise search, fetch ALL records from database (ignore all filters)
+        // For price sorting OR budget filtering OR premise search OR date filtering, fetch ALL records from database (ignore all filters)
         // This ensures we can properly handle numeric vs non-numeric values across the complete dataset
         const reasons = [];
         if (filterState.sortBy === 'price') reasons.push('price sorting');
         if (filterState.budgetMin || filterState.budgetMax) reasons.push('budget filtering');
         if (filterState.premise) reasons.push('premise search');
+        if (dateFilter !== 'all') reasons.push('date filtering');
         const reason = reasons.join(' + ');
         
         console.log(`${reason} requires complete dataset - fetching ALL records from database...`);
@@ -380,6 +421,58 @@ export default function TableViewPage() {
             beforeFilter,
             afterFilter: filteredData.length,
             excludedCount: beforeFilter - filteredData.length
+          });
+        }
+
+        // Apply client-side date filter
+        if (dateFilter !== 'all') {
+          console.log('Applying client-side date filter:', dateFilter);
+          const today = new Date();
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          
+          // Format dates for comparison
+          const todayString = today.toISOString().split('T')[0];
+          const yesterdayString = yesterday.toISOString().split('T')[0];
+          const todayDDMMYYYY = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+          const yesterdayDDMMYYYY = `${yesterday.getDate().toString().padStart(2, '0')}/${(yesterday.getMonth() + 1).toString().padStart(2, '0')}/${yesterday.getFullYear()}`;
+          
+          const beforeFilter = filteredData.length;
+          filteredData = filteredData.filter(item => {
+            if (!item.date_stamp) return false;
+            
+            let propertyDateString = '';
+            if (item.date_stamp.includes('T')) {
+              // ISO format (YYYY-MM-DDTHH:mm:ss)
+              propertyDateString = item.date_stamp.split('T')[0];
+            } else if (item.date_stamp.includes('/')) {
+              // DD/MM/YYYY format - convert to YYYY-MM-DD
+              const parts = item.date_stamp.split('/');
+              if (parts.length === 3) {
+                const [day, month, year] = parts;
+                propertyDateString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+            } else {
+              // Assume it's already in YYYY-MM-DD format
+              propertyDateString = item.date_stamp;
+            }
+            
+            if (dateFilter === 'today') {
+              return propertyDateString === todayString || item.date_stamp === todayDDMMYYYY;
+            } else if (dateFilter === 'yesterday') {
+              return propertyDateString === yesterdayString || item.date_stamp === yesterdayDDMMYYYY;
+            }
+            
+            return true;
+          });
+          
+          console.log('Date filtering results:', {
+            beforeFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforeFilter - filteredData.length,
+            dateFilter,
+            todayString,
+            yesterdayString
           });
         }
 
@@ -585,7 +678,8 @@ export default function TableViewPage() {
           usingCompleteDataset: true,
           appliedBudgetFilter: !!(filterState.budgetMin || filterState.budgetMax),
           appliedPriceSort: filterState.sortBy === 'price',
-          appliedPremiseSearch: !!filterState.premise
+          appliedPremiseSearch: !!filterState.premise,
+          appliedDateFilter: dateFilter !== 'all'
         });
         
         setProperties(paginatedData);
@@ -731,8 +825,8 @@ export default function TableViewPage() {
   // Pagination handlers
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-    fetchProperties(page, pageSize, filters);
-  }, [pageSize, filters, fetchProperties]);
+    fetchProperties(page, pageSize, filters, true, activeDateFilter);
+  }, [pageSize, filters, fetchProperties, activeDateFilter]);
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {
     console.log('=== PAGE SIZE CHANGE ===');
@@ -746,13 +840,35 @@ export default function TableViewPage() {
     // Use the currently applied filters for page size change
     // This ensures filters remain applied when changing page size
     console.log('Using applied filters for page size change:', filters);
-    fetchProperties(1, newPageSize, filters);
+    fetchProperties(1, newPageSize, filters, true, activeDateFilter);
+  }, [filters, fetchProperties, pageSize, activeDateFilter]);
+
+  // Date filter handler
+  const handleDateFilter = useCallback((filter: 'today' | 'yesterday' | 'all') => {
+    console.log('=== DATE FILTER CHANGE ===');
+    console.log('New date filter:', filter);
+    
+    setActiveDateFilter(filter);
+    setCurrentPage(1);
+    
+    // Fetch properties with the date filter applied at the database level
+    fetchProperties(1, pageSize, filters, true, filter);
   }, [filters, fetchProperties, pageSize]);
+
+  // Wrapper function for PropertyFiltersPanel to include current date filter
+  const fetchPropertiesWithDateFilter = useCallback((
+    page: number,
+    size: number,
+    filterState: FilterState,
+    useCache: boolean = true
+  ) => {
+    return fetchProperties(page, size, filterState, useCache, activeDateFilter);
+  }, [fetchProperties, activeDateFilter]);
 
   // Initial load effect
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      fetchProperties(1, pageSize, initialFilters);
+      fetchProperties(1, pageSize, initialFilters, true, 'all');
     }
   }, [isAuthenticated, authLoading, fetchProperties, pageSize]);
 
@@ -794,7 +910,7 @@ export default function TableViewPage() {
           
           // Only refetch if on first page to avoid disrupting user
           if (currentPage === 1) {
-            setTimeout(() => fetchProperties(1, pageSize, filters), 1000);
+            setTimeout(() => fetchProperties(1, pageSize, filters, true, activeDateFilter), 1000);
           }
         }
       )
@@ -810,7 +926,7 @@ export default function TableViewPage() {
           cache.invalidateCache();
           
           // Refetch current page after delete
-          setTimeout(() => fetchProperties(currentPage, pageSize, filters), 1000);
+          setTimeout(() => fetchProperties(currentPage, pageSize, filters, true, activeDateFilter), 1000);
         }
       )
       .subscribe();
@@ -818,7 +934,7 @@ export default function TableViewPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAuthenticated, authLoading, currentPage, pageSize, filters, fetchProperties, cache]);
+  }, [isAuthenticated, authLoading, currentPage, pageSize, filters, fetchProperties, cache, activeDateFilter]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -863,10 +979,10 @@ export default function TableViewPage() {
             <PropertyControlPanel
               hasActiveFilters={hasActiveFilters}
               backgroundLoading={backgroundLoading}
-              propertiesCount={properties.length}
-              totalCount={totalCount}
               showFilters={showFilters}
               onToggleFilters={() => setShowFilters(!showFilters)}
+              onDateFilter={handleDateFilter}
+              activeDateFilter={activeDateFilter}
             />
 
             <PropertyFiltersPanel
@@ -876,7 +992,7 @@ export default function TableViewPage() {
               setCurrentPage={setCurrentPage}
               pageSize={pageSize}
               loading={loading}
-              onFetchProperties={fetchProperties}
+              onFetchProperties={fetchPropertiesWithDateFilter}
             />
 
             {/* Error Display */}

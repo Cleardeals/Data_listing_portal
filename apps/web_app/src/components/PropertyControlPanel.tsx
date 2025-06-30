@@ -6,19 +6,19 @@ import { Button } from '@/components/ui/button';
 interface PropertyControlPanelProps {
   hasActiveFilters: boolean;
   backgroundLoading: boolean;
-  propertiesCount: number;
-  totalCount: number;
   showFilters: boolean;
   onToggleFilters: () => void;
+  onDateFilter?: (filter: 'today' | 'yesterday' | 'all') => void;
+  activeDateFilter?: 'today' | 'yesterday' | 'all';
 }
 
 const PropertyControlPanel: React.FC<PropertyControlPanelProps> = ({
   hasActiveFilters,
   backgroundLoading,
-  propertiesCount,
-  totalCount,
   showFilters,
   onToggleFilters,
+  onDateFilter,
+  activeDateFilter = 'all',
 }) => {
   return (
     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
@@ -42,13 +42,46 @@ const PropertyControlPanel: React.FC<PropertyControlPanelProps> = ({
             <span className="text-blue-200 text-sm">Syncing...</span>
           </div>
         )}
+
+        {/* Date Filter Buttons */}
+        {onDateFilter && (
+          <>
+            <button
+              onClick={() => onDateFilter('today')}
+              className={`px-3 py-2 text-xs transition-all rounded-lg ${
+                activeDateFilter === 'today'
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
+                  : 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/20'
+              }`}
+            >
+              📅 Today
+            </button>
+            <button
+              onClick={() => onDateFilter('yesterday')}
+              className={`px-3 py-2 text-xs transition-all rounded-lg ${
+                activeDateFilter === 'yesterday'
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg'
+                  : 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/20'
+              }`}
+            >
+              📆 Yesterday
+            </button>
+            <button
+              onClick={() => onDateFilter('all')}
+              className={`px-3 py-2 text-xs transition-all rounded-lg ${
+                activeDateFilter === 'all'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
+                  : 'bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/20'
+              }`}
+            >
+              📊 All Properties
+            </button>
+          </>
+        )}
       </div>
       
       <div className="flex items-center gap-4">
-        <div className="text-white/70 text-sm">
-          Showing {propertiesCount.toLocaleString()} of {totalCount.toLocaleString()} properties
-          {hasActiveFilters && ' (filtered)'}
-        </div>
+
         
         <Button
           onClick={onToggleFilters}
