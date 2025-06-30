@@ -14,6 +14,9 @@ interface PropertyDisplayContainerProps {
   loading: boolean;
   totalCount: number;
   viewMode: ViewMode;
+  toggleContactVisibility: (propertyId: string) => void;
+  isContactVisible: (propertyId: string) => boolean;
+  getVisibleContactsCount: () => number;
 }
 
 const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
@@ -21,6 +24,9 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   loading,
   totalCount,
   viewMode,
+  toggleContactVisibility,
+  isContactVisible,
+  getVisibleContactsCount,
 }) => {
   const getViewModeTitle = () => {
     switch (viewMode) {
@@ -32,15 +38,21 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   };
 
   const renderContent = () => {
+    const contactProps = {
+      toggleContactVisibility,
+      isContactVisible,
+      getVisibleContactsCount,
+    };
+
     switch (viewMode) {
       case 'compact':
-        return <CompactTableView properties={properties} loading={loading} />;
+        return <CompactTableView properties={properties} loading={loading} {...contactProps} />;
       case 'gallery':
-        return <GalleryView properties={properties} loading={loading} />;
+        return <GalleryView properties={properties} loading={loading} {...contactProps} />;
       case 'master':
-        return <MasterTableView properties={properties} loading={loading} />;
+        return <MasterTableView properties={properties} loading={loading} {...contactProps} />;
       default:
-        return <CompactTableView properties={properties} loading={loading} />;
+        return <CompactTableView properties={properties} loading={loading} {...contactProps} />;
     }
   };
 
@@ -55,6 +67,9 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
             </h3>
             <div className="text-sm text-white/70">
               {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
+            </div>
+            <div className="text-xs text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">
+              👁️ {getVisibleContactsCount()}/10 contacts visible
             </div>
           </div>
           {viewMode === 'master' && properties.length > 100 && (

@@ -2,13 +2,22 @@
 
 import React from 'react';
 import { PropertyData } from '@/lib/dummyProperties';
+import ContactField from '@/components/ui/ContactField';
 
 interface MasterTableViewProps {
   properties: PropertyData[];
   loading: boolean;
+  toggleContactVisibility: (propertyId: string) => void;
+  isContactVisible: (propertyId: string) => boolean;
+  getVisibleContactsCount: () => number;
 }
 
-const MasterTableView: React.FC<MasterTableViewProps> = ({ properties, loading }) => (
+const MasterTableView: React.FC<MasterTableViewProps> = ({ 
+  properties, 
+  loading, 
+  toggleContactVisibility, 
+  isContactVisible 
+}) => (
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
       <thead className="bg-white/10 border-b border-white/20 sticky top-0">
@@ -41,7 +50,16 @@ const MasterTableView: React.FC<MasterTableViewProps> = ({ properties, loading }
             <tr key={property.serial_number || index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
               <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.serial_number || 'N/A'}</td>
               <td className="px-3 py-2 text-yellow-400 text-xs">{property.owner_name || 'N/A'}</td>
-              <td className="px-3 py-2 text-cyan-400 text-xs">{property.owner_contact || 'N/A'}</td>
+              <td className="px-3 py-2">
+                <ContactField
+                  contact={property.owner_contact}
+                  propertyId={String(property.serial_number || index)}
+                  isVisible={isContactVisible(String(property.serial_number || index))}
+                  onToggle={toggleContactVisibility}
+                  className="text-xs"
+                  showIcon={false}
+                />
+              </td>
               <td className="px-3 py-2 text-green-400 font-semibold text-xs">
                 {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
               </td>

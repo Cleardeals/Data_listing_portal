@@ -2,13 +2,22 @@
 
 import React from 'react';
 import { PropertyData } from '@/lib/dummyProperties';
+import ContactField from '@/components/ui/ContactField';
 
 interface GalleryViewProps {
   properties: PropertyData[];
   loading: boolean;
+  toggleContactVisibility: (propertyId: string) => void;
+  isContactVisible: (propertyId: string) => boolean;
+  getVisibleContactsCount: () => number;
 }
 
-const GalleryView: React.FC<GalleryViewProps> = ({ properties, loading }) => {
+const GalleryView: React.FC<GalleryViewProps> = ({ 
+  properties, 
+  loading, 
+  toggleContactVisibility, 
+  isContactVisible
+}) => {
   if (loading || properties.length === 0) {
     return (
       <div className="text-center py-8 text-white/60">
@@ -89,12 +98,17 @@ const GalleryView: React.FC<GalleryViewProps> = ({ properties, loading }) => {
                   </div>
                   
                   {/* Contact - Right Aligned */}
-                  {property.owner_contact && (
-                    <div className="flex items-center gap-1 text-xs text-cyan-400 ml-2">
-                      <span>📞</span>
-                      <span className="truncate max-w-20">{property.owner_contact}</span>
-                    </div>
-                  )}
+                  <div className="ml-2">
+                    <ContactField
+                      contact={property.owner_contact}
+                      propertyId={String(property.serial_number || index)}
+                      isVisible={isContactVisible(String(property.serial_number || index))}
+                      onToggle={toggleContactVisibility}
+                      className="text-xs flex items-center gap-1"
+                      iconClassName=""
+                      showIcon={true}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

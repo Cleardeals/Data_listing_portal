@@ -2,13 +2,22 @@
 
 import React from 'react';
 import { PropertyData } from '@/lib/dummyProperties';
+import ContactField from '@/components/ui/ContactField';
 
 interface CompactTableViewProps {
   properties: PropertyData[];
   loading: boolean;
+  toggleContactVisibility: (propertyId: string) => void;
+  isContactVisible: (propertyId: string) => boolean;
+  getVisibleContactsCount: () => number;
 }
 
-const CompactTableView: React.FC<CompactTableViewProps> = ({ properties, loading }) => (
+const CompactTableView: React.FC<CompactTableViewProps> = ({ 
+  properties, 
+  loading, 
+  toggleContactVisibility, 
+  isContactVisible 
+}) => (
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
       <thead className="bg-white/10 border-b border-white/20">
@@ -44,7 +53,16 @@ const CompactTableView: React.FC<CompactTableViewProps> = ({ properties, loading
               </td>
               <td className="px-2 py-2 text-white/80 text-xs">{property.size || 'N/A'}</td>
               <td className="px-2 py-2 text-white/80 text-xs">{property.availability || 'N/A'}</td>
-              <td className="px-2 py-2 text-cyan-400 text-xs">{property.owner_contact || 'N/A'}</td>
+              <td className="px-2 py-2">
+                <ContactField
+                  contact={property.owner_contact}
+                  propertyId={String(property.serial_number || index)}
+                  isVisible={isContactVisible(String(property.serial_number || index))}
+                  onToggle={toggleContactVisibility}
+                  className="text-xs"
+                  showIcon={false}
+                />
+              </td>
             </tr>
           ))
         ) : (

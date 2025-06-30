@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Pagination from '@/components/ui/pagination';
 import { PropertyData } from '@/lib/dummyProperties';
 import { usePropertyCache } from '@/hooks/usePropertyCache';
+import { useContactVisibility } from '@/hooks/useContactVisibility';
 
 // Components
 import BackgroundElements from '@/components/BackgroundElements';
@@ -40,6 +41,7 @@ export default function TableViewPage() {
   // Hooks
   const { stats, loading: statsLoading } = usePropertyStats();
   const cache = usePropertyCache();
+  const { toggleContactVisibility, isContactVisible, getVisibleContactsCount } = useContactVisibility();
 
   // Cache-aware loading and error states
   const [backgroundLoading, setBackgroundLoading] = useState(false);
@@ -1007,6 +1009,9 @@ export default function TableViewPage() {
               loading={loading}
               totalCount={totalCount}
               viewMode={filters.viewMode}
+              toggleContactVisibility={toggleContactVisibility}
+              isContactVisible={isContactVisible}
+              getVisibleContactsCount={getVisibleContactsCount}
             />
 
             {/* Pagination */}
