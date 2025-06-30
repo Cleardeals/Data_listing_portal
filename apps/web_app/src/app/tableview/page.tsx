@@ -181,14 +181,20 @@ export default function TableViewPage() {
         query = query.or(`address.ilike.%${filterState.premise}%,sub_property_type.ilike.%${filterState.premise}%,property_type.ilike.%${filterState.premise}%,area.ilike.%${filterState.premise}%`);
       }
 
-      // Budget filters
+      // Budget filters - Skip when sorting by price to show all records
       if (filterState.budgetMin || filterState.budgetMax) {
         try {
-          if (filterState.budgetMin) {
-            query = query.gte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMin));
-          }
-          if (filterState.budgetMax) {
-            query = query.lte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMax));
+          // Only apply budget filters when NOT sorting by price
+          // This ensures all records (including non-numeric) are shown during price sorting
+          if (filterState.sortBy !== 'price') {
+            if (filterState.budgetMin) {
+              query = query.gte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMin));
+            }
+            if (filterState.budgetMax) {
+              query = query.lte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMax));
+            }
+          } else {
+            console.log('Skipping budget filters for price sorting to show all records');
           }
         } catch {
           console.warn('Budget filter failed');
@@ -222,62 +228,174 @@ export default function TableViewPage() {
       
       // Apply sorting with proper handling for numeric fields
       if (filterState.sortBy === 'price') {
-        // For price sorting across entire dataset, we need to fetch all data first
-        console.log('Price sorting requires full dataset - fetching all records...');
+        // For price sorting, fetch ALL records from database (ignore all filters)
+        // This ensures we sort across the complete dataset and show proper price ordering
+        // regardless of any applied filters. Users expect to see the truly lowest/highest 
+        // prices in the entire database when sorting by price.
+        console.log('Price sorting requires complete dataset - fetching ALL records from database...');
         
-        // Remove pagination temporarily to get all matching records
-        // We'll sort client-side and then apply pagination
+        // Create a new query that fetches ALL records, ignoring all filters
+        // Use chunked fetching to bypass Supabase's 1000 record limit
+        console.log('Price sorting requires complete dataset - fetching ALL records in chunks...');
         
-        // Execute query without pagination first
-        const allDataResult = await query;
+        const allData: PropertyData[] = [];
+        let offset = 0;
+        const chunkSize = 1000;
+        let totalFetched = 0;
+        let originalCount = 0;
         
-        if (allDataResult.error) {
-          throw allDataResult.error;
+        // Fetch records in chunks until we get all of them
+        while (true) {
+          console.log(`Fetching chunk ${Math.floor(offset / chunkSize) + 1}, records ${offset + 1} to ${offset + chunkSize}...`);
+          
+          const chunkQuery = supabase
+            .from('propertydata')
+            .select('*', { count: 'exact' })
+            .not('rent_sold_out', 'eq', true)
+            .range(offset, offset + chunkSize - 1);
+          
+          const chunkResult = await chunkQuery;
+          
+          if (chunkResult.error) {
+            throw chunkResult.error;
+          }
+          
+          const chunkData = chunkResult.data || [];
+          
+          // Store the total count from the first chunk
+          if (offset === 0) {
+            originalCount = chunkResult.count || 0;
+            console.log(`Total records in database: ${originalCount}`);
+          }
+          
+          // Add chunk data to our collection
+          allData.push(...chunkData);
+          totalFetched += chunkData.length;
+          
+          console.log(`Fetched ${chunkData.length} records in this chunk. Total so far: ${totalFetched}`);
+          
+          // If we got fewer than chunkSize records, we've reached the end
+          if (chunkData.length < chunkSize) {
+            console.log('Reached end of data - last chunk was smaller than expected');
+            break;
+          }
+          
+          // Move to next chunk
+          offset += chunkSize;
+          
+          // Safety check to prevent infinite loops
+          if (offset > 1000000) {
+            console.warn('Safety limit reached - stopping at 1 million records');
+            break;
+          }
         }
         
-        const allData = allDataResult.data || [];
-        const totalCount = allDataResult.count || 0;
+        console.log('Fetched complete dataset for price sorting:', {
+          totalDbRecords: allData.length,
+          originalQueryCount: originalCount,
+          sortOrder: ascending ? 'ascending' : 'descending',
+          filtersIgnored: true,
+          queryLimit: 'limit(1000000) or range(0, 999999)',
+          isLimitedBySupabase: allData.length === 1000 ? 'WARNING: Might be limited to 1000!' : 'OK',
+          possibleLimitHit: allData.length % 1000 === 0 ? 'WARNING: Round number suggests limit' : 'OK'
+        });
         
-        console.log('Fetched all data for price sorting:', allData.length, 'records');
+        // Add warning if we suspect we're hitting a limit
+        if (allData.length === 1000) {
+          console.warn('🚨 POTENTIAL ISSUE: Fetched exactly 1000 records - this might indicate a Supabase limit!');
+          console.warn('If your database has more than 1000 records, price sorting may not work correctly.');
+        }
         
-        // Sort all data client-side
+        // Sort all data with improved logic
         const sortedAllData = [...allData].sort((a, b) => {
           const priceA = a.rent_or_sell_price;
           const priceB = b.rent_or_sell_price;
           
-          // Check if values are numeric
-          const isNumericA = /^[0-9]+(\.[0-9]+)?$/.test(String(priceA));
-          const isNumericB = /^[0-9]+(\.[0-9]+)?$/.test(String(priceB));
+          // Enhanced regex to handle various number formats (including commas, spaces)
+          const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
+          const isNumericA = numericRegex.test(String(priceA));
+          const isNumericB = numericRegex.test(String(priceB));
           
-          // Numeric values always come before non-numeric
+          // Debug individual comparisons
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Comparing:', { 
+              priceA, 
+              priceB, 
+              isNumericA, 
+              isNumericB, 
+              ascending 
+            });
+          }
+          
+          // Numeric values always come before non-numeric (regardless of sort direction)
           if (isNumericA && !isNumericB) return -1;
           if (!isNumericA && isNumericB) return 1;
           
           // Both numeric - compare as numbers
           if (isNumericA && isNumericB) {
-            const numA = parseFloat(String(priceA));
-            const numB = parseFloat(String(priceB));
+            // Clean the price strings (remove commas, spaces) before parsing
+            const cleanPriceA = String(priceA).replace(/[,\s]/g, '');
+            const cleanPriceB = String(priceB).replace(/[,\s]/g, '');
+            const numA = parseFloat(cleanPriceA);
+            const numB = parseFloat(cleanPriceB);
+            
+            // Debug numeric comparison
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Numeric comparison:', { 
+                cleanPriceA, 
+                cleanPriceB, 
+                numA, 
+                numB, 
+                result: ascending ? numA - numB : numB - numA 
+              });
+            }
+            
             return ascending ? numA - numB : numB - numA;
           }
           
-          // Both non-numeric - no specific order (as requested)
+          // Both non-numeric - maintain stable order
           return 0;
         });
         
-        // Apply pagination to sorted data
+        console.log('Sample sorted prices (first 10):', sortedAllData.slice(0, 10).map(item => ({
+          serial: item.serial_number,
+          price: item.rent_or_sell_price
+        })));
+        
+        if (sortedAllData.length > 10) {
+          console.log('Sample sorted prices (last 10):', sortedAllData.slice(-10).map(item => ({
+            serial: item.serial_number,
+            price: item.rent_or_sell_price
+          })));
+        }
+        
+        // Apply pagination to sorted data with safety checks
         const startIndex = (page - 1) * size;
         const endIndex = startIndex + size;
-        const paginatedData = sortedAllData.slice(startIndex, endIndex);
+        const maxAvailableIndex = sortedAllData.length;
         
+        // Ensure we don't go beyond available data
+        const safeEndIndex = Math.min(endIndex, maxAvailableIndex);
+        const paginatedData = sortedAllData.slice(startIndex, safeEndIndex);
+        
+        // Log detailed pagination info
         console.log('Applied pagination to sorted data:', {
-          totalRecords: sortedAllData.length,
+          totalSortedRecords: sortedAllData.length,
+          totalDbRecords: originalCount,
+          currentPage: page,
+          pageSize: size,
           startIndex,
           endIndex,
-          pageData: paginatedData.length
+          safeEndIndex,
+          pageData: paginatedData.length,
+          maxPossiblePages: Math.ceil(sortedAllData.length / size),
+          isLastPage: endIndex >= maxAvailableIndex,
+          usingCompleteDataset: true
         });
         
         setProperties(paginatedData);
-        setTotalCount(totalCount);
+        // Use the actual sorted data length for total count, not the original query count
+        setTotalCount(sortedAllData.length);
         
         // Early return since we've handled everything for price sorting
         return;
