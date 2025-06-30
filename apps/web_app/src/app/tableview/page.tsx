@@ -176,15 +176,19 @@ export default function TableViewPage() {
         query = query.in('tenant_preference', filterState.availabilityType);
       }
 
-      if (filterState.premise) {
-        console.log('Applying premise filter:', filterState.premise);
-        query = query.or(`address.ilike.%${filterState.premise}%,sub_property_type.ilike.%${filterState.premise}%,property_type.ilike.%${filterState.premise}%,area.ilike.%${filterState.premise}%`);
-      }
-
-      // Check if we need comprehensive dataset (for price sorting OR budget filtering)
+      // Check if we need comprehensive dataset (for price sorting OR budget filtering OR premise search)
       const needsComprehensiveDataset = filterState.sortBy === 'price' || 
                                        filterState.budgetMin || 
-                                       filterState.budgetMax;
+                                       filterState.budgetMax ||
+                                       filterState.premise;
+
+      // Premise filtering - we'll handle this client-side when comprehensive dataset is needed
+      if (filterState.premise && !needsComprehensiveDataset) {
+        console.log('Applying server-side premise filter:', filterState.premise);
+        query = query.or(`address.ilike.%${filterState.premise}%,sub_property_type.ilike.%${filterState.premise}%,property_type.ilike.%${filterState.premise}%,area.ilike.%${filterState.premise}%,owner_name.ilike.%${filterState.premise}%,property_id.ilike.%${filterState.premise}%`);
+      } else if (filterState.premise) {
+        console.log('Premise filter will be applied client-side with comprehensive dataset');
+      }
 
       // Budget filtering note - we'll handle this client-side when comprehensive dataset is needed
       if ((filterState.budgetMin || filterState.budgetMax) && !needsComprehensiveDataset) {
@@ -228,11 +232,16 @@ export default function TableViewPage() {
           ascending = filterState.sortOrder === 'asc';
       }
       
-      // Apply sorting with proper handling for numeric fields OR comprehensive budget filtering
+      // Apply sorting with proper handling for numeric fields OR comprehensive budget filtering OR premise search
       if (needsComprehensiveDataset) {
-        // For price sorting OR budget filtering, fetch ALL records from database (ignore all filters)
+        // For price sorting OR budget filtering OR premise search, fetch ALL records from database (ignore all filters)
         // This ensures we can properly handle numeric vs non-numeric values across the complete dataset
-        const reason = filterState.sortBy === 'price' ? 'price sorting' : 'budget filtering';
+        const reasons = [];
+        if (filterState.sortBy === 'price') reasons.push('price sorting');
+        if (filterState.budgetMin || filterState.budgetMax) reasons.push('budget filtering');
+        if (filterState.premise) reasons.push('premise search');
+        const reason = reasons.join(' + ');
+        
         console.log(`${reason} requires complete dataset - fetching ALL records from database...`);
         
         // Create a new query that fetches ALL records, ignoring all filters
@@ -294,7 +303,7 @@ export default function TableViewPage() {
         console.log('Fetched complete dataset:', {
           totalDbRecords: allData.length,
           originalQueryCount: originalCount,
-          reason: filterState.sortBy === 'price' ? 'price sorting' : 'budget filtering',
+          reasons: reasons.join(' + '),
           filtersIgnored: true,
           isLimitedBySupabase: allData.length === 1000 ? 'WARNING: Might be limited to 1000!' : 'OK',
           possibleLimitHit: allData.length % 1000 === 0 ? 'WARNING: Round number suggests limit' : 'OK'
@@ -355,6 +364,38 @@ export default function TableViewPage() {
             excludedCount: allData.length - filteredData.length,
             minBudget,
             maxBudget
+          });
+        }
+
+        // Apply client-side premise (search keyword) filtering if needed
+        if (filterState.premise) {
+          console.log('Applying client-side premise filter:', filterState.premise);
+          
+          const searchTerm = filterState.premise.toLowerCase();
+          const beforePremiseFilter = filteredData.length;
+          
+          filteredData = filteredData.filter(item => {
+            // Search in multiple fields: address, sub_property_type, property_type, area, owner_name, property_id
+            const searchFields = [
+              item.address,
+              item.sub_property_type,
+              item.property_type,
+              item.area,
+              item.owner_name,
+              item.property_id
+            ];
+            
+            // Check if any field contains the search term (case-insensitive)
+            return searchFields.some(field => 
+              field && String(field).toLowerCase().includes(searchTerm)
+            );
+          });
+          
+          console.log('Premise filtering results:', {
+            beforeFilter: beforePremiseFilter,
+            afterFilter: filteredData.length,
+            excludedCount: beforePremiseFilter - filteredData.length,
+            searchTerm: filterState.premise
           });
         }
         
@@ -476,7 +517,8 @@ export default function TableViewPage() {
           isLastPage: endIndex >= maxAvailableIndex,
           usingCompleteDataset: true,
           appliedBudgetFilter: !!(filterState.budgetMin || filterState.budgetMax),
-          appliedPriceSort: filterState.sortBy === 'price'
+          appliedPriceSort: filterState.sortBy === 'price',
+          appliedPremiseSearch: !!filterState.premise
         });
         
         setProperties(paginatedData);
