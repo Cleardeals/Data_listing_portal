@@ -15,15 +15,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { supabase } from "../../lib/supabase";
 
-
-
-
-
-
-
-
-
-
 function ProfilePageContent() {
   const router = useRouter();
   const { user, loading, logout, refreshSession } = useAuth();
@@ -230,59 +221,6 @@ function ProfilePageContent() {
                   day: 'numeric'
                 }) : 'N/A'}
               </span>
-            </div>
-          </div>
-
-          {/* Additional Profile Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Account Stats */}
-            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-xl p-8">
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
-                <span className="text-3xl">📊</span>
-                <span>Account Statistics</span>
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 backdrop-blur-sm bg-white/5 rounded-lg">
-                  <span className="text-white/80">Login Sessions</span>
-                  <span className="text-cyan-400 font-bold">Active</span>
-                </div>
-                <div className="flex justify-between items-center p-3 backdrop-blur-sm bg-white/5 rounded-lg">
-                  <span className="text-white/80">Account Status</span>
-                  <span className="text-green-400 font-bold">Verified</span>
-                </div>
-                <div className="flex justify-between items-center p-3 backdrop-blur-sm bg-white/5 rounded-lg">
-                  <span className="text-white/80">Security Level</span>
-                  <span className="text-yellow-400 font-bold">Standard</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-xl p-8">
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
-                <span className="text-3xl">⚡</span>
-                <span>Quick Actions</span>
-              </h3>
-              <div className="space-y-4">
-                <button className="btn-3d w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white p-4 rounded-xl text-left">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🔐</span>
-                    <span className="font-semibold">Change Password</span>
-                  </div>
-                </button>
-                <button className="btn-3d w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-4 rounded-xl text-left">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">🔔</span>
-                    <span className="font-semibold">Notification Settings</span>
-                  </div>
-                </button>
-                <button className="btn-3d w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-xl text-left">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">📁</span>
-                    <span className="font-semibold">Export Data</span>
-                  </div>
-                </button>
-              </div>
             </div>
           </div>
         </div>
