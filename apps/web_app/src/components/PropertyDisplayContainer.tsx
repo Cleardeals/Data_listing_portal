@@ -17,6 +17,8 @@ interface PropertyDisplayContainerProps {
   toggleContactVisibility: (propertyId: string) => void;
   isContactVisible: (propertyId: string) => boolean;
   getVisibleContactsCount: () => number;
+  onToggleRentSoldOut?: (serialNumber: number, rentSoldOut: boolean) => void;
+  canEditRentSoldOut?: boolean;
 }
 
 const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
@@ -27,6 +29,8 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   toggleContactVisibility,
   isContactVisible,
   getVisibleContactsCount,
+  onToggleRentSoldOut,
+  canEditRentSoldOut = false,
 }) => {
   const getViewModeTitle = () => {
     switch (viewMode) {
@@ -50,7 +54,15 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
       case 'gallery':
         return <GalleryView properties={properties} loading={loading} {...contactProps} />;
       case 'master':
-        return <MasterTableView properties={properties} loading={loading} {...contactProps} />;
+        return (
+          <MasterTableView 
+            properties={properties} 
+            loading={loading} 
+            {...contactProps}
+            onToggleRentSoldOut={onToggleRentSoldOut}
+            canEditRentSoldOut={canEditRentSoldOut}
+          />
+        );
       default:
         return <CompactTableView properties={properties} loading={loading} {...contactProps} />;
     }

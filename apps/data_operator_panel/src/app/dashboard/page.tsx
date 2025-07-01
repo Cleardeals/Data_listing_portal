@@ -1,6 +1,6 @@
 "use client"
-import React, { useState, useEffect } from "react";
-import { FaBell, FaUserCircle, FaFilter, FaPlus, FaSearch, FaRobot, FaSignOutAlt, FaTimes } from "react-icons/fa";
+import React, { useState, useEffect, useCallback } from "react";
+import { FaBell, FaUserCircle, FaPlus, FaSignOutAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -10,7 +10,9 @@ import { MdAddCall } from "react-icons/md";
 import { EditConfirmationModal } from "@/components/modals/EditConfirmationModal";
 import { DeleteConfirmationModal } from "@/components/modals/DeleteConfirmationModal";
 import Pagination from "@/components/ui/pagination";
-import SortControls from "@/components/SortControls";
+import PropertyFiltersPanel, { FilterState, initialFilters } from "@/components/PropertyFiltersPanel";
+import PropertyControlPanel from "@/components/PropertyControlPanel";
+import PropertyDisplayContainer from "@/components/PropertyDisplayContainer";
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { SupabasePropertyData } from "@/lib/propertyData";
 import { supabase } from "../../lib/supabase";
@@ -27,17 +29,8 @@ function DashboardContent() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [propertyData, setPropertyData] = useState<SupabasePropertyData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [backgroundLoading, setBackgroundLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchMode, setSearchMode] = useState<'default' | 'prompt'>('default');
-  const [promptInput, setPromptInput] = useState("");
-  const [filterValues, setFilterValues] = useState({
-    state: "State",
-    city: "Ahmedabad",
-    area: "Area",
-    type: "type",
-    subtype: "Sub-type",
-    budget: "Budget"
-  });
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   const [, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
   
@@ -46,9 +39,10 @@ function DashboardContent() {
   const [pageSize, setPageSize] = useState<number>(50);
   const [totalCount, setTotalCount] = useState<number>(0);
   
-  // Sort state - default to serial_number ascending
-  const [sortColumn, setSortColumn] = useState<'serial_number' | 'rent_or_sell_price' | null>('serial_number');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  // Filter and view state
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
+  const [activeDateFilter, setActiveDateFilter] = useState<'today' | 'yesterday' | 'all'>('all');
 
   // Track reconnection attempts with ref instead of state to avoid re-renders
   const reconnectAttemptRef = React.useRef(false);
@@ -84,97 +78,429 @@ function DashboardContent() {
     }
   }, [logout, router, refreshSession]);
 
-  // Fetch properties from Supabase with pagination and sorting
-  const fetchProperties = React.useCallback(async (page: number = 1, size: number = 50) => {
+  // Fetch properties from Supabase with pagination, sorting, and filtering
+  const fetchPropertiesWithFilters = React.useCallback(async (
+    page: number = 1, 
+    size: number = 50, 
+    filterState: FilterState = initialFilters, 
+    dateFilter: 'today' | 'yesterday' | 'all' = 'all'
+  ): Promise<void> => {
     try {
-      setLoading(true);
+      setBackgroundLoading(true);
       setError(null);
       
       // Check if we have a session before fetching
       const session = await supabase.auth.getSession();
       if (!session.data.session) {
-        // We'll let the ProtectedRoute handle the redirection
         return;
       }
       
-      // First, get the total count
-      const { count, error: countError } = await supabase
-        .from('propertydata')
-        .select('*', { count: 'exact', head: true });
+      // Check if we need comprehensive dataset (for price sorting OR budget filtering OR premise search OR date filtering)
+      const needsComprehensiveDataset = filterState.sortBy === 'price' || 
+                                       filterState.budgetMin || 
+                                       filterState.budgetMax ||
+                                       filterState.premise ||
+                                       dateFilter !== 'all';
+      
+      let allData: SupabasePropertyData[] = [];
+      
+      if (needsComprehensiveDataset) {
+        // For price sorting OR budget filtering OR premise search OR date filtering, fetch ALL records from database
+        // This ensures we can properly handle numeric vs non-numeric values across the complete dataset
+        const reasons = [];
+        if (filterState.sortBy === 'price') reasons.push('price sorting');
+        if (filterState.budgetMin || filterState.budgetMax) reasons.push('budget filtering');
+        if (filterState.premise) reasons.push('premise search');
+        if (dateFilter !== 'all') reasons.push('date filtering');
+        const reason = reasons.join(' + ');
+        
+        console.log(`${reason} requires complete dataset - fetching ALL records in chunks...`);
+        
+        // Use chunked fetching to bypass Supabase's 1000 record limit
+        const allDataTemp: SupabasePropertyData[] = [];
+        let offset = 0;
+        const chunkSize = 1000;
+        let totalFetched = 0;
+        let originalCount = 0;
+        
+        // Fetch records in chunks until we get all of them
+        while (true) {
+          console.log(`Fetching chunk ${Math.floor(offset / chunkSize) + 1}, records ${offset + 1} to ${offset + chunkSize}...`);
+          
+          const chunkQuery = supabase
+            .from('propertydata')
+            .select('*', { count: 'exact' })
+            .range(offset, offset + chunkSize - 1);
+          
+          const chunkResult = await chunkQuery;
+          
+          if (chunkResult.error) {
+            throw chunkResult.error;
+          }
+          
+          const chunkData = chunkResult.data || [];
+          
+          // Store the total count from the first chunk
+          if (offset === 0) {
+            originalCount = chunkResult.count || 0;
+            console.log(`Total records in database: ${originalCount}`);
+          }
+          
+          // Add chunk data to our collection
+          allDataTemp.push(...chunkData);
+          totalFetched += chunkData.length;
+          
+          console.log(`Fetched ${chunkData.length} records in this chunk. Total so far: ${totalFetched}`);
+          
+          // If we got fewer than chunkSize records, we've reached the end
+          if (chunkData.length < chunkSize) {
+            console.log('Reached end of data - last chunk was smaller than expected');
+            break;
+          }
+          
+          // Move to next chunk
+          offset += chunkSize;
+          
+          // Safety check to prevent infinite loops
+          if (offset > 1000000) {
+            console.warn('Safety limit reached - stopping at 1 million records');
+            break;
+          }
+        }
+        
+        console.log('Fetched complete dataset:', {
+          totalDbRecords: allDataTemp.length,
+          originalQueryCount: originalCount,
+          reasons: reasons.join(' + '),
+          filtersIgnored: true,
+          isLimitedBySupabase: allDataTemp.length === 1000 ? 'WARNING: Might be limited to 1000!' : 'OK',
+          possibleLimitHit: allDataTemp.length % 1000 === 0 ? 'WARNING: Round number suggests limit' : 'OK'
+        });
+        
+        // Add warning if we suspect we're hitting a limit
+        if (allDataTemp.length === 1000) {
+          console.warn('🚨 POTENTIAL ISSUE: Fetched exactly 1000 records - this might indicate a Supabase limit!');
+          console.warn('If your database has more than 1000 records, filtering/sorting may not work correctly.');
+        }
 
-      if (countError) {
-        throw countError;
-      }
+        allData = allDataTemp;
 
-      setTotalCount(count || 0);
+        // Apply client-side date filter
+        if (dateFilter !== 'all') {
+          console.log('Applying client-side date filter:', dateFilter);
+          const today = new Date();
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          
+          // Format dates for comparison
+          const todayString = today.toISOString().split('T')[0];
+          const yesterdayString = yesterday.toISOString().split('T')[0];
+          const todayDDMMYYYY = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+          const yesterdayDDMMYYYY = `${yesterday.getDate().toString().padStart(2, '0')}/${(yesterday.getMonth() + 1).toString().padStart(2, '0')}/${yesterday.getFullYear()}`;
+          
+          const beforeFilter = allData.length;
+          allData = allData.filter(item => {
+            if (!item.date_stamp) return false;
+            
+            let propertyDateString = '';
+            if (item.date_stamp.includes('T')) {
+              // ISO format (YYYY-MM-DDTHH:mm:ss)
+              propertyDateString = item.date_stamp.split('T')[0];
+            } else if (item.date_stamp.includes('/')) {
+              // DD/MM/YYYY format - convert to YYYY-MM-DD
+              const parts = item.date_stamp.split('/');
+              if (parts.length === 3) {
+                const [day, month, year] = parts;
+                propertyDateString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+            } else {
+              // Assume it's already in YYYY-MM-DD format
+              propertyDateString = item.date_stamp;
+            }
+            
+            if (dateFilter === 'today') {
+              return propertyDateString === todayString || item.date_stamp === todayDDMMYYYY;
+            } else if (dateFilter === 'yesterday') {
+              return propertyDateString === yesterdayString || item.date_stamp === yesterdayDDMMYYYY;
+            }
+            
+            return true;
+          });
+          
+          console.log('Date filtering results:', {
+            beforeFilter,
+            afterFilter: allData.length,
+            excludedCount: beforeFilter - allData.length,
+            dateFilter,
+            todayString,
+            yesterdayString
+          });
+        }
+        if (filterState.premise) {
+          const searchTerm = filterState.premise.toLowerCase();
+          
+          allData = allData.filter(property => {
+            // Search in multiple fields: address, sub_property_type, property_type, area, owner_name, property_id
+            const searchFields = [
+              property.address,
+              property.sub_property_type,
+              property.property_type,
+              property.area,
+              property.owner_name,
+              property.property_id,
+              property.special_note
+            ];
+            
+            // Check if any field contains the search term (case-insensitive)
+            return searchFields.some(field => 
+              field && String(field).toLowerCase().includes(searchTerm)
+            );
+          });
+        }
 
-      // Then fetch the paginated data
-      const from = (page - 1) * size;
-      const to = from + size - 1;
+        // Apply other filters on the searched results
+        if (filterState.propertyType.length > 0) {
+          allData = allData.filter(property => filterState.propertyType.includes(property.property_type || ''));
+        }
+        
+        if (filterState.area.length > 0) {
+          allData = allData.filter(property => filterState.area.includes(property.area || ''));
+        }
+        
+        if (filterState.subPropertyType.length > 0) {
+          allData = allData.filter(property => filterState.subPropertyType.includes(property.sub_property_type || ''));
+        }
+        
+        if (filterState.budgetMin) {
+          const minBudget = parseFloat(filterState.budgetMin);
+          allData = allData.filter(property => {
+            const price = property.rent_or_sell_price;
+            
+            // Enhanced regex to handle various number formats (including commas, spaces)
+            const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
+            const isNumeric = numericRegex.test(String(price));
+            
+            // Only filter numeric prices - non-numeric prices are excluded from budget filtering
+            if (!isNumeric) {
+              return false; // Exclude non-numeric prices from budget filtering
+            }
+            
+            // Clean and parse the price
+            const cleanPrice = String(price).replace(/[,\s]/g, '');
+            const numericPrice = parseFloat(cleanPrice);
+            
+            // Check if price is valid
+            if (isNaN(numericPrice)) {
+              return false;
+            }
+            
+            return numericPrice >= minBudget;
+          });
+        }
+        
+        if (filterState.budgetMax) {
+          const maxBudget = parseFloat(filterState.budgetMax);
+          allData = allData.filter(property => {
+            const price = property.rent_or_sell_price;
+            
+            // Enhanced regex to handle various number formats (including commas, spaces)
+            const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
+            const isNumeric = numericRegex.test(String(price));
+            
+            // Only filter numeric prices - non-numeric prices are excluded from budget filtering
+            if (!isNumeric) {
+              return false; // Exclude non-numeric prices from budget filtering
+            }
+            
+            // Clean and parse the price
+            const cleanPrice = String(price).replace(/[,\s]/g, '');
+            const numericPrice = parseFloat(cleanPrice);
+            
+            // Check if price is valid
+            if (isNaN(numericPrice)) {
+              return false;
+            }
+            
+            return numericPrice <= maxBudget;
+          });
+        }
 
-      // Build query with sorting
-      let query = supabase
-        .from('propertydata')
-        .select('*');
+        // Apply sorting
+        allData.sort((a, b) => {
+          if (filterState.sortBy === 'serial_number') {
+            const aValue = a.serial_number || 0;
+            const bValue = b.serial_number || 0;
+            
+            if (filterState.sortOrder === 'desc') {
+              return bValue - aValue;
+            } else {
+              return aValue - bValue;
+            }
+          } else if (filterState.sortBy === 'price') {
+            // Use the same price sorting logic as web_app
+            const priceA = a.rent_or_sell_price;
+            const priceB = b.rent_or_sell_price;
+            
+            // Enhanced regex to handle various number formats (including commas, spaces)
+            const numericRegex = /^\s*[\d,]+(\.\d+)?\s*$/;
+            const isNumericA = numericRegex.test(String(priceA));
+            const isNumericB = numericRegex.test(String(priceB));
+            
+            // Numeric values always come before non-numeric (regardless of sort direction)
+            if (isNumericA && !isNumericB) return -1;
+            if (!isNumericA && isNumericB) return 1;
+            
+            // Both numeric - compare as numbers
+            if (isNumericA && isNumericB) {
+              // Clean the price strings (remove commas, spaces) before parsing
+              const cleanPriceA = String(priceA).replace(/[,\s]/g, '');
+              const cleanPriceB = String(priceB).replace(/[,\s]/g, '');
+              const numA = parseFloat(cleanPriceA);
+              const numB = parseFloat(cleanPriceB);
+              
+              if (filterState.sortOrder === 'desc') {
+                return numB - numA;
+              } else {
+                return numA - numB;
+              }
+            }
+            
+            // Both non-numeric - compare as strings
+            const stringA = String(priceA || '').toLowerCase();
+            const stringB = String(priceB || '').toLowerCase();
+            
+            if (filterState.sortOrder === 'desc') {
+              return stringB.localeCompare(stringA);
+            } else {
+              return stringA.localeCompare(stringB);
+            }
+          } else if (filterState.sortBy === 'date') {
+            const aValue = a.date_stamp || '';
+            const bValue = b.date_stamp || '';
+            
+            if (filterState.sortOrder === 'desc') {
+              return aValue < bValue ? 1 : -1;
+            } else {
+              return aValue > bValue ? 1 : -1;
+            }
+          } else {
+            const aValue = a.serial_number || 0;
+            const bValue = b.serial_number || 0;
+            
+            if (filterState.sortOrder === 'desc') {
+              return bValue - aValue;
+            } else {
+              return aValue - bValue;
+            }
+          }
+        });
 
-      // Apply sorting if specified
-      if (sortColumn) {
-        query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
+        // Apply pagination to the filtered and sorted results
+        const totalCount = allData.length;
+        const startIndex = (page - 1) * size;
+        const paginatedData = allData.slice(startIndex, startIndex + size);
+
+        setPropertyData(paginatedData);
+        setTotalCount(totalCount);
+        setCurrentPage(page);
       } else {
-        // Default sort by serial_number ascending
-        query = query.order('serial_number', { ascending: true });
+        // Regular server-side filtering (when no search term)
+        let query = supabase
+          .from('propertydata')
+          .select('*', { count: 'exact' });
+
+        // Apply filters based on filterState
+        if (filterState.propertyType.length > 0) {
+          query = query.in('property_type', filterState.propertyType);
+        }
+        
+        if (filterState.area.length > 0) {
+          query = query.in('area', filterState.area);
+        }
+        
+        if (filterState.subPropertyType.length > 0) {
+          query = query.in('sub_property_type', filterState.subPropertyType);
+        }
+        
+        if (filterState.budgetMin) {
+          query = query.gte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMin));
+        }
+        
+        if (filterState.budgetMax) {
+          query = query.lte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMax));
+        }
+        
+        // Note: Date filtering is handled in comprehensive mode only
+        // since dateFilter !== 'all' triggers comprehensive dataset processing
+
+        // Apply sorting
+        if (filterState.sortBy === 'serial_number') {
+          query = query.order('serial_number', { ascending: filterState.sortOrder === 'asc' });
+        } else if (filterState.sortBy === 'price') {
+          query = query.order('rent_or_sell_price', { ascending: filterState.sortOrder === 'asc' });
+        } else if (filterState.sortBy === 'date') {
+          query = query.order('date_stamp', { ascending: filterState.sortOrder === 'asc' });
+        } else {
+          // Default sorting
+          query = query.order('serial_number', { ascending: true });
+        }
+
+        // Apply pagination
+        const startIndex = (page - 1) * size;
+        query = query.range(startIndex, startIndex + size - 1);
+
+        const { data, error: fetchError, count } = await query;
+
+        if (fetchError) throw fetchError;
+
+        setPropertyData(data || []);
+        setTotalCount(count || 0);
+        setCurrentPage(page);
       }
-
-      const { data, error: supabaseError } = await query.range(from, to);
-
-      if (supabaseError) {
-        throw supabaseError;
-      }
-
-      setPropertyData(data || []);
     } catch (err: unknown) {
+      console.error('Fetch properties error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch properties');
     } finally {
       setLoading(false);
+      setBackgroundLoading(false);
     }
-  }, [sortColumn, sortDirection]);  // Pagination handlers
+  }, []);
+
+  // Check if any filters are active
+  const hasActiveFilters = React.useMemo(() => {
+    return filters.propertyType.length > 0 ||
+           filters.subPropertyType.length > 0 ||
+           filters.area.length > 0 ||
+           !!filters.budgetMin ||
+           !!filters.budgetMax ||
+           !!filters.premise ||
+           filters.sortBy !== 'serial_number' ||
+           filters.sortOrder !== 'asc' ||
+           activeDateFilter !== 'all';
+  }, [filters, activeDateFilter]);
+
+  // Pagination handlers
   const handlePageChange = React.useCallback(async (page: number) => {
     setCurrentPage(page);
-    await fetchProperties(page, pageSize);
-  }, [fetchProperties, pageSize]);
+    await fetchPropertiesWithFilters(page, pageSize, filters, activeDateFilter);
+  }, [fetchPropertiesWithFilters, pageSize, filters, activeDateFilter]);
 
   const handlePageSizeChange = React.useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
-    fetchProperties(1, newPageSize);
-  }, [fetchProperties]);
+    fetchPropertiesWithFilters(1, newPageSize, filters, activeDateFilter);
+  }, [fetchPropertiesWithFilters, filters, activeDateFilter]);
 
-  // Sort handler
-  const handleSort = (column: 'serial_number' | 'rent_or_sell_price') => {
-    if (sortColumn === column) {
-      // Toggle direction if same column
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Set new column and default to ascending
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-    // Reset to first page when sorting changes
+  // Date filter handler
+  const handleDateFilter = React.useCallback((filter: 'today' | 'yesterday' | 'all') => {
+    setActiveDateFilter(filter);
     setCurrentPage(1);
-    fetchProperties(1, pageSize);
-  };
-
-  // Clear sort handler
-  const handleClearSort = () => {
-    setSortColumn(null);
-    setSortDirection('asc');
-    setCurrentPage(1);
-    fetchProperties(1, pageSize);
-  };
+    fetchPropertiesWithFilters(1, pageSize, filters, filter);
+  }, [fetchPropertiesWithFilters, pageSize, filters]);
 
   useEffect(() => {
     // Fetch property data when component mounts
-    fetchProperties(1, 50);
+    fetchPropertiesWithFilters(1, 50, initialFilters, 'all');
 
     // Setup real-time subscription
     const setupRealtime = () => {
@@ -231,7 +557,7 @@ function DashboardContent() {
         }
       }
     };
-  }, [fetchProperties]); // Remove the dependency on realtimeStatus
+  }, [fetchPropertiesWithFilters]); // Remove the dependency on realtimeStatus
 
   // Setup session monitoring
   React.useEffect(() => {
@@ -335,7 +661,7 @@ function DashboardContent() {
 
       setShowAddForm(false);
       // Refresh current page to show the new property
-      await fetchProperties(currentPage, pageSize);
+      await fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
       console.log('Successfully added new property');
     } catch (err: unknown) {
       console.error('Error adding property:', err);
@@ -376,7 +702,7 @@ function DashboardContent() {
       setShowEditForm(false);
       setEditData(null);
       // Refresh current page to show the updated property
-      await fetchProperties(currentPage, pageSize);
+      await fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
       console.log('Successfully updated property');
     } catch (err: unknown) {
       console.error('Error updating property:', err);
@@ -432,7 +758,7 @@ function DashboardContent() {
         console.log(`Successfully deleted row ${selectedRow}`);
         
         // Refresh current page to reflect the deletion
-        await fetchProperties(currentPage, pageSize);
+        await fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
         
         setSelectedRow(null);
       } catch (err: unknown) {
@@ -443,97 +769,49 @@ function DashboardContent() {
     setShowDeleteModal(false);
   };
 
-  // Search handler with Supabase filtering
-  const handleSearch = async () => {
-    if (searchMode === 'prompt') {
-      // Handle AI-style prompt search
-      if (!promptInput.trim()) {
-        fetchProperties();
-        return;
-      }
-
-      try {
-        setLoading(true);
-        // Search across multiple fields using ilike (case-insensitive)
-        const { data, error } = await supabase
-          .from('propertydata')
-          .select('*')
-          .or(`name.ilike.%${promptInput}%,address.ilike.%${promptInput}%,area.ilike.%${promptInput}%,premise.ilike.%${promptInput}%`)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setPropertyData(data || []);
-      } catch (err: unknown) {
-        console.error('Search error:', err);
-        setError(err instanceof Error ? err.message : 'Search failed');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      // Handle filter-based search
-      try {
-        setLoading(true);
-        let query = supabase.from('propertydata').select('*');
-
-        // Apply filters based on selected values
-        if (filterValues.city !== 'Ahmedabad') {
-          query = query.ilike('address', `%${filterValues.city}%`);
-        }
-        if (filterValues.area !== 'Area') {
-          query = query.ilike('area', `%${filterValues.area}%`);
-        }
-
-        const { data, error } = await query.order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setPropertyData(data || []);
-      } catch (err: unknown) {
-        console.error('Filter error:', err);
-        setError(err instanceof Error ? err.message : 'Filter failed');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  // Quick filter functions
-  const handleQuickFilter = async (filterType: string) => {
+  const handleToggleRentSoldOut = async (serialNumber: number, rentSoldOut: boolean) => {
     try {
-      setLoading(true);
-      let query = supabase.from('propertydata').select('*');
+      setError(null); // Clear any previous errors
+      
+      // Update local state immediately for better UX (optimistic update)
+      setPropertyData(currentData => 
+        currentData.map(item => 
+          item.serial_number === serialNumber 
+            ? { ...item, rent_sold_out: rentSoldOut }
+            : item
+        )
+      );
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ rent_sold_out: rentSoldOut })
+        .eq('serial_number', serialNumber);
 
-      switch (filterType) {
-        case 'available':
-          query = query.eq('rentedout', false);
-          break;
-        case 'rented':
-          query = query.eq('rentedout', true);
-          break;
-        case 'important':
-          query = query.gt('important', 0);
-          break;
-        case 'premium':
-          query = query.neq('premium', '').neq('premium', null);
-          break;
-        case 'today':
-          const today = new Date().toLocaleDateString('en-GB');
-          query = query.eq('date', today);
-          break;
-        default:
-          // Show all
-          break;
+      if (error) {
+        console.error('Supabase update error:', error);
+        // Revert the optimistic update on error
+        setPropertyData(currentData => 
+          currentData.map(item => 
+            item.serial_number === serialNumber 
+              ? { ...item, rent_sold_out: !rentSoldOut }
+              : item
+          )
+        );
+        throw error;
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-      setPropertyData(data || []);
+      console.log(`Successfully updated rent_sold_out status for property ${serialNumber} to ${rentSoldOut}`);
+      
     } catch (err: unknown) {
-      console.error('Quick filter error:', err);
-      setError(err instanceof Error ? err.message : 'Filter failed');
-    } finally {
-      setLoading(false);
+      console.error('Error updating rent_sold_out status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update property status');
     }
   };
+
+  // Create a wrapper function that matches the PropertyFiltersPanel interface
+  const handleFetchPropertiesForFilters = useCallback((page: number, size: number, filterState: FilterState) => {
+    fetchPropertiesWithFilters(page, size, filterState, activeDateFilter);
+  }, [fetchPropertiesWithFilters, activeDateFilter]);
 
   const handleLogout = async () => {
     try {
@@ -546,9 +824,8 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-
       {/* Header Section */}
-      <header className="dashboard-header flex justify-between items-center py-4 px-8 border-b bg-white shadow-sm sticky top-0 z-50 w-full ">
+      <header className="dashboard-header flex justify-between items-center py-4 px-8 border-b bg-white shadow-sm sticky top-0 z-50 w-full">
         <div className="text-xl font-semibold text-blue-600">Data Operator Panel</div>
         <div className="flex items-center space-x-6">
           {user && (
@@ -568,154 +845,31 @@ function DashboardContent() {
           </button>
         </div>
       </header>
-      <div className="px-8 pt-8 pb-2 border-b border-blue-200">
-        {/* <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} /> */}
-        <div className="flex items-center justify-center mt-6">
-          {/* Robot Toggle Button */}
-          <button
-            className={`flex items-center border-2 rounded-lg px-2 py-1 mr-4 transition-colors duration-200 ${
-              searchMode === 'prompt' ? 'bg-blue-600' : 'bg-white'
-            }`}
-            onClick={() => setSearchMode(searchMode === 'prompt' ? 'default' : 'prompt')}
-            title="Toggle AI Search"
-          >
-            <span className="p-2">
-              <FaRobot className={searchMode === 'prompt' ? 'text-white' : 'text-blue-400'} />
-            </span>
-          </button>
-          {/* Prompt or Filter UI */}
-          {searchMode === 'prompt' ? (
-            <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
-              <input
-                className="flex-1 px-4 py-2 rounded bg-white text-black outline-none"
-                placeholder="Search by Specification"
-                value={promptInput}
-                onChange={e => setPromptInput(e.target.value)}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center border-2 rounded-lg px-2 py-1" style={{ minWidth: 900 }}>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.state} onChange={e => setFilterValues(v => ({ ...v, state: e.target.value }))}>
-                <option>State</option>
-              </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.city} onChange={e => setFilterValues(v => ({ ...v, city: e.target.value }))}>
-                <option>Ahmedabad</option>
-              </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.area} onChange={e => setFilterValues(v => ({ ...v, area: e.target.value }))}>
-                <option>Area</option>
-              </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.type} onChange={e => setFilterValues(v => ({ ...v, type: e.target.value }))}>
-                <option>type</option>
-              </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.subtype} onChange={e => setFilterValues(v => ({ ...v, subtype: e.target.value }))}>
-                <option>Sub-type</option>
-              </select>
-              <select className="mx-2 px-2 py-1 rounded bg-white text-black" value={filterValues.budget} onChange={e => setFilterValues(v => ({ ...v, budget: e.target.value }))}>
-                <option>Budget</option>
-              </select>
-            </div>
-          )}
-          {/* Search Icon */}
-          <button
-            className="flex items-center border-2 rounded-lg px-2 py-1 ml-2"
-            onClick={handleSearch}
-            disabled={loading}
-            title="Search"
-          >
-            <span className="p-2">
-              <FaSearch className="text-blue-600" />
-            </span>
-          </button>
-          {/* Clear Search Button */}
-          <button
-            className="flex items-center border-2 rounded-lg px-2 py-1 ml-2 bg-white-100 "
-            onClick={() => {
-              setPromptInput('');
-              setFilterValues({
-                state: "State",
-                city: "Ahmedabad", 
-                area: "Area",
-                type: "type",
-                subtype: "Sub-type",
-                budget: "Budget"
-              });
-              fetchProperties();
-            }}
-            title="Clear Search"
-          >
-            <span className="p-2">
-              <FaTimes className="text-blue-600"/>
-            </span>
-          </button>
-          {/* Filter Button */}
-          <button
-            className="flex items-center border-2 rounded-lg px-2 py-1 ml-2"
-            onClick={() => setSearchMode('default')}
-          >
-            <span className="p-2">
-              <FaFilter className="text-blue-400" />
-            </span>
-          </button>
-        </div>
-        {/* Filter Buttons */}
-        <div className="flex items-center justify-center mt-6 gap-3 flex-wrap">
-          <button 
-            onClick={() => fetchProperties()}
-            className="px-6 py-2.5 rounded-lg border border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 hover:from-blue-100 hover:to-blue-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
-            style={{ minWidth: 146 }}
-          >
-            📋 All Properties
-          </button>
-          <button 
-            onClick={() => handleQuickFilter('available')}
-            className="px-6 py-2.5 rounded-lg border border-green-300 bg-gradient-to-r from-green-50 to-green-100 text-green-800 hover:from-green-100 hover:to-green-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
-            style={{ minWidth: 146 }}
-          >
-            ✅ Available
-          </button>
-          <button 
-            onClick={() => handleQuickFilter('rented')}
-            className="px-6 py-2.5 rounded-lg border border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-800 hover:from-red-100 hover:to-red-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
-            style={{ minWidth: 146 }}
-          >
-            🏠 Rented Out
-          </button>
-          <button 
-            onClick={() => handleQuickFilter('important')}
-            className="px-6 py-2.5 rounded-lg border border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-800 hover:from-yellow-100 hover:to-yellow-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
-            style={{ minWidth: 146 }}
-          >
-            ⭐ Important
-          </button>
-          <button 
-            onClick={() => handleQuickFilter('premium')}
-            className="px-6 py-2.5 rounded-lg border border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-800 hover:from-purple-100 hover:to-purple-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
-            style={{ minWidth: 146 }}
-          >
-            💎 Premium
-          </button>
-          <button 
-            onClick={() => handleQuickFilter('today')}
-            className="px-6 py-2.5 rounded-lg border border-orange-300 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-800 hover:from-orange-100 hover:to-orange-200 font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
-            style={{ minWidth: 146 }}
-          >
-            📅 Today&apos;s Entries
-          </button>
-        </div>
-        
-        {/* Sort Controls */}
-        <div className="mt-6">
-          <SortControls
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            onClearSort={handleClearSort}
-            className="mx-auto max-w-4xl"
-          />
-        </div>
+
+      <div className="px-8 pt-8 pb-2">
+        {/* Control Panel */}
+        <PropertyControlPanel
+          hasActiveFilters={hasActiveFilters}
+          backgroundLoading={backgroundLoading}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          onDateFilter={handleDateFilter}
+          activeDateFilter={activeDateFilter}
+        />
+
+        {/* Filters Panel */}
+        <PropertyFiltersPanel
+          showFilters={showFilters}
+          filters={filters}
+          setFilters={setFilters}
+          setCurrentPage={setCurrentPage}
+          pageSize={pageSize}
+          loading={loading}
+          onFetchProperties={handleFetchPropertiesForFilters}
+        />
         
         {/* Action Buttons */}
-        <div className="flex items-center justify-center mt-4 gap-4">
+        <div className="flex items-center justify-center mb-6 gap-4">
           <BulkUploadButton />
           <button 
             onClick={() => setShowAddForm(true)} 
@@ -738,244 +892,36 @@ function DashboardContent() {
 
         {/* Error Display */}
         {error && (
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mb-6">
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
               <span>❌ {error}</span>
               <button 
                 onClick={() => setError(null)}
                 className="ml-2 text-red-500 hover:text-red-700"
               >
-                <FaTimes />
+                ✕
               </button>
             </div>
           </div>
         )}
 
-        {/* Data Table */}
-        <div className="mt-8 mx-4">
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse min-w-[1600px]">
-                <thead>
-                  <tr className="bg-gradient-to-r from-slate-800 to-slate-700 text-white">
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-20">
-                      Serial #
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Property ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Property Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-48">Special Note</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Owner Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Contact</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-56">Address</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Area</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Sub Property Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Size (sq ft)</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Furnishing</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Availability</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-24">Floor</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Tenant Preference</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-24">Age</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">
-                      Price
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Deposit</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-48">Additional Details</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Rent/Sold Out?</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-20 sticky right-20 bg-gradient-to-r from-slate-800 to-slate-700 z-10">Edit</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider w-20 sticky right-0 bg-gradient-to-r from-slate-800 to-slate-700 z-10">Delete</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={22} className="px-6 py-12 text-center text-gray-500 text-sm">
-                        <div className="flex flex-col items-center justify-center space-y-2">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                          <span>Loading properties...</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : error ? (
-                    <tr>
-                      <td colSpan={22} className="px-6 py-12 text-center text-red-500 text-sm">
-                        <div className="flex flex-col items-center justify-center space-y-2">
-                          <span className="text-red-600">⚠️ Error: {error}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : propertyData.length === 0 ? (
-                    <tr>
-                      <td colSpan={22} className="px-6 py-12 text-center text-gray-500 text-sm">
-                        <div className="flex flex-col items-center justify-center space-y-2">
-                          <span className="text-gray-400">📋 No properties found</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    propertyData.map((property, index) => (
-                      <tr key={property.serial_number} className={`text-gray-900 hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">#{property.serial_number}</span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className="font-mono text-sm text-blue-600 font-medium">{property.property_id}</span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                            property.property_type === 'Res_resale' ? 'bg-blue-100 text-blue-800' :
-                            property.property_type === 'Res_rental' ? 'bg-green-100 text-green-800' :
-                            property.property_type === 'Com_resale' ? 'bg-purple-100 text-purple-800' :
-                            property.property_type === 'Com_rental' ? 'bg-orange-100 text-orange-800' : 
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {property.property_type === 'Res_resale' ? 'Residential Resale' :
-                             property.property_type === 'Res_rental' ? 'Residential Rental' :
-                             property.property_type === 'Com_resale' ? 'Commercial Resale' :
-                             property.property_type === 'Com_rental' ? 'Commercial Rental' : 
-                             property.property_type || '-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 align-top">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            {property.special_note ? (
-                              <span className="whitespace-pre-line break-words">{property.special_note}</span>
-                            ) : (
-                              <span className="text-gray-400 italic">No notes</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className="text-sm text-gray-600">
-                            {property.date_stamp ? new Date(property.date_stamp).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric', 
-                              year: 'numeric' 
-                            }) : '-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm font-semibold text-gray-900 max-w-xs overflow-hidden">
-                            {property.owner_name || <span className="text-gray-400 italic">No name</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            {property.owner_contact ? (
-                              <a href={`tel:${property.owner_contact}`} className="text-blue-600 hover:text-blue-800 hover:underline">
-                                {property.owner_contact}
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 italic">No contact</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            <span className="whitespace-pre-line break-words">{property.address}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <span className="inline-block px-2 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded">
-                            {property.area}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            <span className="whitespace-pre-line break-words">{property.sub_property_type}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className="inline-block px-2 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded">
-                            {property.size || '-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            <span className="whitespace-pre-line break-words">{property.furnishing_status}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <span className="inline-block px-2 py-1 text-sm font-medium bg-green-100 text-green-800 rounded">
-                            {property.availability}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className="text-sm text-gray-700">{property.floor}</span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            <span className="whitespace-pre-line break-words">{property.tenant_preference}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <span className="text-sm text-gray-700">{property.age}</span>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm font-bold text-green-600 max-w-xs overflow-hidden">
-                            <span className="whitespace-pre-line break-words">{property.rent_or_sell_price}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            <span className="whitespace-pre-line break-words">{property.deposit}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
-                          <div className="text-sm text-gray-700 max-w-xs overflow-hidden">
-                            {property.additional_details ? (
-                              <span className="whitespace-pre-line break-words">{property.additional_details}</span>
-                            ) : (
-                              <span className="text-gray-400 italic">No details</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center">
-                          <div className="flex justify-center">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(property.rent_sold_out)}
-                              readOnly
-                              className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
-                            />
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 border-r border-gray-200 text-center sticky right-20 bg-inherit z-10">
-                          <button
-                            onClick={() => {
-                              setSelectedRow(property.serial_number);
-                              setShowEditModal(true);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                            title="Edit Property"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-center sticky right-0 bg-inherit z-10">
-                          <button
-                            onClick={() => {
-                              setSelectedRow(property.serial_number);
-                              setShowDeleteModal(true);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
-                            title="Delete Property"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        {/* Property Display Container */}
+        <PropertyDisplayContainer
+          properties={propertyData}
+          loading={loading}
+          error={error}
+          totalCount={totalCount}
+          viewMode={filters.viewMode}
+          onEditProperty={(serialNumber) => {
+            setSelectedRow(serialNumber);
+            setShowEditModal(true);
+          }}
+          onDeleteProperty={(serialNumber) => {
+            setSelectedRow(serialNumber);
+            setShowDeleteModal(true);
+          }}
+          onToggleRentSoldOut={handleToggleRentSoldOut}
+        />
 
         {/* Pagination */}
         {!loading && totalCount > 0 && (
@@ -996,6 +942,7 @@ function DashboardContent() {
           </div>
         )}
         
+        {/* Modals */}
         <AddEditPropertyModal
           open={showAddForm}
           onClose={() => setShowAddForm(false)}
@@ -1025,10 +972,7 @@ function DashboardContent() {
           onConfirm={handleDeleteConfirm}
           onClose={() => setShowDeleteModal(false)}
         />
-
       </div>
-      {/* Main Content Placeholder */}
-      <div className="flex-1 p-8">{/* Dashboard content goes here */}</div>
     </div>
   );
 }

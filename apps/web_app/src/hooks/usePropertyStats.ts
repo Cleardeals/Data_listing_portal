@@ -216,7 +216,6 @@ export const usePropertyStats = () => {
         const { data, error: supabaseError } = await supabase
           .from('propertydata')
           .select('*')
-          .not('rent_sold_out', 'eq', true) // Only active properties
           .range(offset, offset + batchSize - 1); // Fetch in batches
 
         if (supabaseError) {

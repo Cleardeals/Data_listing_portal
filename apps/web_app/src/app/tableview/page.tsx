@@ -20,7 +20,7 @@ import PropertyDisplayContainer from '@/components/PropertyDisplayContainer';
 
 export default function TableViewPage() {
   // Auth state
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   
   // State management
   const [properties, setProperties] = useState<PropertyData[]>([]);
@@ -110,8 +110,7 @@ export default function TableViewPage() {
       try {
         query = supabase
           .from('propertydata')
-          .select('*', { count: 'exact' })
-          .not('rent_sold_out', 'eq', true);
+          .select('*', { count: 'exact' });
         
         if (!query) {
           throw new Error('Query builder returned null');
@@ -282,7 +281,6 @@ export default function TableViewPage() {
           const chunkQuery = supabase
             .from('propertydata')
             .select('*', { count: 'exact' })
-            .not('rent_sold_out', 'eq', true)
             .range(offset, offset + chunkSize - 1);
           
           const chunkResult = await chunkQuery;
@@ -867,6 +865,51 @@ export default function TableViewPage() {
     return fetchProperties(page, size, filterState, useCache, activeDateFilter);
   }, [fetchProperties, activeDateFilter]);
 
+  // Toggle rent_sold_out status function
+  const handleToggleRentSoldOut = useCallback(async (serialNumber: number, rentSoldOut: boolean) => {
+    try {
+      setError(null); // Clear any previous errors
+      
+      // Update local state immediately for better UX (optimistic update)
+      setProperties(currentData => 
+        currentData.map(item => 
+          item.serial_number === serialNumber 
+            ? { ...item, rent_sold_out: rentSoldOut }
+            : item
+        )
+      );
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ rent_sold_out: rentSoldOut })
+        .eq('serial_number', serialNumber);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        // Revert the optimistic update on error
+        setProperties(currentData => 
+          currentData.map(item => 
+            item.serial_number === serialNumber 
+              ? { ...item, rent_sold_out: !rentSoldOut }
+              : item
+          )
+        );
+        throw error;
+      }
+
+      console.log(`Successfully updated rent_sold_out status for property ${serialNumber} to ${rentSoldOut}`);
+      
+    } catch (err: unknown) {
+      console.error('Error updating rent_sold_out status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update property status');
+    }
+  }, []);
+
+  // Check if user can edit rent_sold_out status (super_admin, data_operator, and customers)
+  const canEditRentSoldOut = useMemo(() => {
+    return user?.role === 'super_admin' || user?.role === 'data_operator' || user?.group === 'customers';
+  }, [user?.role, user?.group]);
+
   // Initial load effect
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -1012,6 +1055,8 @@ export default function TableViewPage() {
               toggleContactVisibility={toggleContactVisibility}
               isContactVisible={isContactVisible}
               getVisibleContactsCount={getVisibleContactsCount}
+              onToggleRentSoldOut={handleToggleRentSoldOut}
+              canEditRentSoldOut={canEditRentSoldOut}
             />
 
             {/* Pagination */}

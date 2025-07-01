@@ -52,7 +52,11 @@ const CompactTableView: React.FC<CompactTableViewProps> = ({
                 {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
               </td>
               <td className="px-2 py-2 text-white/80 text-xs">{property.size || 'N/A'}</td>
-              <td className="px-2 py-2 text-white/80 text-xs">{property.availability || 'N/A'}</td>
+              <td className="px-2 py-2 text-xs">
+                <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
+                  {property.availability || 'N/A'}
+                </span>
+              </td>
               <td className="px-2 py-2">
                 <ContactField
                   contact={property.owner_contact}

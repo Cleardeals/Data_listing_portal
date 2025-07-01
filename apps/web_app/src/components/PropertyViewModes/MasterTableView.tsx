@@ -10,13 +10,17 @@ interface MasterTableViewProps {
   toggleContactVisibility: (propertyId: string) => void;
   isContactVisible: (propertyId: string) => boolean;
   getVisibleContactsCount: () => number;
+  onToggleRentSoldOut?: (serialNumber: number, rentSoldOut: boolean) => void;
+  canEditRentSoldOut?: boolean;
 }
 
 const MasterTableView: React.FC<MasterTableViewProps> = ({ 
   properties, 
   loading, 
   toggleContactVisibility, 
-  isContactVisible 
+  isContactVisible,
+  onToggleRentSoldOut,
+  canEditRentSoldOut = false
 }) => (
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
@@ -93,11 +97,27 @@ const MasterTableView: React.FC<MasterTableViewProps> = ({
               </td>
               <td className="px-3 py-2 text-white/80 text-xs">{property.date_stamp || 'N/A'}</td>
               <td className="px-3 py-2 text-xs">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  property.rent_sold_out ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-                }`}>
-                  {property.rent_sold_out ? 'Sold Out' : 'Available'}
-                </span>
+                {canEditRentSoldOut && onToggleRentSoldOut ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(property.rent_sold_out)}
+                      onChange={(e) => onToggleRentSoldOut(property.serial_number, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-white/10 border-white/30 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className={`text-xs font-medium ${
+                      property.rent_sold_out ? 'text-red-400' : 'text-green-400'
+                    }`}>
+                      {property.rent_sold_out ? 'Sold/Rented' : 'Available'}
+                    </span>
+                  </div>
+                ) : (
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    property.rent_sold_out ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                  }`}>
+                    {property.rent_sold_out ? 'Sold Out' : 'Available'}
+                  </span>
+                )}
               </td>
             </tr>
           ))

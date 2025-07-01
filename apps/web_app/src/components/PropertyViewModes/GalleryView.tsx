@@ -79,8 +79,10 @@ const GalleryView: React.FC<GalleryViewProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1 min-w-0">
-                    <span className="text-green-400 text-xs">✅</span>
-                    <span className="text-white/80 truncate">{property.availability || 'N/A'}</span>
+                    <span className="text-blue-400 text-xs">ℹ️</span>
+                    <span className="text-blue-400 text-xs font-medium truncate">
+                      {property.availability || 'N/A'}
+                    </span>
                   </div>
                 </div>
               </div>
