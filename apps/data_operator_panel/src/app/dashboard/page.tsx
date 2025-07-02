@@ -325,6 +325,22 @@ function DashboardContent() {
           });
         }
 
+        // Apply visibility filter
+        if (filterState.visibility.length > 0) {
+          allData = allData.filter(property => {
+            const visibilityStr = String(property.visibility);
+            return filterState.visibility.includes(visibilityStr);
+          });
+        }
+
+        // Apply rent/sold out filter
+        if (filterState.rentSoldOut.length > 0) {
+          allData = allData.filter(property => {
+            const rentSoldOutStr = String(property.rent_sold_out);
+            return filterState.rentSoldOut.includes(rentSoldOutStr);
+          });
+        }
+
         // Apply sorting
         allData.sort((a, b) => {
           if (filterState.sortBy === 'serial_number') {
@@ -430,6 +446,18 @@ function DashboardContent() {
           query = query.lte('rent_or_sell_price::numeric', parseFloat(filterState.budgetMax));
         }
         
+        // Apply visibility filter
+        if (filterState.visibility.length > 0) {
+          const visibilityValues = filterState.visibility.map(v => v === 'true');
+          query = query.in('visibility', visibilityValues);
+        }
+        
+        // Apply rent/sold out filter
+        if (filterState.rentSoldOut.length > 0) {
+          const rentSoldOutValues = filterState.rentSoldOut.map(v => v === 'true');
+          query = query.in('rent_sold_out', rentSoldOutValues);
+        }
+        
         // Note: Date filtering is handled in comprehensive mode only
         // since dateFilter !== 'all' triggers comprehensive dataset processing
 
@@ -476,6 +504,8 @@ function DashboardContent() {
            !!filters.premise ||
            filters.sortBy !== 'serial_number' ||
            filters.sortOrder !== 'asc' ||
+           filters.visibility.length > 0 ||
+           filters.rentSoldOut.length > 0 ||
            activeDateFilter !== 'all';
   }, [filters, activeDateFilter]);
 

@@ -19,6 +19,8 @@ export interface FilterState {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   viewMode: ViewMode;
+  visibility: string[];
+  rentSoldOut: string[];
 }
 
 // Initial filter state
@@ -35,6 +37,8 @@ export const initialFilters: FilterState = {
   sortBy: "serial_number",
   sortOrder: "asc",
   viewMode: "compact",
+  visibility: [],
+  rentSoldOut: [],
 };
 
 interface PropertyFiltersPanelProps {
@@ -311,6 +315,50 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                 <option value="desc" className="text-slate-700 bg-white">Descending ↓</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        {/* Visibility Filter */}
+        <div className="mb-6 p-4 bg-white/70 backdrop-blur-sm rounded-lg border border-cyan-100 shadow-sm">
+          <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            👁️ Visibility Status
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {['true', 'false'].map((status) => (
+              <button
+                key={status}
+                onClick={() => handleFilterChange('visibility', status)}
+                className={`px-4 py-2 text-sm rounded-full border-2 font-medium transition-all duration-200 transform hover:scale-105 ${
+                  pendingFilters.visibility.includes(status)
+                    ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white border-cyan-500 shadow-lg'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-cyan-50 hover:border-cyan-300 shadow-sm'
+                }`}
+              >
+                {status === 'true' ? '👁️ Visible' : '🙈 Hidden'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Rent/Sold Out Filter */}
+        <div className="mb-6 p-4 bg-white/70 backdrop-blur-sm rounded-lg border border-rose-100 shadow-sm">
+          <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            🏷️ Property Status
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {['false', 'true'].map((status) => (
+              <button
+                key={status}
+                onClick={() => handleFilterChange('rentSoldOut', status)}
+                className={`px-4 py-2 text-sm rounded-full border-2 font-medium transition-all duration-200 transform hover:scale-105 ${
+                  pendingFilters.rentSoldOut.includes(status)
+                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white border-rose-500 shadow-lg'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-rose-50 hover:border-rose-300 shadow-sm'
+                }`}
+              >
+                {status === 'false' ? '✅ Available' : '❌ Sold/Rented'}
+              </button>
+            ))}
           </div>
         </div>
 
