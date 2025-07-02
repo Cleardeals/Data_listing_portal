@@ -200,14 +200,14 @@ export const AddEditPropertyModal = ({
 
             {/* Size */}
             <div>
-              <label className="block mb-2 text-gray-800 font-medium">Size (sq ft)</label>
+              <label className="block mb-2 text-gray-800 font-medium">Size</label>
               <input
                 type="text"
                 name="size"
                 value={data.size}
                 onChange={handleInputChange}
                 className="w-full p-2 border rounded text-gray-900"
-                placeholder="Size in square feet"
+                placeholder="e.g., 1000 sq ft, 2 BHK, 50x30"
               />
             </div>
 
