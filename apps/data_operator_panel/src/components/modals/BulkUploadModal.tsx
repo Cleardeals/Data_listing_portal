@@ -1,12 +1,18 @@
 "use client"
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function BulkUploadButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const openModal = () => setIsOpen(true);
   const closeModal = () => {
@@ -62,9 +68,9 @@ export default function BulkUploadButton() {
       </button>
 
       {/* Enhanced Modal */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl border border-white/20">
+      {isOpen && isClient && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ top: 0, left: 0, width: '100vw', height: '100vh', position: 'fixed' }}>
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl border border-white/20 mt-8 max-h-[90vh] overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-t-2xl px-6 py-4 border-b border-slate-600/50">
               <div className="flex items-center justify-between">
@@ -86,8 +92,8 @@ export default function BulkUploadButton() {
               </div>
             </div>
             
-            {/* Body */}
-            <div className="p-6">
+            {/* Body - with scroll */}
+            <div className="p-6 overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(90vh - 140px)' }}>
               {/* File Upload Area */}
               <div 
                 className="relative border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer"
@@ -216,7 +222,8 @@ export default function BulkUploadButton() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

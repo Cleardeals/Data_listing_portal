@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDynamicOptions } from '../../lib/dynamicOptions';
 
 // Define PropertyData type matching the exact database schema
@@ -85,7 +86,7 @@ export const AddEditPropertyModal = ({
   }, [initialData]);
   
   if (!open) return null;
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setData((prev: PropertyData) => ({ ...prev, [name]: value }));
@@ -96,9 +97,21 @@ export const AddEditPropertyModal = ({
     onSubmit(data);
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl border border-white/20">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto" 
+      style={{ 
+        zIndex: 99999, 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh'
+      }}
+    >
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl border border-white/20 my-4 mx-4 relative" style={{ zIndex: 100000 }}>
         {/* Enhanced Header */}
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-t-2xl px-6 py-4 border-b border-slate-600/50 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -526,6 +539,10 @@ export const AddEditPropertyModal = ({
       </div>
     </div>
   );
+
+  return typeof window !== 'undefined' 
+    ? createPortal(modalContent, document.body)
+    : null;
 };
 
 // Export the PropertyData type for use in other components

@@ -1,3 +1,8 @@
+"use client"
+
+import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
+
 // Reusable confirmation modal component
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -18,7 +23,13 @@ export const ConfirmationModal = ({
   cancelText = "No",
   variant = "warning",
 }: ConfirmationModalProps) => {
-  if (!isOpen) return null;
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isOpen || !isClient) return null;
 
   const getVariantStyles = () => {
     switch (variant) {
@@ -51,9 +62,9 @@ export const ConfirmationModal = ({
 
   const styles = getVariantStyles();
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-white/20">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ top: 0, left: 0, width: '100vw', height: '100vh', position: 'fixed' }}>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-white/20 mt-20">
         <div className="p-6">
           {/* Icon */}
           <div className="flex justify-center mb-4">
@@ -87,6 +98,7 @@ export const ConfirmationModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -37,7 +37,7 @@ function DashboardContent() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(50);
+  const [pageSize, setPageSize] = useState<number>(25);
   const [totalCount, setTotalCount] = useState<number>(0);
   
   // Filter and view state
@@ -531,7 +531,7 @@ function DashboardContent() {
 
   useEffect(() => {
     // Fetch property data when component mounts
-    fetchPropertiesWithFilters(1, 50, initialFilters, 'all');
+    fetchPropertiesWithFilters(1, 25, initialFilters, 'all');
 
     // Setup real-time subscription
     const setupRealtime = () => {
@@ -1073,7 +1073,6 @@ function DashboardContent() {
             onDateFilter={handleDateFilter}
             activeDateFilter={activeDateFilter}
           />
-        </div>
 
         {/* Enhanced Filters Panel */}
         {showFilters && (
@@ -1158,21 +1157,6 @@ function DashboardContent() {
 
         {/* Enhanced Property Display Container */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-slate-200/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800">Property Listings</h2>
-                <p className="text-sm text-slate-600">
-                  {loading ? 'Loading properties...' : `Showing ${propertyData.length} of ${totalCount.toLocaleString()} properties`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-slate-500">
-                  Rows: <span className="font-medium text-slate-700">{pageSize}</span>
-                </div>
-              </div>
-            </div>
-          </div>
           
           <PropertyDisplayContainer
             properties={propertyData}
@@ -1273,6 +1257,7 @@ function DashboardContent() {
           onConfirm={handleDeleteConfirm}
           onClose={() => setShowDeleteModal(false)}
         />
+      </div>
       </div>
     </div>
   );
