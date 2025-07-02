@@ -13,6 +13,7 @@ import Pagination from "@/components/ui/pagination";
 import PropertyFiltersPanel, { FilterState, initialFilters } from "@/components/PropertyFiltersPanel";
 import PropertyControlPanel from "@/components/PropertyControlPanel";
 import PropertyDisplayContainer from "@/components/PropertyDisplayContainer";
+import { StatsLoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import type { PropertyData } from "@/components/modals/AddEditPropertyModal";
 import { SupabasePropertyData } from "@/lib/propertyData";
 import { supabase } from "../../lib/supabase";
@@ -895,127 +896,354 @@ function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header Section */}
-      <header className="dashboard-header flex justify-between items-center py-4 px-8 border-b bg-white shadow-sm sticky top-0 z-50 w-full">
-        <div className="text-xl font-semibold text-blue-600">Data Operator Panel</div>
-        <div className="flex items-center space-x-6">
-          {user && (
-            <div className="text-sm text-gray-600">
-              Welcome, {user.email}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Enhanced Header Section */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/60 shadow-lg sticky top-0 z-50">
+        <div className="flex justify-between items-center py-4 px-8">
+          {/* Logo and Title */}
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">DO</span>
             </div>
-          )}
-          <button title="Add User" className="text-2xl"><MdAddCall className="text-blue-500" /></button>
-          <button title="Notifications" className="text-2xl"><FaBell className="text-blue-500" /></button>
-          <button title="Profile" className="text-2xl"><FaUserCircle className="text-blue-500" /></button>
-          <button 
-            title="Logout" 
-            className="text-2xl text-red-500 hover:text-red-700 transition-colors" 
-            onClick={handleLogout}
-          >
-            <FaSignOutAlt />
-          </button>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Data Operator Panel</h1>
+              <p className="text-sm text-slate-500">Property Management Dashboard</p>
+            </div>
+          </div>
+
+          {/* Header Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Real-time Status */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-full bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200/50 shadow-sm">
+              <div className={`w-2 h-2 rounded-full ${
+                realtimeStatus === 'connected' ? 'bg-green-500 animate-pulse' : 
+                realtimeStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+              }`}></div>
+              <span className="text-xs text-gray-700 font-medium">
+                {realtimeStatus === 'connected' ? 'Live' : 
+                 realtimeStatus === 'connecting' ? 'Connecting' : 'Offline'}
+              </span>
+            </div>
+
+            {/* User Info */}
+            {user && (
+              <div className="hidden lg:flex items-center space-x-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-semibold">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-sm">
+                  <p className="text-slate-700 font-medium">Welcome back</p>
+                  <p className="text-slate-500 text-xs">{user.email}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
+              <button 
+                title="Add User" 
+                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+              >
+                <MdAddCall className="w-5 h-5" />
+              </button>
+              <button 
+                title="Notifications" 
+                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 relative"
+              >
+                <FaBell className="w-5 h-5" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              </button>
+              <button 
+                title="Profile" 
+                className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+              >
+                <FaUserCircle className="w-5 h-5" />
+              </button>
+              
+              {/* Divider */}
+              <div className="w-px h-6 bg-slate-300 mx-2"></div>
+              
+              <button 
+                title="Logout" 
+                className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200" 
+                onClick={handleLogout}
+              >
+                <FaSignOutAlt className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="px-8 pt-8 pb-2">
-        {/* Control Panel */}
-        <PropertyControlPanel
-          hasActiveFilters={hasActiveFilters}
-          backgroundLoading={backgroundLoading}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          onDateFilter={handleDateFilter}
-          activeDateFilter={activeDateFilter}
-        />
+      {/* Dashboard Stats Section */}
+      <div className="px-8 pt-6">
+        {loading ? (
+          <div className="mb-8">
+            <StatsLoadingSkeleton />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in">
+            {/* Total Properties */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Properties</p>
+                  <p className="text-3xl font-bold text-slate-800">{totalCount.toLocaleString()}</p>
+                  <p className="text-xs text-green-600 mt-1">↗ Active listings</p>
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white text-lg">🏢</span>
+                </div>
+              </div>
+            </div>
 
-        {/* Filters Panel */}
-        <PropertyFiltersPanel
-          showFilters={showFilters}
-          filters={filters}
-          setFilters={setFilters}
-          setCurrentPage={setCurrentPage}
-          pageSize={pageSize}
-          loading={loading}
-          onFetchProperties={handleFetchPropertiesForFilters}
-        />
+            {/* Active Filters */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Active Filters</p>
+                  <p className="text-3xl font-bold text-slate-800">{hasActiveFilters ? 'ON' : 'OFF'}</p>
+                  <p className="text-xs text-slate-500 mt-1">{hasActiveFilters ? 'Filtering applied' : 'No filters'}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  hasActiveFilters 
+                    ? 'bg-gradient-to-br from-orange-500 to-orange-600' 
+                    : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                }`}>
+                  <span className="text-white text-lg">🔍</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Page */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Current Page</p>
+                  <p className="text-3xl font-bold text-slate-800">{currentPage}</p>
+                  <p className="text-xs text-slate-500 mt-1">of {Math.ceil(totalCount / pageSize)}</p>
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white text-lg">📄</span>
+                </div>
+              </div>
+            </div>
+
+            {/* System Status */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">System Status</p>
+                  <p className="text-3xl font-bold text-slate-800">
+                    {realtimeStatus === 'connected' ? '✅' : realtimeStatus === 'connecting' ? '🟡' : '❌'}
+                  </p>
+                  <p className={`text-xs mt-1 capitalize ${
+                    realtimeStatus === 'connected' ? 'text-green-600' : 
+                    realtimeStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {realtimeStatus}
+                  </p>
+                </div>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  realtimeStatus === 'connected' 
+                    ? 'bg-gradient-to-br from-green-500 to-green-600' 
+                    : realtimeStatus === 'connecting'
+                    ? 'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                    : 'bg-gradient-to-br from-red-500 to-red-600'
+                }`}>
+                  <span className="text-white text-lg">⚡</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="px-8 pb-8">
+        {/* Control Panel with Enhanced Design */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/50 shadow-lg">
+          <PropertyControlPanel
+            hasActiveFilters={hasActiveFilters}
+            backgroundLoading={backgroundLoading}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            onDateFilter={handleDateFilter}
+            activeDateFilter={activeDateFilter}
+          />
+        </div>
+
+        {/* Enhanced Filters Panel */}
+        {showFilters && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/50 shadow-lg">
+            <PropertyFiltersPanel
+              showFilters={showFilters}
+              filters={filters}
+              setFilters={setFilters}
+              setCurrentPage={setCurrentPage}
+              pageSize={pageSize}
+              loading={loading}
+              onFetchProperties={handleFetchPropertiesForFilters}
+            />
+          </div>
+        )}
         
-        {/* Action Buttons */}
-        <div className="flex items-center justify-center mb-6 gap-4">
-          <BulkUploadButton />
-          <button 
-            onClick={() => setShowAddForm(true)} 
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg flex items-center gap-2 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-          >
-            <FaPlus className="w-4 h-4" /> Add Property
-          </button>
-          {/* Real-time Status Indicator */}
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 shadow-sm">
-            <div className={`w-3 h-3 rounded-full ${
-              realtimeStatus === 'connected' ? 'bg-green-500 animate-pulse' : 
-              realtimeStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
-            }`}></div>
-            <span className="text-sm text-gray-700 font-medium">
-              {realtimeStatus === 'connected' ? '🟢 Live' : 
-               realtimeStatus === 'connecting' ? '🟡 Connecting...' : '🔴 Disconnected'}
-            </span>
+        {/* Enhanced Action Bar */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/50 shadow-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 font-medium">Quick Actions:</span>
+              </div>
+              <BulkUploadButton />
+              <button 
+                onClick={() => setShowAddForm(true)} 
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl flex items-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium transform hover:scale-105"
+              >
+                <FaPlus className="w-4 h-4" /> Add New Property
+              </button>
+            </div>
+
+            {/* Enhanced Status and Info */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {backgroundLoading && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-blue-700 text-sm font-medium">Syncing Data...</span>
+                </div>
+              )}
+              
+              <div className="text-sm text-slate-600 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">
+                <span className="font-medium">Page Size:</span> {pageSize} items
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Error Display */}
+        {/* Enhanced Error Display */}
         {error && (
-          <div className="flex justify-center mb-6">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <span>❌ {error}</span>
-              <button 
-                onClick={() => setError(null)}
-                className="ml-2 text-red-500 hover:text-red-700"
-              >
-                ✕
-              </button>
+          <div className="mb-6">
+            <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-red-600 text-lg">⚠️</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-red-800 font-semibold mb-1">Error Occurred</h3>
+                  <p className="text-red-700 text-sm mb-3">{error}</p>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        setError(null);
+                        fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                    >
+                      Retry
+                    </button>
+                    <button 
+                      onClick={() => setError(null)}
+                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Property Display Container */}
-        <PropertyDisplayContainer
-          properties={propertyData}
-          loading={loading}
-          error={error}
-          totalCount={totalCount}
-          viewMode={filters.viewMode}
-          onEditProperty={(serialNumber) => {
-            setSelectedRow(serialNumber);
-            setShowEditModal(true);
-          }}
-          onDeleteProperty={(serialNumber) => {
-            setSelectedRow(serialNumber);
-            setShowDeleteModal(true);
-          }}
-          onToggleRentSoldOut={handleToggleRentSoldOut}
-          onToggleVisibility={handleToggleVisibility}
-        />
+        {/* Enhanced Property Display Container */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg overflow-hidden">
+          <div className="p-6 border-b border-slate-200/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">Property Listings</h2>
+                <p className="text-sm text-slate-600">
+                  {loading ? 'Loading properties...' : `Showing ${propertyData.length} of ${totalCount.toLocaleString()} properties`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-slate-500">
+                  Rows: <span className="font-medium text-slate-700">{pageSize}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <PropertyDisplayContainer
+            properties={propertyData}
+            loading={loading}
+            error={error}
+            totalCount={totalCount}
+            onEditProperty={(serialNumber) => {
+              setSelectedRow(serialNumber);
+              setShowEditModal(true);
+            }}
+            onDeleteProperty={(serialNumber) => {
+              setSelectedRow(serialNumber);
+              setShowDeleteModal(true);
+            }}
+            onToggleRentSoldOut={handleToggleRentSoldOut}
+            onToggleVisibility={handleToggleVisibility}
+          />
+        </div>
 
-        {/* Pagination */}
+        {/* Simplified Pagination */}
         {!loading && totalCount > 0 && (
-          <div className="mt-6 mx-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <Pagination
-                currentPage={currentPage}
-                totalItems={totalCount}
-                pageSize={pageSize}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-                className="flex justify-center"
-              />
-              <div className="mt-3 text-center text-sm text-gray-600">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} properties
+          <div className="mt-6">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={totalCount}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </div>
+        )}
+
+        {/* Loading State for Empty Results */}
+        {!loading && totalCount === 0 && !error && (
+          <div className="mt-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 border border-white/50 shadow-lg text-center">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-4xl">🔍</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">No Properties Found</h3>
+              <p className="text-slate-600 mb-6">
+                {hasActiveFilters 
+                  ? "No properties match your current filters. Try adjusting your search criteria."
+                  : "No properties available. Start by adding your first property listing."
+                }
+              </p>
+              <div className="flex gap-3 justify-center">
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => {
+                      setFilters(initialFilters);
+                      setActiveDateFilter('all');
+                      fetchPropertiesWithFilters(1, pageSize, initialFilters, 'all');
+                    }}
+                    className="px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors font-medium"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium"
+                >
+                  Add New Property
+                </button>
               </div>
             </div>
           </div>
         )}
         
-        {/* Modals */}
+        {/* Modals remain the same */}
         <AddEditPropertyModal
           open={showAddForm}
           onClose={() => setShowAddForm(false)}
