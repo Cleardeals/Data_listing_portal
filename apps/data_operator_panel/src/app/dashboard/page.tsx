@@ -649,6 +649,7 @@ function DashboardContent() {
         rent_or_sell_price: data.rent_or_sell_price,
         deposit: data.deposit,
         special_note: data.special_note,
+        visibility: data.visibility,
         rent_sold_out: false
       };
 
@@ -689,7 +690,8 @@ function DashboardContent() {
         age: data.age,
         rent_or_sell_price: data.rent_or_sell_price,
         deposit: data.deposit,
-        special_note: data.special_note
+        special_note: data.special_note,
+        visibility: data.visibility
       };
 
       const { error } = await supabase
@@ -731,7 +733,8 @@ function DashboardContent() {
           age: rowData.age || '',
           rent_or_sell_price: rowData.rent_or_sell_price || '',
           deposit: rowData.deposit || '',
-          special_note: rowData.special_note || ''
+          special_note: rowData.special_note || '',
+          visibility: rowData.visibility || true
         };
         setEditData(formattedData);
         setShowEditForm(true);
@@ -805,6 +808,45 @@ function DashboardContent() {
     } catch (err: unknown) {
       console.error('Error updating rent_sold_out status:', err);
       setError(err instanceof Error ? err.message : 'Failed to update property status');
+    }
+  };
+
+  const handleToggleVisibility = async (serialNumber: number, visibility: boolean) => {
+    try {
+      setError(null); // Clear any previous errors
+      
+      // Update local state immediately for better UX (optimistic update)
+      setPropertyData(currentData => 
+        currentData.map(item => 
+          item.serial_number === serialNumber 
+            ? { ...item, visibility: visibility }
+            : item
+        )
+      );
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ visibility: visibility })
+        .eq('serial_number', serialNumber);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        // Revert the optimistic update on error
+        setPropertyData(currentData => 
+          currentData.map(item => 
+            item.serial_number === serialNumber 
+              ? { ...item, visibility: !visibility }
+              : item
+          )
+        );
+        throw error;
+      }
+
+      console.log(`Successfully updated visibility status for property ${serialNumber} to ${visibility}`);
+      
+    } catch (err: unknown) {
+      console.error('Error updating visibility status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update property visibility');
     }
   };
 
@@ -921,6 +963,7 @@ function DashboardContent() {
             setShowDeleteModal(true);
           }}
           onToggleRentSoldOut={handleToggleRentSoldOut}
+          onToggleVisibility={handleToggleVisibility}
         />
 
         {/* Pagination */}

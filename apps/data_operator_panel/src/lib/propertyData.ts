@@ -19,6 +19,7 @@ export interface SupabasePropertyData {
   deposit: string | null;
   date_stamp: string | null;
   rent_sold_out: boolean | null;
+  visibility: boolean | null;
 }
 
 // Form data interface for Add/Edit modals

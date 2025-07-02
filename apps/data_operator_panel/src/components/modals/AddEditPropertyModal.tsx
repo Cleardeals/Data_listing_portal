@@ -21,6 +21,7 @@ type PropertyData = {
   rent_or_sell_price: string;
   deposit: string;
   special_note: string;
+  visibility: boolean;
 };
 
 // Define the AddEditPropertyModal component
@@ -56,7 +57,8 @@ export const AddEditPropertyModal = ({
     age: '',
     rent_or_sell_price: '',
     deposit: '',
-    special_note: ''
+    special_note: '',
+    visibility: true
   });
   
   // Update form fields if initialData changes (for editing different rows)
@@ -77,7 +79,8 @@ export const AddEditPropertyModal = ({
       age: '',
       rent_or_sell_price: '',
       deposit: '',
-      special_note: ''
+      special_note: '',
+      visibility: true
     });
   }, [initialData]);
   
@@ -338,6 +341,25 @@ export const AddEditPropertyModal = ({
                 rows={3}
                 placeholder="Special notes or remarks"
               />
+            </div>
+
+            {/* Visibility */}
+            <div className="col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="visibility"
+                  checked={data.visibility}
+                  onChange={(e) => setData(prev => ({ ...prev, visibility: e.target.checked }))}
+                  className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-800 font-medium">
+                  Make this property visible to customers
+                </span>
+              </label>
+              <p className="text-sm text-gray-600 mt-1 ml-8">
+                {data.visibility ? 'This property will be visible in the customer portal' : 'This property will be hidden from customers'}
+              </p>
             </div>
           </div>
           

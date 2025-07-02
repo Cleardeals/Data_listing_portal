@@ -110,7 +110,8 @@ export default function TableViewPage() {
       try {
         query = supabase
           .from('propertydata')
-          .select('*', { count: 'exact' });
+          .select('*', { count: 'exact' })
+          .eq('visibility', true); // Only show visible properties
         
         if (!query) {
           throw new Error('Query builder returned null');
@@ -281,6 +282,7 @@ export default function TableViewPage() {
           const chunkQuery = supabase
             .from('propertydata')
             .select('*', { count: 'exact' })
+            .eq('visibility', true) // Only fetch visible properties
             .range(offset, offset + chunkSize - 1);
           
           const chunkResult = await chunkQuery;
@@ -806,6 +808,7 @@ export default function TableViewPage() {
       const { data, error } = await supabase
         .from('propertydata')
         .select('serial_number')
+        .eq('visibility', true)
         .limit(1);
         
       console.log('Simple query test:', { data, error });

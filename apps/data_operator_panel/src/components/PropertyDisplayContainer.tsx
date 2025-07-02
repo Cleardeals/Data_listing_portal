@@ -13,6 +13,7 @@ interface PropertyDisplayContainerProps {
   onEditProperty: (serialNumber: number) => void;
   onDeleteProperty: (serialNumber: number) => void;
   onToggleRentSoldOut: (serialNumber: number, rentSoldOut: boolean) => void;
+  onToggleVisibility: (serialNumber: number, visibility: boolean) => void;
 }
 
 const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
@@ -24,6 +25,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   onEditProperty,
   onDeleteProperty,
   onToggleRentSoldOut,
+  onToggleVisibility,
 }) => {
   const getViewModeTitle = () => {
     switch (viewMode) {
@@ -37,7 +39,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   const renderTableView = () => (
     <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse min-w-[1600px]">
+        <table className="w-full border-collapse min-w-[1700px]">
           <thead>
             <tr className="bg-gradient-to-r from-slate-800 to-slate-700 text-white">
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-20">
@@ -52,7 +54,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-56">Address</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Area</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-40">Sub Property Type</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Size (sq ft)</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Size</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Furnishing</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Availability</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-24">Floor</th>
@@ -64,6 +66,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-28">Deposit</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-48">Additional Details</th>
               <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Status</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-32">Visibility</th>
               <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-r border-slate-600 w-20 sticky right-20 bg-gradient-to-r from-slate-800 to-slate-700 z-10">Edit</th>
               <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider w-20 sticky right-0 bg-gradient-to-r from-slate-800 to-slate-700 z-10">Delete</th>
             </tr>
@@ -71,7 +74,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={22} className="px-6 py-12 text-center text-gray-500 text-sm">
+                <td colSpan={23} className="px-6 py-12 text-center text-gray-500 text-sm">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span>Loading properties...</span>
@@ -80,7 +83,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={22} className="px-6 py-12 text-center text-red-500 text-sm">
+                <td colSpan={23} className="px-6 py-12 text-center text-red-500 text-sm">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <span className="text-red-600">⚠️ Error: {error}</span>
                   </div>
@@ -88,7 +91,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               </tr>
             ) : properties.length === 0 ? (
               <tr>
-                <td colSpan={22} className="px-6 py-12 text-center text-gray-500 text-sm">
+                <td colSpan={23} className="px-6 py-12 text-center text-gray-500 text-sm">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <span className="text-gray-400">📋 No properties found</span>
                   </div>
@@ -231,6 +234,25 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
                             : 'text-green-600'
                         } group-hover:underline`}>
                           {property.rent_sold_out ? 'Sold/Rented' : 'Available'}
+                        </span>
+                      </label>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 border-r border-gray-200 text-center">
+                    <div className="flex justify-center items-center">
+                      <label className="inline-flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(property.visibility)}
+                          onChange={(e) => onToggleVisibility(property.serial_number, e.target.checked)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className={`ml-2 text-xs font-medium ${
+                          property.visibility 
+                            ? 'text-blue-600' 
+                            : 'text-gray-600'
+                        } group-hover:underline`}>
+                          {property.visibility ? 'Visible' : 'Hidden'}
                         </span>
                       </label>
                     </div>

@@ -216,6 +216,7 @@ export const usePropertyStats = () => {
         const { data, error: supabaseError } = await supabase
           .from('propertydata')
           .select('*')
+          .eq('visibility', true) // Only fetch visible properties for stats
           .range(offset, offset + batchSize - 1); // Fetch in batches
 
         if (supabaseError) {
