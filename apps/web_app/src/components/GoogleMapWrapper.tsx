@@ -20,6 +20,13 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
   selectedProperty,
   onPropertySelect
 }) => {
+  console.log('GoogleMapComponent: Rendering with', {
+    center,
+    zoom,
+    propertiesCount: properties.length,
+    googleMapsAvailable: !!(window as any).google
+  });
+
   const mapRef = React.useRef<HTMLDivElement>(null);
   const [map, setMap] = React.useState<any>(null);
   const markersRef = React.useRef<any[]>([]);
@@ -33,37 +40,35 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
 
   // Initialize map
   React.useEffect(() => {
+    console.log('GoogleMapComponent: Map initialization', {
+      hasMapRef: !!mapRef.current,
+      hasMap: !!map,
+      hasGoogle: !!(window as any).google
+    });
+
     if (mapRef.current && !map && (window as any).google) {
-      const newMap = new (window as any).google.maps.Map(mapRef.current, {
-        center,
-        zoom,
-        styles: [
-          {
-            featureType: 'all',
-            elementType: 'geometry',
-            stylers: [{ color: '#242f3e' }]
-          },
-          {
-            featureType: 'all',
-            elementType: 'labels.text.stroke',
-            stylers: [{ color: '#242f3e' }]
-          },
-          {
-            featureType: 'all',
-            elementType: 'labels.text.fill',
-            stylers: [{ color: '#746855' }]
-          },
-          {
-            featureType: 'water',
-            elementType: 'geometry',
-            stylers: [{ color: '#17263c' }]
-          }
-        ]
-      });
-      setMap(newMap);
-      
-      const newInfoWindow = new (window as any).google.maps.InfoWindow();
-      setInfoWindow(newInfoWindow);
+      console.log('GoogleMapComponent: Creating new map instance');
+      try {
+        const mapOptions = {
+          center,
+          zoom,
+          mapTypeControl: true,
+          streetViewControl: true,
+          fullscreenControl: true,
+          zoomControl: true,
+        };
+        
+        const newMap = new (window as any).google.maps.Map(mapRef.current, mapOptions);
+        setMap(newMap);
+        console.log('GoogleMapComponent: Map created successfully');
+        
+        const newInfoWindow = new (window as any).google.maps.InfoWindow();
+        setInfoWindow(newInfoWindow);
+        console.log('GoogleMapComponent: InfoWindow created successfully');
+        
+      } catch (error) {
+        console.error('GoogleMapComponent: Error creating map:', error);
+      }
     }
   }, [mapRef, map, center, zoom]);
 
@@ -78,28 +83,43 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
   React.useEffect(() => {
     if (!map || !infoWindow || !(window as any).google) return;
 
+    console.log('Creating markers for', properties.length, 'properties');
+
     // Clear existing markers
     markersRef.current.forEach((marker: any) => marker.setMap(null));
+    markersRef.current = [];
 
-    const newMarkers = properties
-      .filter(property => property.latitude && property.longitude)
-      .map(property => {
-        const marker = new (window as any).google.maps.Marker({
-          position: { lat: property.latitude!, lng: property.longitude! },
-          map,
-          title: `${property.area} - ₹${property.rent_or_sell_price || 'N/A'}`,
-          icon: {
-            url: property.property_type?.includes('Res') 
-              ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMjIgMTJIMTlWMjBIMTVWMTRIOVYyMEg1VjEySDJMMTIgMloiIGZpbGw9IiM0Rjc5QTQiLz4KPHN2Zz4K'
-              : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMgM0gyMVYyMUgzVjNaTTUgNVYxOUgxOVY1SDVaTTcgN0gxN1Y5SDdWN1pNNyAxMUgxN1YxM0g3VjExWk03IDE1SDE3VjE3SDdWMTVaIiBmaWxsPSIjRjU5RTBCIi8+Cjwvc3ZnPgo=',
-            scaledSize: new (window as any).google.maps.Size(30, 30),
-            anchor: new (window as any).google.maps.Point(15, 30)
-          }
-        });
+    const validProperties = properties.filter(property => {
+      const isValid = property.latitude && property.longitude && 
+                     !isNaN(property.latitude) && !isNaN(property.longitude);
+      if (!isValid) {
+        console.warn('Invalid property coordinates:', property.area, property.latitude, property.longitude);
+      }
+      return isValid;
+    });
+
+    console.log('Valid properties for mapping:', validProperties.length);
+
+    const newMarkers = validProperties.map(property => {
+      console.log('Creating marker for:', property.area, property.latitude, property.longitude);
+      
+      const marker = new (window as any).google.maps.Marker({
+        position: { lat: property.latitude!, lng: property.longitude! },
+        map,
+        title: `${property.area} - ₹${property.rent_or_sell_price || 'N/A'}`,
+        icon: {
+          path: (window as any).google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: property.property_type?.includes('Res') ? '#4F79A4' : '#F59E0B',
+          fillOpacity: 0.8,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 2
+        }
+      });
 
         // Create info window content
         const createInfoWindowContent = (prop: PropertyData) => `
-          <div style="max-width: 250px; font-family: system-ui, sans-serif;">
+          <div style="max-width: 300px; font-family: system-ui, sans-serif;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
               <span style="font-size: 20px;">${prop.property_type?.includes('Res') ? '🏠' : '🏢'}</span>
               <div>
@@ -123,6 +143,13 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
                 <span style="font-size: 12px; color: #374151;">${prop.area || 'N/A'}</span>
               </div>
               
+              ${prop.address ? `
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                  <span>🏠</span>
+                  <span style="font-size: 12px; color: #374151;">${prop.address}</span>
+                </div>
+              ` : ''}
+              
               ${prop.size ? `
                 <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
                   <span>📐</span>
@@ -130,10 +157,17 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
                 </div>
               ` : ''}
               
-              <div style="display: flex; align-items: center; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
                 <span>🛋️</span>
                 <span style="font-size: 12px; color: #374151;">${prop.furnishing_status || 'N/A'}</span>
               </div>
+
+              ${prop.owner_contact ? `
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                  <span>📞</span>
+                  <span style="font-size: 12px; color: #059669; font-weight: 600;">${prop.owner_contact}</span>
+                </div>
+              ` : ''}
             </div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e5e7eb;">
@@ -152,11 +186,29 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
           </div>
         `;
 
+        marker.addListener('mouseover', () => {
+          infoWindow.setContent(createInfoWindowContent(property));
+          infoWindow.open(map, marker);
+        });
+
+        marker.addListener('mouseout', () => {
+          // Close info window after a short delay to allow for mouse movement to info window
+          setTimeout(() => {
+            if (!marker.get('isHovered')) {
+              infoWindow.close();
+            }
+          }, 200);
+        });
+
         marker.addListener('click', () => {
+          // Keep info window open on click and select property
           infoWindow.setContent(createInfoWindowContent(property));
           infoWindow.open(map, marker);
           onPropertySelectRef.current(property);
         });
+
+        // Track hover state
+        marker.set('isHovered', false);
 
         return marker;
       });
@@ -242,7 +294,16 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
     }
   }, [selectedProperty, map, infoWindow]);
 
-  return <div ref={mapRef} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div 
+      ref={mapRef} 
+      style={{ 
+        width: '100%', 
+        height: '100%'
+      }} 
+      className="google-map-container"
+    />
+  );
 };
 
 interface GoogleMapWrapperProps {
@@ -253,7 +314,16 @@ interface GoogleMapWrapperProps {
 }
 
 const GoogleMapWrapper: React.FC<GoogleMapWrapperProps> = (props) => {
+  console.log('GoogleMapWrapper: Rendering with props', {
+    propertiesCount: props.properties.length,
+    hasApiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+    center: props.center,
+    apiKeyPrefix: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.substring(0, 15)
+  });
+
   const render = (status: Status) => {
+    console.log('GoogleMapWrapper: Render status:', status);
+    
     switch (status) {
       case Status.LOADING:
         return (
@@ -265,47 +335,66 @@ const GoogleMapWrapper: React.FC<GoogleMapWrapperProps> = (props) => {
           </div>
         );
       case Status.FAILURE:
+        console.error('GoogleMapWrapper: Google Maps failed to load');
         return (
           <div className="h-full flex items-center justify-center bg-red-500/20 border border-red-400/30 rounded-lg">
             <div className="text-center text-red-200">
               <span className="text-2xl mb-2 block">❌</span>
               <p className="font-medium">Google Maps Failed to Load</p>
               <p className="text-sm text-red-300/80 mt-1">
-                Please check your API key configuration
+                Check console for details. Verify API key and enabled services.
               </p>
             </div>
           </div>
         );
       case Status.SUCCESS:
+        console.log('GoogleMapWrapper: Google Maps loaded successfully, rendering GoogleMapComponent');
         return <GoogleMapComponent {...props} zoom={12} />;
+      default:
+        console.warn('GoogleMapWrapper: Unknown status:', status);
+        return (
+          <div className="h-full flex items-center justify-center bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
+            <div className="text-center text-yellow-200">
+              <span className="text-2xl mb-2 block">⚠️</span>
+              <p>Unknown Google Maps status: {status}</p>
+            </div>
+          </div>
+        );
     }
   };
 
   if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+    console.log('GoogleMapWrapper: No Google Maps API key found');
     return (
       <div className="h-full flex items-center justify-center bg-white/10 border border-white/20 rounded-lg">
         <div className="text-center text-white/60">
           <div className="text-4xl mb-4">🗺️</div>
           <p className="text-lg font-medium mb-2">Google Maps Not Configured</p>
           <p className="text-sm text-white/80 mb-4">
-            Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env.local file
+            Google Maps API key not found in environment variables
           </p>
           <div className="bg-white/10 rounded-lg p-4 max-w-md">
-            <p className="text-xs text-white/70 mb-2">Setup Instructions:</p>
-            <ol className="text-xs text-white/80 text-left space-y-1">
-              <li>1. Go to Google Cloud Console</li>
-              <li>2. Enable Maps JavaScript API</li>
-              <li>3. Create API key</li>
-              <li>4. Add to .env.local file</li>
-            </ol>
+            <p className="text-xs text-white/70 mb-2">Current environment check:</p>
+            <div className="text-xs text-white/80 text-left space-y-1">
+              <div>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Found' : 'Not found'}</div>
+            </div>
+          </div>
+          <div className="mt-4 text-xs text-white/60">
+            <p>📌 {props.properties.length} properties ready to map</p>
+            <p>🎯 Center: {props.center.lat.toFixed(4)}, {props.center.lng.toFixed(4)}</p>
           </div>
         </div>
       </div>
     );
   }
 
+  console.log('GoogleMapWrapper: Using API key, rendering Wrapper component');
   return (
-    <Wrapper apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} render={render} />
+    <Wrapper 
+      apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} 
+      render={render}
+      libraries={['geometry', 'places']}
+    />
   );
 };
 

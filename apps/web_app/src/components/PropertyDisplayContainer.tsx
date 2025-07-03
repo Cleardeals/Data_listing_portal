@@ -84,9 +84,11 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
             <div className="text-sm text-white/70">
               {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
             </div>
-            <div className="text-xs text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">
-              👁️ {getVisibleContactsCount()}/10 contacts visible
-            </div>
+            {viewMode !== 'map' && (
+              <div className="text-xs text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">
+                👁️ {getVisibleContactsCount()}/10 contacts visible
+              </div>
+            )}
           </div>
           {viewMode === 'master' && properties.length > 100 && (
             <div className="text-xs text-yellow-400 bg-yellow-500/20 px-3 py-1 rounded-full">
