@@ -59,6 +59,8 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
         };
         
         const newMap = new (window as any).google.maps.Map(mapRef.current, mapOptions);
+        console.log('GoogleMapComponent: Map instance created:', newMap);
+        
         setMap(newMap);
         console.log('GoogleMapComponent: Map created successfully');
         

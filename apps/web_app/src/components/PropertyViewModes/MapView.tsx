@@ -216,15 +216,17 @@ const MapView: React.FC<MapViewProps> = ({
       </div>
 
       {/* Full Width Map Container */}
-      <div className="w-full min-h-[700px]">
-        <div className="h-full min-h-[700px] bg-white/10 border border-white/20 rounded-lg overflow-hidden">
+      <div className="w-full h-[700px]">
+        <div className="h-full w-full bg-white/10 border border-white/20 rounded-lg overflow-hidden">
           {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
-            <GoogleMapWrapper
-              properties={propertiesWithCoords}
-              selectedProperty={selectedProperty}
-              onPropertySelect={handlePropertyClick}
-              center={mapCenter}
-            />
+            <div className="h-full w-full">
+              <GoogleMapWrapper
+                properties={propertiesWithCoords}
+                selectedProperty={selectedProperty}
+                onPropertySelect={handlePropertyClick}
+                center={mapCenter}
+              />
+            </div>
           ) : (
             /* Placeholder when no API key */
             <div className="h-full flex items-center justify-center text-white/60">
