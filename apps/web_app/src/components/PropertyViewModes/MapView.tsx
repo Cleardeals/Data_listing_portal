@@ -108,7 +108,9 @@ const geocodeAddress = async (area: string, address: string): Promise<{ lat: num
 
 const MapView: React.FC<MapViewProps> = ({
   properties,
-  loading
+  loading,
+  toggleContactVisibility,
+  isContactVisible
 }) => {
   console.log('MapView: Starting with', properties.length, 'properties');
 
@@ -296,6 +298,8 @@ const MapView: React.FC<MapViewProps> = ({
                 selectedProperty={selectedProperty}
                 onPropertySelect={handlePropertyClick}
                 center={mapCenter}
+                toggleContactVisibility={toggleContactVisibility}
+                isContactVisible={isContactVisible}
               />
             </div>
           ) : (

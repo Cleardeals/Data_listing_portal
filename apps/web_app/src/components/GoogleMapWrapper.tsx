@@ -4,6 +4,7 @@
 import React from 'react';
 import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import { PropertyData } from '@/lib/dummyProperties';
+import ContactField from '@/components/ui/ContactField';
 
 interface GoogleMapProps {
   center: { lat: number; lng: number };
@@ -11,6 +12,8 @@ interface GoogleMapProps {
   properties: Array<PropertyData & { latitude?: number; longitude?: number }>;
   selectedProperty: (PropertyData & { latitude?: number; longitude?: number }) | null;
   onPropertySelect: (property: PropertyData & { latitude?: number; longitude?: number }) => void;
+  toggleContactVisibility: (propertyId: string) => void;
+  isContactVisible: (propertyId: string) => boolean;
 }
 
 const GoogleMapComponent: React.FC<GoogleMapProps> = ({
@@ -18,7 +21,9 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
   zoom,
   properties,
   selectedProperty,
-  onPropertySelect
+  onPropertySelect,
+  toggleContactVisibility,
+  isContactVisible
 }) => {
   console.log('GoogleMapComponent: Rendering with', {
     center,
@@ -30,8 +35,11 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
   const mapRef = React.useRef<HTMLDivElement>(null);
   const [map, setMap] = React.useState<any>(null);
   const markersRef = React.useRef<any[]>([]);
-  const [infoWindow, setInfoWindow] = React.useState<any>(null);
+  const [hoveredProperty, setHoveredProperty] = React.useState<(PropertyData & { latitude?: number; longitude?: number }) | null>(null);
+  const [hoverCardPosition, setHoverCardPosition] = React.useState<{ x: number; y: number } | null>(null);
+  const [isHoveringCard, setIsHoveringCard] = React.useState(false);
   const onPropertySelectRef = React.useRef(onPropertySelect);
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Keep ref up to date
   React.useEffect(() => {
@@ -64,34 +72,91 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
         setMap(newMap);
         console.log('GoogleMapComponent: Map created successfully');
         
-        const newInfoWindow = new (window as any).google.maps.InfoWindow();
-        setInfoWindow(newInfoWindow);
-        console.log('GoogleMapComponent: InfoWindow created successfully');
-        
       } catch (error) {
         console.error('GoogleMapComponent: Error creating map:', error);
       }
     }
   }, [mapRef, map, center, zoom]);
 
-  // Update map center when it changes
+  // Update map center when it changes, but maintain Pune focus
   React.useEffect(() => {
     if (map) {
-      map.setCenter(center);
+      // Always keep the map centered on Pune area regardless of prop changes
+      const puneCenter = { lat: 18.5204, lng: 73.8567 };
+      
+      // Only update center if the current center is significantly far from Pune
+      const currentCenter = map.getCenter();
+      if (currentCenter) {
+        const currentLat = currentCenter.lat();
+        const currentLng = currentCenter.lng();
+        
+        // Check if current center is outside Pune area
+        const isOutsidePune = currentLat < 18.3 || currentLat > 18.8 || 
+                             currentLng < 73.6 || currentLng > 74.1;
+        
+        if (isOutsidePune) {
+          console.log('Map moved outside Pune area, resetting to Pune center');
+          map.setCenter(puneCenter);
+          map.setZoom(12);
+        }
+      } else {
+        // If no current center, set to Pune
+        map.setCenter(puneCenter);
+      }
     }
   }, [map, center]);
 
-  // Create markers for properties
-  React.useEffect(() => {
-    if (!map || !infoWindow || !(window as any).google) return;
+  // Clear hover card when no longer hovering
+  const clearHoverCard = React.useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      if (!isHoveringCard) {
+        setHoveredProperty(null);
+        setHoverCardPosition(null);
+      }
+    }, 200);
+  }, [isHoveringCard]);
 
-    console.log('Creating markers for', properties.length, 'properties');
+  // Array of bright colors that contrast well with green map background - moved outside to prevent recreation
+  const brightColors = React.useMemo(() => [
+    '#FF1744', // Bright red
+    '#FF6D00', // Bright orange
+    '#2962FF', // Bright blue
+    '#E91E63', // Bright pink
+    '#9C27B0', // Bright purple
+    '#FF5722', // Bright red-orange
+    '#3F51B5', // Bright indigo
+    '#FF9800', // Bright amber
+    '#E53935', // Bright red variant
+    '#8E24AA', // Bright purple variant
+    '#1E88E5', // Bright blue variant
+    '#FB8C00', // Bright orange variant
+    '#D81B60', // Bright pink variant
+    '#5E35B1', // Bright deep purple
+    '#1976D2'  // Bright blue variant
+  ], []);
 
-    // Clear existing markers
-    markersRef.current.forEach((marker: any) => marker.setMap(null));
-    markersRef.current = [];
+  // Function to get consistent color for a property
+  const getPropertyColor = React.useCallback((property: PropertyData & { latitude?: number; longitude?: number }) => {
+    // Create a simple hash from property's unique identifiers
+    const identifier = `${property.serial_number}-${property.area}-${property.latitude}-${property.longitude}`;
+    let hash = 0;
+    for (let i = 0; i < identifier.length; i++) {
+      const char = identifier.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    
+    // Use absolute value to ensure positive index
+    const colorIndex = Math.abs(hash) % brightColors.length;
+    return brightColors[colorIndex];
+  }, [brightColors]);
 
-    const validProperties = properties.filter(property => {
+  // Memoize valid properties to prevent unnecessary marker recreation
+  const validProperties = React.useMemo(() => {
+    return properties.filter(property => {
       const isValid = property.latitude && property.longitude && 
                      !isNaN(property.latitude) && !isNaN(property.longitude);
       if (!isValid) {
@@ -99,34 +164,25 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
       }
       return isValid;
     });
+  }, [properties]);
+
+  // Create markers for properties
+  React.useEffect(() => {
+    if (!map || !(window as any).google) return;
+
+    console.log('Creating markers for', validProperties.length, 'properties');
+
+    // Clear existing markers
+    markersRef.current.forEach((marker: any) => marker.setMap(null));
+    markersRef.current = [];
 
     console.log('Valid properties for mapping:', validProperties.length);
 
     const newMarkers = validProperties.map(property => {
       console.log('Creating marker for:', property.area, property.latitude, property.longitude);
       
-      // Array of bright colors that contrast well with green map background
-      const brightColors = [
-        '#FF1744', // Bright red
-        '#FF6D00', // Bright orange
-        '#2962FF', // Bright blue
-        '#E91E63', // Bright pink
-        '#9C27B0', // Bright purple
-        '#FF5722', // Bright red-orange
-        '#3F51B5', // Bright indigo
-        '#FF9800', // Bright amber
-        '#E53935', // Bright red variant
-        '#8E24AA', // Bright purple variant
-        '#1E88E5', // Bright blue variant
-        '#FB8C00', // Bright orange variant
-        '#D81B60', // Bright pink variant
-        '#5E35B1', // Bright deep purple
-        '#1976D2'  // Bright blue variant
-      ];
-      
-      // Generate random color for each property
-      const randomIndex = Math.floor(Math.random() * brightColors.length);
-      const markerColor = brightColors[randomIndex];
+      // Get consistent color for this property
+      const markerColor = getPropertyColor(property);
       
       const marker = new (window as any).google.maps.Marker({
         position: { lat: property.latitude!, lng: property.longitude! },
@@ -145,143 +201,140 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
         animation: (window as any).google.maps.Animation.DROP
       });
 
-        // Create info window content
-        const createInfoWindowContent = (prop: PropertyData) => `
-          <div style="max-width: 300px; font-family: system-ui, sans-serif;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span style="font-size: 20px;">${prop.property_type?.includes('Res') ? '🏠' : '🏢'}</span>
-              <div>
-                <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1f2937;">
-                  ${prop.sub_property_type || prop.property_type || 'Property'}
-                </h3>
-                <span style="font-size: 12px; color: #6b7280;">#${prop.serial_number}</span>
-              </div>
-            </div>
-            
-            <div style="margin-bottom: 8px;">
-              ${prop.owner_name ? `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                  <span>👤</span>
-                  <span style="font-size: 12px; color: #374151;">${prop.owner_name}</span>
-                </div>
-              ` : ''}
-              
-              <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                <span>📍</span>
-                <span style="font-size: 12px; color: #374151;">${prop.area || 'N/A'}</span>
-              </div>
-              
-              ${prop.address ? `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                  <span>🏠</span>
-                  <span style="font-size: 12px; color: #374151;">${prop.address}</span>
-                </div>
-              ` : ''}
-              
-              ${prop.size ? `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                  <span>📐</span>
-                  <span style="font-size: 12px; color: #374151;">${prop.size}</span>
-                </div>
-              ` : ''}
-              
-              <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                <span>🛋️</span>
-                <span style="font-size: 12px; color: #374151;">${prop.furnishing_status || 'N/A'}</span>
-              </div>
+      // Store the original color and property reference on the marker to prevent flickering
+      marker.originalColor = markerColor;
+      marker.propertyId = property.serial_number;
 
-              ${prop.owner_contact ? `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                  <span>📞</span>
-                  <span style="font-size: 12px; color: #059669; font-weight: 600;">${prop.owner_contact}</span>
-                </div>
-              ` : ''}
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              <div>
-                <div style="font-size: 14px; font-weight: 600; color: #059669;">
-                  ${prop.rent_or_sell_price ? `₹${parseFloat(prop.rent_or_sell_price).toLocaleString()}` : 'N/A'}
-                </div>
-                <div style="font-size: 10px; color: #6b7280;">
-                  ${prop.property_type?.includes('rental') ? 'Per Month' : 'Total'}
-                </div>
-              </div>
-              <span style="font-size: 12px; padding: 2px 6px; background-color: #dbeafe; color: #1e40af; border-radius: 4px;">
-                ${prop.availability || 'N/A'}
-              </span>
-            </div>
-          </div>
-        `;
-
-        marker.addListener('mouseover', () => {
-          // Get the original marker color
-          const originalColor = marker.getIcon().fillColor;
+      marker.addListener('mouseover', (event: any) => {
+        // Use stored original color instead of regenerating
+        marker.setIcon({
+          path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+          fillColor: marker.originalColor,
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 4,
+          strokeOpacity: 1,
+          scale: 2.5,
+          anchor: new (window as any).google.maps.Point(12, 20)
+        });
+        
+        // Call hover handler directly to avoid dependency issues
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+        
+        setHoveredProperty(property);
+        
+        // Use mouse event position for card placement
+        if (mapRef.current && event && event.domEvent) {
+          const mapContainer = mapRef.current;
+          const rect = mapContainer.getBoundingClientRect();
+          const clientX = event.domEvent.clientX;
+          const clientY = event.domEvent.clientY;
           
-          // Enlarge marker on hover with consistent home icon
-          marker.setIcon({
-            path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
-            fillColor: originalColor,
-            fillOpacity: 1,
-            strokeColor: '#FFFFFF',
-            strokeWeight: 4,
-            strokeOpacity: 1,
-            scale: 2.5,
-            anchor: new (window as any).google.maps.Point(12, 20)
+          setHoverCardPosition({
+            x: clientX - rect.left,
+            y: clientY - rect.top - 45 // Adjusted offset for slightly larger card
           });
-          
-          infoWindow.setContent(createInfoWindowContent(property));
-          infoWindow.open(map, marker);
-        });
-
-        marker.addListener('mouseout', () => {
-          // Get the original marker color
-          const originalColor = marker.getIcon().fillColor;
-          
-          // Reset marker size with consistent home icon
-          marker.setIcon({
-            path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
-            fillColor: originalColor,
-            fillOpacity: 1,
-            strokeColor: '#FFFFFF',
-            strokeWeight: 3,
-            strokeOpacity: 1,
-            scale: 2,
-            anchor: new (window as any).google.maps.Point(12, 20)
-          });
-          
-          // Close info window after a short delay to allow for mouse movement to info window
-          setTimeout(() => {
-            if (!marker.get('isHovered')) {
-              infoWindow.close();
-            }
-          }, 200);
-        });
-
-        marker.addListener('click', () => {
-          // Keep info window open on click and select property
-          infoWindow.setContent(createInfoWindowContent(property));
-          infoWindow.open(map, marker);
-          onPropertySelectRef.current(property);
-        });
-
-        // Track hover state
-        marker.set('isHovered', false);
-
-        return marker;
+        }
       });
 
+      marker.addListener('mouseout', () => {
+        // Use stored original color instead of regenerating
+        marker.setIcon({
+          path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+          fillColor: marker.originalColor,
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 3,
+          strokeOpacity: 1,
+          scale: 2,
+          anchor: new (window as any).google.maps.Point(12, 20)
+        });
+        
+        // Call leave handler directly to avoid dependency issues
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+        hoverTimeoutRef.current = setTimeout(() => {
+          // Check current hover state instead of using stale closure
+          setHoveredProperty(prev => {
+            setHoverCardPosition(prevPos => {
+              // Only clear if we're not currently hovering on the card
+              if (!document.querySelector('.hover-card:hover')) {
+                return null;
+              }
+              return prevPos;
+            });
+            if (!document.querySelector('.hover-card:hover')) {
+              return null;
+            }
+            return prev;
+          });
+        }, 200);
+      });
+
+      marker.addListener('click', () => {
+        onPropertySelectRef.current(property);
+      });
+
+      return marker;
+    });
+
     markersRef.current = newMarkers;
+    
+    // Always keep the map centered in Pune area, regardless of markers
+    const puneCenter = { lat: 18.5204, lng: 73.8567 };
+    
+    if (newMarkers.length > 0) {
+      // Validate that all markers are actually in the Pune area before fitting bounds
+      const allMarkersInPune = newMarkers.every(marker => {
+        const position = marker.getPosition();
+        const lat = position.lat();
+        const lng = position.lng();
+        // Check if coordinates are within reasonable Pune bounds
+        return lat >= 18.3 && lat <= 18.8 && lng >= 73.6 && lng <= 74.1;
+      });
+      
+      if (allMarkersInPune) {
+        // Only fit bounds if all markers are confirmed to be in Pune area
+        const bounds = new (window as any).google.maps.LatLngBounds();
+        newMarkers.forEach(marker => {
+          bounds.extend(marker.getPosition());
+        });
+        
+        // Fit bounds with padding to ensure we don't zoom in too much
+        map.fitBounds(bounds, 50); // 50px padding
+        
+        // Ensure reasonable zoom levels
+        (window as any).google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+          const currentZoom = map.getZoom();
+          if (currentZoom > 14) {
+            map.setZoom(14); // Max zoom level
+          } else if (currentZoom < 11) {
+            map.setZoom(11); // Min zoom level
+          }
+        });
+      } else {
+        // If any markers are outside Pune, just center on Pune with fixed zoom
+        map.setCenter(puneCenter);
+        map.setZoom(12);
+      }
+    } else {
+      // If no markers, center on Pune with default zoom
+      map.setCenter(puneCenter);
+      map.setZoom(12);
+    }
     
     // Cleanup function
     return () => {
       markersRef.current.forEach((marker: any) => marker.setMap(null));
     };
-  }, [map, properties, infoWindow]);
+  }, [map, validProperties, getPropertyColor]);
 
   // Highlight selected property
   React.useEffect(() => {
-    if (selectedProperty && map && infoWindow && markersRef.current.length > 0) {
+    if (selectedProperty && map && markersRef.current.length > 0) {
       const selectedMarker = markersRef.current.find((marker: any) => {
         const position = marker.getPosition();
         return position?.lat() === selectedProperty.latitude && 
@@ -291,76 +344,126 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
       if (selectedMarker) {
         map.setCenter({ lat: selectedProperty.latitude!, lng: selectedProperty.longitude! });
         map.setZoom(Math.max(map.getZoom() || 12, 15));
-        
-        const createInfoWindowContent = (prop: PropertyData) => `
-          <div style="max-width: 250px; font-family: system-ui, sans-serif;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span style="font-size: 20px;">${prop.property_type?.includes('Res') ? '🏠' : '🏢'}</span>
-              <div>
-                <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1f2937;">
-                  ${prop.sub_property_type || prop.property_type || 'Property'}
-                </h3>
-                <span style="font-size: 12px; color: #6b7280;">#${prop.serial_number}</span>
-              </div>
-            </div>
-            
-            <div style="margin-bottom: 8px;">
-              ${prop.owner_name ? `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                  <span>👤</span>
-                  <span style="font-size: 12px; color: #374151;">${prop.owner_name}</span>
-                </div>
-              ` : ''}
-              
-              <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                <span>📍</span>
-                <span style="font-size: 12px; color: #374151;">${prop.area || 'N/A'}</span>
-              </div>
-              
-              ${prop.size ? `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                  <span>📐</span>
-                  <span style="font-size: 12px; color: #374151;">${prop.size}</span>
-                </div>
-              ` : ''}
-              
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <span>🛋️</span>
-                <span style="font-size: 12px; color: #374151;">${prop.furnishing_status || 'N/A'}</span>
-              </div>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              <div>
-                <div style="font-size: 14px; font-weight: 600; color: #059669;">
-                  ${prop.rent_or_sell_price ? `₹${parseFloat(prop.rent_or_sell_price).toLocaleString()}` : 'N/A'}
-                </div>
-                <div style="font-size: 10px; color: #6b7280;">
-                  ${prop.property_type?.includes('rental') ? 'Per Month' : 'Total'}
-                </div>
-              </div>
-              <span style="font-size: 12px; padding: 2px 6px; background-color: #dbeafe; color: #1e40af; border-radius: 4px;">
-                ${prop.availability || 'N/A'}
-              </span>
-            </div>
-          </div>
-        `;
-        
-        infoWindow.setContent(createInfoWindowContent(selectedProperty));
-        infoWindow.open(map, selectedMarker);
       }
     }
-  }, [selectedProperty, map, infoWindow]);
+  }, [selectedProperty, map]);
 
   return (
-    <div 
-      ref={mapRef} 
-      style={{ 
-        width: '100%', 
-        height: '100%'
-      }} 
-      className="google-map-container"
-    />
+    <div className="relative w-full h-full">
+      <div 
+        ref={mapRef} 
+        style={{ 
+          width: '100%', 
+          height: '100%'
+        }} 
+        className="google-map-container"
+      />
+      
+      {/* Custom Hover Card */}
+      {hoveredProperty && hoverCardPosition && (
+        <div
+          className="absolute z-50 pointer-events-auto hover-card"
+          style={{
+            left: `${hoverCardPosition.x}px`,
+            top: `${hoverCardPosition.y}px`,
+            transform: 'translate(-50%, -100%)'
+          }}
+          onMouseEnter={() => setIsHoveringCard(true)}
+          onMouseLeave={() => {
+            setIsHoveringCard(false);
+            clearHoverCard();
+          }}
+        >
+          <div className="backdrop-blur-md bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-white/30 rounded-lg overflow-hidden transition-all duration-300 shadow-2xl max-w-sm">
+            <div className="flex flex-row h-36">
+              {/* Image/Icon Section - Left Side */}
+              <div className="w-16 h-full bg-gradient-to-br from-blue-600/80 to-purple-600/80 flex items-center justify-center border-r border-white/30 flex-shrink-0">
+                <div className="text-center">
+                  <div className="text-xl">
+                    {hoveredProperty.property_type?.includes('Res') ? '🏠' : '🏢'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Content Section - Right Side */}
+              <div className="flex-1 p-2.5 flex flex-col justify-between min-w-0">
+                {/* Top Section - Title and Serial */}
+                <div>
+                  <div className="flex items-start justify-between mb-1.5">
+                    <h3 className="text-xs font-semibold text-white line-clamp-1 flex-1 mr-1.5">
+                      {hoveredProperty.sub_property_type || hoveredProperty.property_type || 'Property'}
+                    </h3>
+                    <span className="text-[10px] text-white/60 bg-white/10 px-1.5 py-0.5 rounded text-nowrap">
+                      #{hoveredProperty.serial_number}
+                    </span>
+                  </div>
+
+                  {/* Owner Name */}
+                  {hoveredProperty.owner_name && (
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-yellow-400 text-[10px]">👤</span>
+                      <span className="text-white/80 text-[10px] truncate">{hoveredProperty.owner_name}</span>
+                    </div>
+                  )}
+
+                  {/* Property Details - Compact Grid */}
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px] mb-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-blue-400 text-[9px]">📍</span>
+                      <span className="text-white/80 truncate">{hoveredProperty.area || 'N/A'}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-purple-400 text-[9px]">📐</span>
+                      <span className="text-white/80 truncate">{hoveredProperty.size || 'N/A'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-orange-400 text-[9px]">🛋️</span>
+                      <span className="text-white/80 truncate">{hoveredProperty.furnishing_status || 'N/A'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-blue-400 text-[9px]">ℹ️</span>
+                      <span className="text-blue-400 text-[10px] font-medium truncate">
+                        {hoveredProperty.availability || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Section - Price and Contact */}
+                <div className="border-t border-white/10 pt-1.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-green-400">
+                        {hoveredProperty.rent_or_sell_price ? `₹${parseFloat(hoveredProperty.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+                      </div>
+                      <div className="text-[9px] text-white/60 mt-0.5">
+                        {hoveredProperty.property_type?.includes('rental') ? 'Per Month' : 'Total'}
+                      </div>
+                    </div>
+                    
+                    {/* Contact - Right Aligned */}
+                    <div className="ml-2.5">
+                      <ContactField
+                        contact={hoveredProperty.owner_contact}
+                        propertyId={String(hoveredProperty.serial_number)}
+                        isVisible={isContactVisible(String(hoveredProperty.serial_number))}
+                        onToggle={toggleContactVisibility}
+                        className="text-[10px] flex items-center gap-1"
+                        iconClassName=""
+                        showIcon={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -369,6 +472,8 @@ interface GoogleMapWrapperProps {
   selectedProperty: (PropertyData & { latitude?: number; longitude?: number }) | null;
   onPropertySelect: (property: PropertyData & { latitude?: number; longitude?: number }) => void;
   center: { lat: number; lng: number };
+  toggleContactVisibility: (propertyId: string) => void;
+  isContactVisible: (propertyId: string) => boolean;
 }
 
 const GoogleMapWrapper: React.FC<GoogleMapWrapperProps> = (props) => {
