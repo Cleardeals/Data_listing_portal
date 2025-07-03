@@ -17,8 +17,6 @@ import PropertyStatsOverview from '@/components/PropertyStatsOverview';
 import PropertyControlPanel from '@/components/PropertyControlPanel';
 import PropertyFiltersPanel, { FilterState, initialFilters } from '@/components/PropertyFiltersPanel';
 import PropertyDisplayContainer from '@/components/PropertyDisplayContainer';
-import AISalesScriptGenerator from '@/components/AISalesScriptGenerator';
-import AIPropertySearch from '@/components/AIPropertySearch';
 
 export default function TableViewPage() {
   // Auth state
@@ -1053,18 +1051,6 @@ export default function TableViewPage() {
               pageSize={pageSize}
               loading={loading}
               onFetchProperties={fetchPropertiesWithDateFilter}
-            />
-
-            {/* AI Property Search - Standalone feature */}
-            <AIPropertySearch />
-
-            {/* AI Sales Script Generator */}
-            <AISalesScriptGenerator
-              properties={properties}
-              onScriptGenerated={(scripts) => {
-                console.log('Generated scripts:', scripts);
-                // You can add additional handling here, like storing in state or analytics
-              }}
             />
 
             {/* Error Display */}

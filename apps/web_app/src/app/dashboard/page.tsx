@@ -7,11 +7,80 @@ import LazyAreaChart from "@/components/LazyAreaChart";
 import LazyStatsGrid from "@/components/LazyStatsGrid";
 import PropertyStatsOverview from "@/components/PropertyStatsOverview";
 import { usePropertyStats } from "@/hooks/usePropertyStats";
+import AISalesScriptGenerator from "@/components/AISalesScriptGenerator";
+import AIPropertySearch from "@/components/AIPropertySearch";
+import RealEstateMentor from "@/components/RealEstateMentor";
+import { useState, useEffect } from "react";
+import { PropertyData } from "@/lib/dummyProperties";
+import { supabase } from "@/lib/supabase";
+import { SalesScriptResponse } from "@/types/aiTypes";
 
 // Main Dashboard page component
 export default function DashboardPage() {
   const { user } = useAuth();
   const { stats, loading, error, clearCache } = usePropertyStats();
+  
+  // State for AI components
+  const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [loadingAIData, setLoadingAIData] = useState(true);
+
+  // Load properties for AI components with full pagination support
+  useEffect(() => {
+    const loadAllProperties = async () => {
+      if (!user) return;
+      
+      setLoadingAIData(true);
+      try {
+        const allProperties: PropertyData[] = [];
+        let from = 0;
+        const batchSize = 1000; // Supabase default limit
+        let hasMoreData = true;
+
+        while (hasMoreData) {
+          const { data, error } = await supabase
+            .from('propertydata')
+            .select('*')
+            .order('serial_number', { ascending: false })
+            .range(from, from + batchSize - 1);
+
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            allProperties.push(...data);
+            from += batchSize;
+            
+            // If we got less than batchSize, we've reached the end
+            if (data.length < batchSize) {
+              hasMoreData = false;
+            }
+          } else {
+            hasMoreData = false;
+          }
+        }
+
+        setProperties(allProperties);
+        console.log(`Loaded ${allProperties.length} properties for AI tools`);
+      } catch (error) {
+        console.error('Error loading properties for AI:', error);
+        // Fallback to basic fetch if pagination fails
+        try {
+          const { data, error: fallbackError } = await supabase
+            .from('propertydata')
+            .select('*')
+            .order('serial_number', { ascending: false });
+          
+          if (fallbackError) throw fallbackError;
+          setProperties(data || []);
+        } catch (fallbackError) {
+          console.error('Fallback fetch also failed:', fallbackError);
+        }
+      } finally {
+        setLoadingAIData(false);
+      }
+    };
+
+    loadAllProperties();
+  }, [user]);
 
   // Add error display for property stats
   const ErrorDisplay = () => (
@@ -92,6 +161,165 @@ export default function DashboardPage() {
                   <p className="text-white/70 text-sm">Manage account & preferences</p>
                 </div>
               </Link>
+            </div>
+          </div>
+
+          {/* AI Tools Section */}
+          <div className="mb-8">
+            <div className="bg-slate-800/70 backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl">
+              {/* Section Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-2xl">🤖</span>
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                      AI-Powered Assistant Suite
+                    </h2>
+                    <p className="text-white/90 text-lg mt-1">Your intelligent real estate companion</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className={`w-2 h-2 rounded-full ${loadingAIData ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
+                      <span className={`text-sm font-medium ${loadingAIData ? 'text-yellow-400' : 'text-green-400'}`}>
+                        {loadingAIData ? 'Loading AI Data...' : '3 AI Tools Active'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Quick Stats - simplified */}
+                <div className="hidden lg:flex items-center gap-6">
+                  <div className="text-center cursor-pointer">
+                    <div className="text-2xl font-bold text-blue-400">
+                      {loadingAIData ? (
+                        <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      ) : (
+                        properties.length
+                      )}
+                    </div>
+                    <div className="text-xs text-white/60">Properties Loaded</div>
+                  </div>
+                  <div className="text-center cursor-pointer">
+                    <div className="text-2xl font-bold text-purple-400">3</div>
+                    <div className="text-xs text-white/60">AI Models</div>
+                  </div>
+                  <div className="text-center cursor-pointer">
+                    <div className="text-2xl font-bold text-green-400">
+                      {loadingAIData ? '...' : '∞'}
+                    </div>
+                    <div className="text-xs text-white/60">Queries</div>
+                  </div>
+                  {!loadingAIData && (
+                    <div className="text-center cursor-pointer">
+                      <div className="text-2xl font-bold text-emerald-400">⚡</div>
+                      <div className="text-xs text-white/60">Ready</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* AI Tools Stack - Vertical Layout */}
+              <div className="space-y-6">
+                {/* Property Search Tool */}
+                <div className="relative bg-slate-900/80 backdrop-blur-sm border border-white/30 rounded-xl p-6 hover:bg-slate-900/90 transition-all duration-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-md">
+                      <span className="text-white text-lg">🔍</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">Smart Property Search</h3>
+                      <p className="text-white/80 text-sm">Natural language property discovery</p>
+                    </div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  </div>
+                  <div className="w-full">
+                    <AIPropertySearch />
+                  </div>
+                </div>
+
+                {/* Sales Script Generator Tool */}
+                <div className="relative bg-slate-900/80 backdrop-blur-sm border border-white/30 rounded-xl p-6 hover:bg-slate-900/90 transition-all duration-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-md">
+                      <span className="text-white text-lg">📝</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">Sales Script Generator</h3>
+                      <p className="text-white/80 text-sm">AI-powered sales presentations</p>
+                    </div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                  </div>
+                  <div className="w-full">
+                    <AISalesScriptGenerator
+                      properties={properties}
+                      onScriptGenerated={(scripts: SalesScriptResponse[]) => {
+                        console.log('Generated scripts:', scripts);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Real Estate Mentor Tool */}
+                <div className="relative bg-slate-900/80 backdrop-blur-sm border border-white/30 rounded-xl p-6 hover:bg-slate-900/90 transition-all duration-200">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-md">
+                      <span className="text-white text-lg">🏠</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">Expert Mentor (Kaka)</h3>
+                      <p className="text-white/80 text-sm">25+ years Pune real estate wisdom</p>
+                    </div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  </div>
+                  <div className="w-full">
+                    <RealEstateMentor />
+                  </div>
+                </div>
+              </div>
+
+              {/* Simplified Feature Highlights */}
+              <div className="mt-8 pt-6 border-t border-white/30">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-white/90 text-sm">Natural Language Processing</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    <span className="text-white/90 text-sm">Context-Aware Responses</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-white/90 text-sm">Local Market Expertise</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                    <span className="text-white/90 text-sm">Real-time Property Data</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Simplified Usage Tips */}
+              <div className="mt-6 p-4 bg-slate-700/50 border border-indigo-400/40 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-indigo-500/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-indigo-300 text-sm">💡</span>
+                  </div>
+                  <div>
+                    <h4 className="text-indigo-100 font-medium mb-1">Pro Tips for Best Results</h4>
+                    <ul className="text-indigo-200/90 text-sm space-y-1">
+                      <li>• Use specific locations and requirements for property search</li>
+                      <li>• Select multiple properties for comprehensive sales scripts</li>
+                      <li>• Ask Kaka about local regulations, market trends, and negotiation tactics</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

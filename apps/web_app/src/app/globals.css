@@ -146,6 +146,29 @@ body {
   background: linear-gradient(to bottom, #2563eb, #1e40af);
 }
 
+/* Custom Scrollbar Styles for Horizontal Property Cards */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
@@ -324,6 +347,176 @@ html {
   animation: morph-bg 8s ease-in-out infinite;
 }
 
+/* AI Tools Section Animations */
+@keyframes ai-tool-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes ai-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 30px rgba(168, 85, 247, 0.4);
+  }
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced AI Tools Micro-interactions */
+@keyframes feature-highlight {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+@keyframes gradient-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes text-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  }
+}
+
+@keyframes card-lift {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(-4px) scale(1.02);
+  }
+}
+
+@keyframes icon-bounce {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+/* AI Tools Classes */
+.ai-tool-card {
+  animation: slide-in-up 0.6s ease-out;
+}
+
+.ai-tool-card:hover {
+  animation: card-lift 0.3s ease-out forwards;
+}
+
+.ai-tool-card .text-white:hover {
+  animation: text-glow 2s ease-in-out infinite;
+}
+
+.ai-tool-card:hover .bg-gradient-to-r {
+  animation: gradient-pulse 2s ease-in-out infinite;
+}
+
+.ai-tool-card:hover svg,
+.ai-tool-card:hover span {
+  animation: icon-bounce 0.6s ease-in-out;
+}
+
+.ai-tool-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.ai-tool-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-tool-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.ai-tool-float {
+  animation: ai-tool-float 6s ease-in-out infinite;
+}
+
+.ai-glow {
+  animation: ai-glow 4s ease-in-out infinite;
+}
+
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Smooth hover transitions */
+.ai-tool-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-tool-hover:hover {
+  transform: translateY(-2px);
+  animation: feature-highlight 0.4s ease-in-out;
+}
+
+/* Gradient background animation */
+@keyframes ai-gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.ai-gradient-bg {
+  background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+  background-size: 400% 400%;
+  animation: ai-gradient 15s ease infinite;
+}
+
 /* Responsive enhancements */
 @media (max-width: 768px) {
   .property-card-3d {
@@ -395,4 +588,14 @@ html {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .ai-tool-card,
+  .ai-tool-hover,
+  .status-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
 }

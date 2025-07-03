@@ -68,3 +68,35 @@ export interface PropertySearchState {
     confidenceScore?: number;
   } | null;
 }
+
+// AI Real Estate Mentor types
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface RealEstateMentorRequest {
+  message: string;
+  chatHistory?: ChatMessage[];
+  context?: 'training' | 'legal' | 'market' | 'general';
+  userLevel?: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface RealEstateMentorResponse {
+  success: boolean;
+  response: string;
+  context: string;
+  tips?: string[];
+  resources?: string[];
+  nextSteps?: string[];
+  error?: string;
+}
+
+export interface MentorChatState {
+  isLoading: boolean;
+  messages: ChatMessage[];
+  currentContext: 'training' | 'legal' | 'market' | 'general';
+  userLevel: 'beginner' | 'intermediate' | 'advanced';
+  error: string | null;
+}
