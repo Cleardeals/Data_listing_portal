@@ -27,3 +27,44 @@ export interface SalesScriptResponse {
     generatedAt: string;
   };
 }
+
+// AI Property Search types
+export interface PropertySearchRequest {
+  prompt: string;
+  maxResults?: number;
+  searchType?: 'basic' | 'detailed' | 'investment';
+  priceRange?: 'budget' | 'mid' | 'premium';
+  locationPreference?: string[];
+}
+
+export interface PropertySearchResponse {
+  success: boolean;
+  properties: PropertyData[];
+  searchCriteria: string;
+  totalMatches: number;
+  aiExplanation: string;
+  searchMetadata: {
+    searchType: string;
+    priceRange: string;
+    maxResults: number;
+    generatedAt: string;
+    confidenceScore?: number;
+  };
+  error?: string;
+  suggestion?: string;
+}
+
+export interface PropertySearchState {
+  isSearching: boolean;
+  results: PropertyData[];
+  searchCriteria: string;
+  aiExplanation: string;
+  totalMatches: number;
+  error: string | null;
+  hasSearched: boolean;
+  searchMetadata: {
+    searchType?: string;
+    priceRange?: string;
+    confidenceScore?: number;
+  } | null;
+}

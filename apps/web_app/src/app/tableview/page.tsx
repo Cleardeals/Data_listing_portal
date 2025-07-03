@@ -18,6 +18,7 @@ import PropertyControlPanel from '@/components/PropertyControlPanel';
 import PropertyFiltersPanel, { FilterState, initialFilters } from '@/components/PropertyFiltersPanel';
 import PropertyDisplayContainer from '@/components/PropertyDisplayContainer';
 import AISalesScriptGenerator from '@/components/AISalesScriptGenerator';
+import AIPropertySearch from '@/components/AIPropertySearch';
 
 export default function TableViewPage() {
   // Auth state
@@ -1053,6 +1054,9 @@ export default function TableViewPage() {
               loading={loading}
               onFetchProperties={fetchPropertiesWithDateFilter}
             />
+
+            {/* AI Property Search - Standalone feature */}
+            <AIPropertySearch />
 
             {/* AI Sales Script Generator */}
             <AISalesScriptGenerator
