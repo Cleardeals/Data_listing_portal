@@ -18,48 +18,85 @@ interface PropertyWithCoords extends PropertyData {
   geocoded?: boolean;
 }
 
-// Geocoding service to convert area + address to coordinates
+// Geocoding cache to avoid re-geocoding same addresses
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>();
+
+// Geocoding service with rate limiting and retry logic
 const geocodeAddress = async (area: string, address: string): Promise<{ lat: number; lng: number } | null> => {
   try {
     const query = `${area} ${address}`.trim();
     if (!query) return null;
 
+    // Check cache first
+    const cacheKey = query.toLowerCase();
+    if (geocodeCache.has(cacheKey)) {
+      const cached = geocodeCache.get(cacheKey);
+      console.log('Using cached geocoding result for:', query);
+      return cached || null;
+    }
+
+    // Add delay to prevent rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Try Google Maps Geocoding API first if available
     if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.results && data.results.length > 0) {
-          const location = data.results[0].geometry.location;
-          return {
-            lat: location.lat,
-            lng: location.lng
-          };
+      try {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'OK' && data.results && data.results.length > 0) {
+            const location = data.results[0].geometry.location;
+            const result = {
+              lat: location.lat,
+              lng: location.lng
+            };
+            // Cache the result
+            geocodeCache.set(cacheKey, result);
+            return result;
+          }
+          
+          // Handle rate limiting
+          if (data.status === 'OVER_QUERY_LIMIT') {
+            console.warn('Google Maps API rate limit exceeded');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            geocodeCache.set(cacheKey, null);
+            return null;
+          }
         }
+      } catch (error) {
+        console.warn('Google Maps API error:', error);
       }
     }
 
     // Fallback to OpenCage API if Google Maps fails
     if (process.env.NEXT_PUBLIC_OPENCAGE_API_KEY) {
-      const response = await fetch(
-        `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_OPENCAGE_API_KEY}&limit=1`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.results && data.results.length > 0) {
-          const result = data.results[0];
-          return {
-            lat: result.geometry.lat,
-            lng: result.geometry.lng
-          };
+      try {
+        const response = await fetch(
+          `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_OPENCAGE_API_KEY}&limit=1`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.results && data.results.length > 0) {
+            const result = {
+              lat: data.results[0].geometry.lat,
+              lng: data.results[0].geometry.lng
+            };
+            // Cache the result
+            geocodeCache.set(cacheKey, result);
+            return result;
+          }
         }
+      } catch (error) {
+        console.warn('OpenCage API error:', error);
       }
     }
     
+    // Cache null result to avoid retrying
+    geocodeCache.set(cacheKey, null);
     return null;
   } catch (error) {
     console.warn('Geocoding failed for:', area, address, error);
@@ -76,12 +113,12 @@ const MapView: React.FC<MapViewProps> = ({
   console.log('MapView: Starting with', properties.length, 'properties');
 
   const [propertiesWithCoords, setPropertiesWithCoords] = useState<PropertyWithCoords[]>([]);
-  const [mapCenter, setMapCenter] = useState({ lat: 19.0760, lng: 72.8777 }); // Default to Mumbai
+  const [mapCenter, setMapCenter] = useState({ lat: 18.5204, lng: 73.8567 }); // Default to Pune
   const [selectedProperty, setSelectedProperty] = useState<PropertyWithCoords | null>(null);
   const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0 });
   const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
 
-  // Geocode properties
+  // Geocode properties with batching and error handling
   useEffect(() => {
     const geocodeProperties = async () => {
       if (!properties.length) {
@@ -89,32 +126,66 @@ const MapView: React.FC<MapViewProps> = ({
         return;
       }
 
+      console.log('MapView: Starting geocoding for', properties.length, 'properties');
       setGeocodingProgress({ current: 0, total: properties.length });
       const geocodedProperties: PropertyWithCoords[] = [];
 
-      for (let i = 0; i < properties.length; i++) {
-        const property = properties[i];
-        setGeocodingProgress({ current: i + 1, total: properties.length });
+      // Process in smaller batches to avoid overwhelming the API
+      const BATCH_SIZE = 5; // Reduced batch size for better reliability
+      const batches = [];
+      for (let i = 0; i < properties.length; i += BATCH_SIZE) {
+        batches.push(properties.slice(i, i + BATCH_SIZE));
+      }
 
-        let coords: { lat: number; lng: number } | null = null;
+      let processedCount = 0;
 
-        // Try geocoding with area and address
-        if (property.area || property.address) {
-          coords = await geocodeAddress(property.area || '', property.address || '');
-          
-          if (!coords && !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && !process.env.NEXT_PUBLIC_OPENCAGE_API_KEY) {
-            setShowApiKeyWarning(true);
+      for (const batch of batches) {
+        console.log(`Processing batch ${Math.floor(processedCount / BATCH_SIZE) + 1}/${batches.length}`);
+        
+        // Process batch with limited concurrency
+        const batchPromises = batch.map(async (property, index) => {
+          const globalIndex = processedCount + index;
+          setGeocodingProgress({ current: globalIndex + 1, total: properties.length });
+
+          let coords: { lat: number; lng: number } | null = null;
+
+          // Try geocoding with area and address
+          if (property.area || property.address) {
+            coords = await geocodeAddress(property.area || '', property.address || '');
+            
+            if (!coords && !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && !process.env.NEXT_PUBLIC_OPENCAGE_API_KEY) {
+              setShowApiKeyWarning(true);
+            }
           }
-        }
 
-        // Only add properties that have valid coordinates
-        if (coords) {
-          geocodedProperties.push({
-            ...property,
-            latitude: coords.lat,
-            longitude: coords.lng,
-            geocoded: true
-          });
+          // Return result with coordinates if successful
+          if (coords) {
+            return {
+              ...property,
+              latitude: coords.lat,
+              longitude: coords.lng,
+              geocoded: true
+            };
+          }
+          return null;
+        });
+
+        // Wait for batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        
+        // Add successful results
+        batchResults.forEach(result => {
+          if (result) {
+            geocodedProperties.push(result);
+          }
+        });
+
+        processedCount += batch.length;
+
+        // Add delay between batches to respect rate limits
+        if (processedCount < properties.length) {
+          console.log(`Waiting before next batch... (${processedCount}/${properties.length} processed)`);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
         }
       }
 

@@ -9,6 +9,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   className?: string;
+  viewMode?: 'compact' | 'gallery' | 'master' | 'map';
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -18,12 +19,29 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   onPageSizeChange,
   className = '',
+  viewMode,
 }) => {
   const pagination = calculatePagination(currentPage, pageSize, totalItems);
   const pageNumbers = generatePageNumbers(currentPage, pagination.totalPages);
 
   // Always show pagination info, even for single page, to provide feedback
   if (totalItems === 0) return null;
+
+  // For map view, limit page size options to avoid performance issues
+  const getPageSizeOptions = () => {
+    if (viewMode === 'map') {
+      return [
+        { value: 25, label: '25' },
+        { value: 50, label: '50' }
+      ];
+    }
+    
+    return [
+      { value: 25, label: '25' },
+      { value: 50, label: '50' },
+      { value: 100, label: '100' }
+    ];
+  };
 
   return (
     <div className={`flex items-center justify-between mt-6 ${className}`}>
@@ -96,11 +114,18 @@ const Pagination: React.FC<PaginationProps> = ({
             }}
             className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white"
           >
-            <option value="25" className="bg-gray-800">25</option>
-            <option value="50" className="bg-gray-800">50</option>
-            <option value="100" className="bg-gray-800">100</option>
+            {getPageSizeOptions().map(option => (
+              <option key={option.value} value={option.value} className="bg-gray-800">
+                {option.label}
+              </option>
+            ))}
           </select>
           <span>entries</span>
+          {viewMode === 'map' && (
+            <span className="text-xs text-blue-400 ml-2">
+              (Limited for map performance)
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -846,6 +846,16 @@ export default function TableViewPage() {
     fetchProperties(1, newPageSize, filters, true, activeDateFilter);
   }, [filters, fetchProperties, pageSize, activeDateFilter]);
 
+  // Auto-adjust page size for map view
+  useEffect(() => {
+    if (filters.viewMode === 'map' && pageSize > 50) {
+      console.log('Auto-adjusting page size from', pageSize, 'to 50 for map view');
+      setPageSize(50);
+      setCurrentPage(1);
+      fetchProperties(1, 50, filters, true, activeDateFilter);
+    }
+  }, [filters.viewMode, pageSize, filters, fetchProperties, activeDateFilter]);
+
   // Date filter handler
   const handleDateFilter = useCallback((filter: 'today' | 'yesterday' | 'all') => {
     console.log('=== DATE FILTER CHANGE ===');
@@ -1071,6 +1081,7 @@ export default function TableViewPage() {
                   pageSize={pageSize}
                   onPageChange={handlePageChange}
                   onPageSizeChange={handlePageSizeChange}
+                  viewMode={filters.viewMode}
                 />
               </div>
             )}

@@ -105,18 +105,44 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
     const newMarkers = validProperties.map(property => {
       console.log('Creating marker for:', property.area, property.latitude, property.longitude);
       
+      // Array of bright colors that contrast well with green map background
+      const brightColors = [
+        '#FF1744', // Bright red
+        '#FF6D00', // Bright orange
+        '#2962FF', // Bright blue
+        '#E91E63', // Bright pink
+        '#9C27B0', // Bright purple
+        '#FF5722', // Bright red-orange
+        '#3F51B5', // Bright indigo
+        '#FF9800', // Bright amber
+        '#E53935', // Bright red variant
+        '#8E24AA', // Bright purple variant
+        '#1E88E5', // Bright blue variant
+        '#FB8C00', // Bright orange variant
+        '#D81B60', // Bright pink variant
+        '#5E35B1', // Bright deep purple
+        '#1976D2'  // Bright blue variant
+      ];
+      
+      // Generate random color for each property
+      const randomIndex = Math.floor(Math.random() * brightColors.length);
+      const markerColor = brightColors[randomIndex];
+      
       const marker = new (window as any).google.maps.Marker({
         position: { lat: property.latitude!, lng: property.longitude! },
         map,
         title: `${property.area} - ₹${property.rent_or_sell_price || 'N/A'}`,
         icon: {
-          path: (window as any).google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: property.property_type?.includes('Res') ? '#4F79A4' : '#F59E0B',
-          fillOpacity: 0.8,
+          path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+          fillColor: markerColor,
+          fillOpacity: 1,
           strokeColor: '#FFFFFF',
-          strokeWeight: 2
-        }
+          strokeWeight: 3,
+          strokeOpacity: 1,
+          scale: 2,
+          anchor: new (window as any).google.maps.Point(12, 20)
+        },
+        animation: (window as any).google.maps.Animation.DROP
       });
 
         // Create info window content
@@ -189,11 +215,41 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
         `;
 
         marker.addListener('mouseover', () => {
+          // Get the original marker color
+          const originalColor = marker.getIcon().fillColor;
+          
+          // Enlarge marker on hover with consistent home icon
+          marker.setIcon({
+            path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+            fillColor: originalColor,
+            fillOpacity: 1,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 4,
+            strokeOpacity: 1,
+            scale: 2.5,
+            anchor: new (window as any).google.maps.Point(12, 20)
+          });
+          
           infoWindow.setContent(createInfoWindowContent(property));
           infoWindow.open(map, marker);
         });
 
         marker.addListener('mouseout', () => {
+          // Get the original marker color
+          const originalColor = marker.getIcon().fillColor;
+          
+          // Reset marker size with consistent home icon
+          marker.setIcon({
+            path: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+            fillColor: originalColor,
+            fillOpacity: 1,
+            strokeColor: '#FFFFFF',
+            strokeWeight: 3,
+            strokeOpacity: 1,
+            scale: 2,
+            anchor: new (window as any).google.maps.Point(12, 20)
+          });
+          
           // Close info window after a short delay to allow for mouse movement to info window
           setTimeout(() => {
             if (!marker.get('isHovered')) {
