@@ -45,6 +45,7 @@ const MasterTableView: React.FC<MasterTableViewProps> = ({
           <th className="px-3 py-2 text-left text-white font-medium">Age</th>
           <th className="px-3 py-2 text-left text-white font-medium">Deposit</th>
           <th className="px-3 py-2 text-left text-white font-medium">Date Stamp</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Location</th>
           <th className="px-3 py-2 text-left text-white font-medium">Rent Sold Out</th>
         </tr>
       </thead>
@@ -97,6 +98,19 @@ const MasterTableView: React.FC<MasterTableViewProps> = ({
               </td>
               <td className="px-3 py-2 text-white/80 text-xs">{property.date_stamp || 'N/A'}</td>
               <td className="px-3 py-2 text-xs">
+                <button
+                  onClick={() => {
+                    const query = encodeURIComponent(`${property.area || ''} ${property.address || ''}`.trim() || 'Property Location');
+                    window.open(`https://www.google.com/maps/search/${query}`, '_blank');
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 rounded transition-colors"
+                  title={`Open ${property.area || ''} ${property.address || ''} in Google Maps`}
+                >
+                  <span className="text-sm">🗺️</span>
+                  <span className="text-xs">Maps</span>
+                </button>
+              </td>
+              <td className="px-3 py-2 text-xs">
                 {canEditRentSoldOut && onToggleRentSoldOut ? (
                   <div className="flex items-center gap-2">
                     <input
@@ -123,7 +137,7 @@ const MasterTableView: React.FC<MasterTableViewProps> = ({
           ))
         ) : (
           <tr>
-            <td colSpan={20} className="px-4 py-8 text-center text-white/60">
+            <td colSpan={21} className="px-4 py-8 text-center text-white/60">
               {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
             </td>
           </tr>

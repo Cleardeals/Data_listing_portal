@@ -6,7 +6,8 @@ import { ViewMode } from './PropertyFiltersPanel';
 import {
   CompactTableView,
   GalleryView,
-  MasterTableView
+  MasterTableView,
+  MapView
 } from './PropertyViewModes';
 
 interface PropertyDisplayContainerProps {
@@ -37,6 +38,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
       case 'compact': return '📊 Compact Table';
       case 'gallery': return '🖼️ Gallery View';
       case 'master': return '📜 Master View';
+      case 'map': return '🗺️ Map View';
       default: return '📊 Compact Table';
     }
   };
@@ -53,6 +55,8 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
         return <CompactTableView properties={properties} loading={loading} {...contactProps} />;
       case 'gallery':
         return <GalleryView properties={properties} loading={loading} {...contactProps} />;
+      case 'map':
+        return <MapView properties={properties} loading={loading} {...contactProps} />;
       case 'master':
         return (
           <MasterTableView 
@@ -87,6 +91,11 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
           {viewMode === 'master' && properties.length > 100 && (
             <div className="text-xs text-yellow-400 bg-yellow-500/20 px-3 py-1 rounded-full">
               ⚠️ Large dataset - performance may vary
+            </div>
+          )}
+          {viewMode === 'map' && (
+            <div className="text-xs text-blue-400 bg-blue-500/20 px-3 py-1 rounded-full">
+              🗺️ Interactive location view
             </div>
           )}
         </div>

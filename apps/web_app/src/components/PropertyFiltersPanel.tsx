@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useDynamicOptions } from '@/lib/dynamicOptions';
 import { usePropertyCache } from '@/hooks/usePropertyCache';
 
-export type ViewMode = 'master' | 'compact' | 'gallery';
+export type ViewMode = 'master' | 'compact' | 'gallery' | 'map';
 
 export interface FilterState {
   propertyType: string[];
@@ -448,6 +448,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
                   >
                     <option value="compact" className="bg-gray-800">Compact Table</option>
                     <option value="gallery" className="bg-gray-800">Gallery View</option>
+                    <option value="map" className="bg-gray-800">Map View</option>
                     <option value="master" className="bg-gray-800">Master View</option>
                   </select>
                   <span className="text-xs text-white/60 ml-2">
