@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         });
 
         const result = await generateText({
-          model: process.env.AI_MODEL || 'meta-llama/llama-3.1-8b-instruct',
+          model: process.env.AI_MODEL || 'groq/llama-3.1-8b-instant',
           prompt,
           temperature: 0.7,
         });
