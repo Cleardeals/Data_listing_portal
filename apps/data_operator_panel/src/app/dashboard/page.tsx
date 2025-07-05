@@ -45,6 +45,10 @@ function DashboardContent() {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [activeDateFilter, setActiveDateFilter] = useState<'today' | 'yesterday' | 'all'>('all');
 
+  // Multi-select state
+  const [selectedProperties, setSelectedProperties] = useState<number[]>([]);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState<boolean>(false);
+
   // Track reconnection attempts with ref instead of state to avoid re-renders
   const reconnectAttemptRef = React.useRef(false);
   const sessionMonitorRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -895,6 +899,134 @@ function DashboardContent() {
     }
   };
 
+  // Multi-select handler functions
+  const handleToggleMultiSelect = useCallback(() => {
+    setIsMultiSelectMode(!isMultiSelectMode);
+    setSelectedProperties([]); // Clear selections when toggling mode
+  }, [isMultiSelectMode]);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedProperties.length === propertyData.length) {
+      setSelectedProperties([]);
+    } else {
+      setSelectedProperties(propertyData.map(p => p.serial_number));
+    }
+  }, [selectedProperties.length, propertyData]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedProperties([]);
+  }, []);
+
+  const handleTogglePropertySelection = useCallback((serialNumber: number) => {
+    setSelectedProperties(prev => 
+      prev.includes(serialNumber) 
+        ? prev.filter(id => id !== serialNumber)
+        : [...prev, serialNumber]
+    );
+  }, []);
+
+  // Bulk operation handlers
+  const handleBulkDelete = useCallback(async (serialNumbers: number[]) => {
+    if (serialNumbers.length === 0) return;
+    
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${serialNumbers.length} properties? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setBackgroundLoading(true);
+      setError(null);
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .delete()
+        .in('serial_number', serialNumbers);
+
+      if (error) throw error;
+
+      console.log(`Successfully deleted ${serialNumbers.length} properties`);
+      setSelectedProperties([]);
+      
+      // Refresh the current page
+      await fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
+    } catch (err: unknown) {
+      console.error('Error deleting properties:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete properties');
+    } finally {
+      setBackgroundLoading(false);
+    }
+  }, [currentPage, pageSize, filters, activeDateFilter, fetchPropertiesWithFilters]);
+
+  const handleBulkToggleRentSoldOut = useCallback(async (serialNumbers: number[], rentSoldOut: boolean) => {
+    if (serialNumbers.length === 0) return;
+
+    const action = rentSoldOut ? 'mark as sold/rented' : 'mark as available';
+    const confirmed = window.confirm(
+      `Are you sure you want to ${action} ${serialNumbers.length} properties?`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setBackgroundLoading(true);
+      setError(null);
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ rent_sold_out: rentSoldOut })
+        .in('serial_number', serialNumbers);
+
+      if (error) throw error;
+
+      console.log(`Successfully updated rent_sold_out status for ${serialNumbers.length} properties to ${rentSoldOut}`);
+      setSelectedProperties([]);
+      
+      // Refresh the current page
+      await fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
+    } catch (err: unknown) {
+      console.error('Error updating rent_sold_out status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update property status');
+    } finally {
+      setBackgroundLoading(false);
+    }
+  }, [currentPage, pageSize, filters, activeDateFilter, fetchPropertiesWithFilters]);
+
+  const handleBulkToggleVisibility = useCallback(async (serialNumbers: number[], visibility: boolean) => {
+    if (serialNumbers.length === 0) return;
+
+    const action = visibility ? 'show' : 'hide';
+    const confirmed = window.confirm(
+      `Are you sure you want to ${action} ${serialNumbers.length} properties?`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setBackgroundLoading(true);
+      setError(null);
+      
+      const { error } = await supabase
+        .from('propertydata')
+        .update({ visibility: visibility })
+        .in('serial_number', serialNumbers);
+
+      if (error) throw error;
+
+      console.log(`Successfully updated visibility status for ${serialNumbers.length} properties to ${visibility}`);
+      setSelectedProperties([]);
+      
+      // Refresh the current page
+      await fetchPropertiesWithFilters(currentPage, pageSize, filters, activeDateFilter);
+    } catch (err: unknown) {
+      console.error('Error updating visibility status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update property visibility');
+    } finally {
+      setBackgroundLoading(false);
+    }
+  }, [currentPage, pageSize, filters, activeDateFilter, fetchPropertiesWithFilters]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Enhanced Header Section */}
@@ -1173,6 +1305,15 @@ function DashboardContent() {
             }}
             onToggleRentSoldOut={handleToggleRentSoldOut}
             onToggleVisibility={handleToggleVisibility}
+            selectedProperties={selectedProperties}
+            isMultiSelectMode={isMultiSelectMode}
+            onTogglePropertySelection={handleTogglePropertySelection}
+            onSelectAllProperties={handleSelectAll}
+            onToggleMultiSelect={handleToggleMultiSelect}
+            onDeselectAll={handleDeselectAll}
+            onBulkDelete={handleBulkDelete}
+            onBulkToggleRentSoldOut={handleBulkToggleRentSoldOut}
+            onBulkToggleVisibility={handleBulkToggleVisibility}
           />
         </div>
 

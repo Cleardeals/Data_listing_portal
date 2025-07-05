@@ -12,6 +12,17 @@ interface PropertyDisplayContainerProps {
   onDeleteProperty: (serialNumber: number) => void;
   onToggleRentSoldOut: (serialNumber: number, rentSoldOut: boolean) => void;
   onToggleVisibility: (serialNumber: number, visibility: boolean) => void;
+  // Multi-select functionality
+  selectedProperties: number[];
+  isMultiSelectMode: boolean;
+  onTogglePropertySelection: (serialNumber: number) => void;
+  onSelectAllProperties: () => void;
+  onToggleMultiSelect: () => void;
+  onDeselectAll: () => void;
+  // Bulk operations
+  onBulkDelete: (serialNumbers: number[]) => void;
+  onBulkToggleRentSoldOut: (serialNumbers: number[], rentSoldOut: boolean) => void;
+  onBulkToggleVisibility: (serialNumbers: number[], visibility: boolean) => void;
 }
 
 const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
@@ -23,6 +34,15 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   onDeleteProperty,
   onToggleRentSoldOut,
   onToggleVisibility,
+  selectedProperties,
+  isMultiSelectMode,
+  onTogglePropertySelection,
+  onSelectAllProperties,
+  onToggleMultiSelect,
+  onDeselectAll,
+  onBulkDelete,
+  onBulkToggleRentSoldOut,
+  onBulkToggleVisibility,
 }) => {
   const renderTableView = () => (
     <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 overflow-hidden">
@@ -30,6 +50,19 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
         <table className="w-full border-collapse min-w-[1700px]">
           <thead>
             <tr className="bg-slate-800 text-white">
+              {/* Checkbox Column - Show only in multi-select mode */}
+              {isMultiSelectMode && (
+                <th className="px-3 py-3 text-center text-xs font-medium uppercase tracking-wider border-r border-slate-600/50 w-16">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedProperties.length === properties.length && properties.length > 0}
+                      onChange={onSelectAllProperties}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                  </div>
+                </th>
+              )}
               <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider border-r border-slate-600/50 w-20">
                 <div className="flex items-center gap-2">
                   <span className="text-blue-300">#</span>
@@ -173,7 +206,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
           <tbody className="bg-white divide-y divide-slate-200/60">
             {loading ? (
               <tr>
-                <td colSpan={23} className="px-6 py-16 text-center">
+                <td colSpan={isMultiSelectMode ? 24 : 23} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <div className="relative">
                       <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -186,7 +219,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={23} className="px-6 py-16 text-center">
+                <td colSpan={isMultiSelectMode ? 24 : 23} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center">
                       <span className="text-3xl">⚠️</span>
@@ -204,7 +237,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               </tr>
             ) : properties.length === 0 ? (
               <tr>
-                <td colSpan={23} className="px-6 py-16 text-center">
+                <td colSpan={isMultiSelectMode ? 24 : 23} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
                       <span className="text-3xl">📋</span>
@@ -217,12 +250,25 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
             ) : (
               properties.map((property, index) => (
                 <tr key={property.serial_number} className={`text-slate-800 hover:bg-blue-50/50 transition-colors duration-200 border-b border-slate-200/50 ${
-                  property.rent_sold_out 
-                    ? 'bg-red-50/60 border-l-4 border-red-400/60' 
-                    : index % 2 === 0 
-                      ? 'bg-white' 
-                      : 'bg-slate-50/40'
+                  selectedProperties.includes(property.serial_number) 
+                    ? 'bg-blue-50/80 border-l-4 border-blue-400/60' 
+                    : property.rent_sold_out 
+                      ? 'bg-red-50/60 border-l-4 border-red-400/60' 
+                      : index % 2 === 0 
+                        ? 'bg-white' 
+                        : 'bg-slate-50/40'
                 }`}>
+                  {/* Checkbox Column - Show only in multi-select mode */}
+                  {isMultiSelectMode && (
+                    <td className="px-4 py-3 border-r border-slate-200/60 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedProperties.includes(property.serial_number)}
+                        onChange={() => onTogglePropertySelection(property.serial_number)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-3 border-r border-slate-200/60 text-center">
                     <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded font-semibold">#{property.serial_number}</span>
                   </td>
@@ -447,11 +493,111 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               <span className="text-slate-600 text-sm">properties</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span>Real-time data</span>
+          
+          <div className="flex items-center gap-4">
+            {/* Multi-Select Mode Toggle */}
+            <button
+              onClick={onToggleMultiSelect}
+              className={`px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg shadow-sm hover:shadow-md border ${
+                isMultiSelectMode
+                  ? 'bg-purple-600 text-white border-purple-500 hover:bg-purple-700'
+                  : 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300'
+              }`}
+            >
+              {isMultiSelectMode ? (
+                <>
+                  <span className="mr-2">✅</span>
+                  Exit Multi-Select
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">☑️</span>
+                  Multi-Select
+                </>
+              )}
+            </button>
+
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span>Real-time data</span>
+            </div>
           </div>
         </div>
+
+        {/* Multi-Select Controls - Show when multi-select mode is active */}
+        {isMultiSelectMode && (
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-slate-200">
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-slate-200 shadow-sm">
+              <span className="text-slate-700 text-sm font-medium">
+                {selectedProperties.length} selected
+              </span>
+              <button
+                onClick={onSelectAllProperties}
+                className="px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 rounded transition-colors"
+              >
+                Select All
+              </button>
+              <button
+                onClick={onDeselectAll}
+                className="px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded transition-colors"
+              >
+                Deselect All
+              </button>
+            </div>
+
+            {/* Bulk Operations - Show when properties are selected */}
+            {selectedProperties.length > 0 && (
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 border border-slate-200 shadow-sm">
+                <span className="text-slate-700 text-xs font-medium mr-2">Bulk Actions:</span>
+                
+                {/* Bulk Delete */}
+                <button
+                  onClick={() => onBulkDelete(selectedProperties)}
+                  className="px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors border border-red-500 shadow-sm"
+                  title="Delete selected properties"
+                >
+                  🗑️ Delete
+                </button>
+
+                {/* Bulk Mark as Sold/Rented */}
+                <button
+                  onClick={() => onBulkToggleRentSoldOut(selectedProperties, true)}
+                  className="px-3 py-2 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors border border-orange-500 shadow-sm"
+                  title="Mark selected as sold/rented"
+                >
+                  🏷️ Mark Sold
+                </button>
+
+                {/* Bulk Mark as Available */}
+                <button
+                  onClick={() => onBulkToggleRentSoldOut(selectedProperties, false)}
+                  className="px-3 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors border border-green-500 shadow-sm"
+                  title="Mark selected as available"
+                >
+                  ✅ Mark Available
+                </button>
+
+                {/* Bulk Hide */}
+                <button
+                  onClick={() => onBulkToggleVisibility(selectedProperties, false)}
+                  className="px-3 py-2 text-xs font-medium text-white bg-gray-600 hover:bg-gray-700 rounded transition-colors border border-gray-500 shadow-sm"
+                  title="Hide selected properties"
+                >
+                  👁️‍🗨️ Hide
+                </button>
+
+                {/* Bulk Show */}
+                <button
+                  onClick={() => onBulkToggleVisibility(selectedProperties, true)}
+                  className="px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors border border-blue-500 shadow-sm"
+                  title="Show selected properties"
+                >
+                  👁️ Show
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content based on view mode - for now, only table view */}
