@@ -4,15 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 3);
-    }, 4000);
     
     // Add smooth scrolling behavior
     document.documentElement.style.scrollBehavior = 'smooth';
@@ -36,15 +32,12 @@ export default function Home() {
     document.addEventListener('click', handleClickOutside);
     
     return () => {
-      clearInterval(interval);
       document.documentElement.style.scrollBehavior = 'auto';
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('click', handleClickOutside);
     };
   }, [isMobileMenuOpen]);
 
-  const handleGoToSlide = (index: number): void => setCurrentSlide(index);
-  
   const toggleMobileMenu = (): void => setIsMobileMenuOpen(!isMobileMenuOpen);
   
   const closeMobileMenu = (): void => setIsMobileMenuOpen(false);
@@ -177,7 +170,7 @@ export default function Home() {
           </div>
 
           {/* Professional Stats Cards for Brokers - Ultra compact mobile design */}
-          <div className="w-full max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6">
             {/* Mobile: Super compact horizontal pill cards */}
             <div className="block sm:hidden">
               
@@ -220,65 +213,70 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Desktop: Compact grid layout */}
-            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-              {[
-                { 
-                  title: "AI Property Search", 
-                  description: "Natural Language Processing", 
-                  gradient: "from-blue-500 to-cyan-500",
-                  icon: "🔍"
-                },
-                { 
-                  title: "Sales Script Generator", 
-                  description: "AI-Powered Presentations", 
-                  gradient: "from-purple-500 to-pink-500",
-                  icon: "📊"
-                },
-                { 
-                  title: "Real Estate Mentor", 
-                  description: "Expert AI Guidance", 
-                  gradient: "from-emerald-500 to-teal-500",
-                  icon: "🏠"
-                }
-            ].map((stat, index) => (
-              <div key={index} className={`bg-gradient-to-br ${stat.gradient} p-4 lg:p-5 rounded-lg lg:rounded-xl shadow-lg backdrop-blur-lg border border-white/20 flex flex-col justify-between transform transition-all duration-500 hover:scale-105 min-h-[140px] lg:min-h-[160px]`}>
-                <div className="text-center flex-1 flex flex-col justify-center">
-                  <div className="text-xl lg:text-2xl mb-2 animate-bounce">{stat.icon}</div>
-                  <h3 className="text-sm lg:text-base font-bold text-white mb-1 leading-tight">{stat.title}</h3>
-                  <p className="text-white/90 text-xs lg:text-sm mb-2 leading-relaxed">{stat.description}</p>
+            {/* Desktop: Enhanced Professional Grid Layout */}
+            <div className="hidden sm:flex sm:justify-center">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-12 max-w-6xl">
+                {[
+                  { 
+                    title: "AI Property Search", 
+                    description: "Advanced Natural Language Processing for Intelligent Property Discovery", 
+                    gradient: "from-blue-500 to-cyan-500",
+                    icon: "🔍",
+                    accentColor: "blue"
+                  },
+                  { 
+                    title: "Sales Script Generator", 
+                    description: "AI-Powered Presentations & Personalized Client Communications", 
+                    gradient: "from-purple-500 to-pink-500",
+                    icon: "📊",
+                    accentColor: "purple"
+                  },
+                  { 
+                    title: "Real Estate Mentor", 
+                    description: "Expert AI Guidance & Strategic Business Intelligence", 
+                    gradient: "from-emerald-500 to-teal-500",
+                    icon: "🏠",
+                    accentColor: "emerald"
+                  }
+                ].map((stat, index) => (
+                  <div key={index} className={`group relative bg-gradient-to-br ${stat.gradient} p-6 lg:p-8 xl:p-10 rounded-2xl lg:rounded-3xl shadow-xl backdrop-blur-lg border border-white/30 flex flex-col justify-between min-h-[240px] lg:min-h-[280px] xl:min-h-[320px] w-full max-w-sm overflow-hidden`}>
+                {/* Animated background overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 opacity-0 transition-opacity duration-500"></div>
+                
+                {/* Floating particles effect */}
+                <div className="absolute top-2 right-2 w-2 h-2 bg-white/30 rounded-full"></div>
+                <div className="absolute bottom-4 left-4 w-1 h-1 bg-white/40 rounded-full"></div>
+                
+                <div className="relative z-10 text-center flex-1 flex flex-col justify-center">
+                  <div className="text-3xl lg:text-4xl mb-4 filter drop-shadow-lg">
+                    {stat.icon}
+                  </div>
+                  <h3 className="text-lg lg:text-xl font-bold text-white mb-3 leading-tight">
+                    {stat.title}
+                  </h3>
+                  <p className="text-white/85 text-sm lg:text-base mb-4 leading-relaxed px-2">
+                    {stat.description}
+                  </p>
                 </div>
-                <div className="text-center mt-auto">
-                  <button className="bg-white/20 backdrop-blur-sm text-white px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-semibold text-xs lg:text-sm hover:bg-white/30 transition-all duration-200 transform hover:scale-105 w-full">
-                    Explore Tool
+                
+                <div className="relative z-10 text-center mt-auto">
+                  <button className={`bg-white/25 backdrop-blur-md text-white px-6 lg:px-8 py-3 lg:py-4 rounded-xl lg:rounded-2xl font-semibold text-sm lg:text-base w-full shadow-lg border border-white/20`}>
+                    <span className="flex items-center justify-center gap-2">
+                      Explore Tool
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </span>
                   </button>
                 </div>
+                
+                {/* Glow effect */}
+                <div className={`absolute -inset-1 bg-gradient-to-r ${stat.gradient} rounded-2xl lg:rounded-3xl blur-sm opacity-0 -z-10`}></div>
               </div>
             ))}
             </div>
+            </div>
           </div>
-        </div>
-
-        {/* Navigation Dots */}
-        <div className="absolute bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 flex gap-3 sm:gap-4 z-30">
-          {[0, 1, 2].map((index) => (
-            <button
-              key={index}
-              className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
-                index === currentSlide 
-                  ? 'bg-white scale-125 shadow-lg' 
-                  : 'bg-white/50 hover:bg-white/80'
-              }`}
-              onClick={() => handleGoToSlide(index)}
-            />
-          ))}
-        </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 animate-bounce">
-          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
         </div>
       </div>
 
@@ -586,23 +584,7 @@ export default function Home() {
             <span className="block mt-2 text-base sm:text-xl text-blue-200">
               Your success story starts here.
             </span>
-          </p>
-          
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center mb-12 sm:mb-16">
-            <Link href="/dashboard" className="group bg-white text-blue-900 px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold text-lg sm:text-xl hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-2xl btn-3d">
-              <span className="flex items-center justify-center gap-3">
-                Access Dashboard
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-2 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </span>
-            </Link>
-            <Link href="/contact" className="bg-white/10 backdrop-blur-3d text-white px-8 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold text-lg sm:text-xl border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 btn-3d">
-              Schedule Demo
-            </Link>
-          </div>
-          
+          </p>  
           {/* Professional trust indicators */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-white/10">
             {[
