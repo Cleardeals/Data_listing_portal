@@ -59,6 +59,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate role - must be super_admin or data_operator
+    if (!['super_admin', 'data_operator'].includes(role)) {
+      return NextResponse.json(
+        { error: 'Role must be either "super_admin" or "data_operator"' },
+        { status: 400 }
+      );
+    }
+
     // Get current user metadata
     const { data: userData, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(userId);
     if (fetchError) throw fetchError;
@@ -67,7 +75,13 @@ export async function PUT(request: NextRequest) {
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: {
         ...userData.user.user_metadata,
-        role: role
+        role: role,
+        group: 'internalusers' // Ensure group is always set
+      },
+      app_metadata: {
+        ...userData.user.app_metadata,
+        // Optional: Keep is_super_admin for backward compatibility
+        is_super_admin: role === 'super_admin'
       }
     });
 

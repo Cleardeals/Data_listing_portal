@@ -60,7 +60,8 @@ export interface InternalUser {
   role: string;
   contact: string;
   created_at: string;
-  is_super_admin: boolean;
+  group: string;
+  is_verified: boolean;
 }
 
 // Types for external users
@@ -83,6 +84,7 @@ export interface InternalUserFormData {
   email: string;
   contact: string;
   role: string;
+  is_verified: boolean;
   password?: string;
 }
 
@@ -91,17 +93,27 @@ export interface ExternalUserFormData {
   email: string;
   business: string;
   contact: string;
-  subscription: string;
+  role?: string;
+  is_verified?: boolean;
   password?: string;
 }
 
+// Available roles for external users
+export const availableExternalUserRoles = [
+  "Unverified Customer",
+  "Verified Customer"
+];
+
+// Available status options for external users
+export const availableStatusOptions = [
+  { value: true, label: "Verified" },
+  { value: false, label: "Unverified" }
+];
+
 // Available roles for internal users
 export const availableRoles = [
-  "Admin",
-  "Editor",
-  "Viewer",
-  "Analyst",
-  "Manager"
+  "super_admin",
+  "data_operator"
 ];
 
 // Available subscription types for external users

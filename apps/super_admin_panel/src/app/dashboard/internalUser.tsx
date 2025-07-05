@@ -1,6 +1,6 @@
 'use client';
 
-import { FaPlus, FaFilter, FaTrash, FaSearch, FaEdit, FaChevronDown } from "react-icons/fa";
+import { FaPlus, FaTrash, FaSearch, FaEdit, FaChevronDown } from "react-icons/fa";
 import { useState, useEffect, useRef } from 'react';
 import AddEditInternalUserModal from '../../components/addInternalUser';
 import { EditConfirmationModal } from '../../components/editConfirmationModal';
@@ -19,6 +19,7 @@ import {
 export default function InternalUserTable() {
   const [users, setUsers] = useState<InternalUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<InternalUser | null>(null);
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,10 +28,13 @@ export default function InternalUserTable() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
+        setError(null);
+        setLoading(true);
         const internalUsers = await fetchInternalUsers();
         setUsers(internalUsers);
       } catch (error) {
         console.error('Failed to fetch internal users:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load internal users');
       } finally {
         setLoading(false);
       }
@@ -64,7 +68,7 @@ export default function InternalUserTable() {
         const updatedUser = await updateInternalUser(selectedUser.id, formData);
         setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
         setShowEditUser(false);
-      } else {
+      } else if (showAddUser) {
         // Add new user
         const newUser = await addInternalUser(formData);
         setUsers([...users, newUser]);
@@ -73,7 +77,8 @@ export default function InternalUserTable() {
       setSelectedUser(null);
     } catch (error) {
       console.error('Failed to save user:', error);
-      // You might want to show an error message to the user here
+      // TODO: You might want to show an error message to the user here
+      alert('Failed to save user. Please try again.');
     }
   };
   
@@ -133,10 +138,22 @@ export default function InternalUserTable() {
         />
         <button className="flex items-center justify-center w-10 h-10"><FaSearch className="text-black text-lg" /></button>    
         <div className="flex items-center space-x-2 ml-2">
-          <button className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-blue-400 bg-blue-100 hover:bg-blue-200 transition"><FaFilter className="text-blue-700 text-lg" /></button>
           <button onClick={() => setShowAddUser(true)} className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-blue-400 bg-blue-100 hover:bg-blue-200 transition"><FaPlus className="text-blue-700 text-lg" /></button>
         </div>
       </div>
+      
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-3xl mx-auto">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+      
       <AddEditInternalUserModal 
         open={showAddUser} 
         onClose={() => setShowAddUser(false)} 
@@ -158,6 +175,7 @@ export default function InternalUserTable() {
                   <th className="px-4 py-2 border text-blue-900 font-bold w-48">NAME</th>
                   <th className="px-4 py-2 border text-blue-900 font-bold w-72">Email</th>
                   <th className="px-4 py-2 border text-blue-900 font-bold w-40">Role</th>
+                  <th className="px-4 py-2 border text-blue-900 font-bold w-32">Status</th>
                   <th className="px-4 py-2 border text-blue-900 font-bold w-48">Contact</th>
                   <th className="px-4 py-2 border text-blue-900 font-bold w-16">Edit</th>
                   <th className="px-4 py-2 border text-blue-900 font-bold w-16">Delete</th>
@@ -174,7 +192,10 @@ export default function InternalUserTable() {
                         className="bg-gradient-to-r from-blue-50 to-blue-100 px-3 py-1.5 rounded-md text-blue-700 inline-flex items-center justify-between w-32 cursor-pointer hover:shadow-sm transition-all duration-200 border border-blue-200"
                         onClick={() => toggleDropdown(idx)}
                       >
-                        <span className="font-medium">{user.role}</span>
+                        <span className="font-medium">
+                          {user.role === 'super_admin' ? 'Super Admin' : 
+                           user.role === 'data_operator' ? 'Data Operator' : user.role}
+                        </span>
                         <div className={`p-1 rounded-full bg-blue-200 bg-opacity-50 transition-transform duration-200 ${openDropdownIndex === idx ? 'rotate-180' : ''}`}>
                           <FaChevronDown className="text-blue-600" size={10} />
                         </div>
@@ -197,11 +218,21 @@ export default function InternalUserTable() {
                               }`}
                               onClick={() => handleRoleChange(user.id, role)}
                             >
-                              {role}
+                              {role === 'super_admin' ? 'Super Admin' : 
+                               role === 'data_operator' ? 'Data Operator' : role}
                             </div>
                           ))}
                         </div>
                       )}
+                    </td>
+                    <td className="border px-4 py-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        user.is_verified 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {user.is_verified ? 'Verified' : 'Unverified'}
+                      </span>
                     </td>
                     <td className="border px-4 py-2">{user.contact}</td>
                     <td className="border px-4 py-2 text-blue-600 cursor-pointer">

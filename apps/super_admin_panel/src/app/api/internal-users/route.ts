@@ -51,21 +51,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch internal users (super admins)
+    // Fetch internal users (users with group "internalusers")
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
     
     if (error) throw error;
 
     const internalUsers = data.users
-      .filter(user => user.app_metadata?.is_super_admin === true && !user.app_metadata?.deleted_at)
+      .filter(user => {
+        const userGroup = user.user_metadata?.group;
+        
+        // Filter for ALL internal users (group: "internalusers") regardless of role or deleted status
+        // Include users with no group set if they have internal roles
+        const isInternalGroup = userGroup === 'internalusers';
+        const hasInternalRole = ['super_admin', 'data_operator'].includes(user.user_metadata?.role);
+        
+        return isInternalGroup || hasInternalRole;
+      })
       .map(user => ({
         id: user.id,
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
         email: user.email || '',
-        role: user.user_metadata?.role || 'Viewer',
+        role: user.user_metadata?.role || 'data_operator',
         contact: user.user_metadata?.contact || user.phone || '',
         created_at: user.created_at,
-        is_super_admin: true
+        group: user.user_metadata?.group || 'internalusers',
+        is_verified: user.user_metadata?.is_verified ?? true
+        // Note: Ignoring deleted_at field - treating previously soft-deleted users as normal users
       }));
 
     return NextResponse.json(internalUsers);
@@ -91,6 +102,14 @@ export async function POST(request: NextRequest) {
   try {
     const userData = await request.json();
     
+    // Validate role - must be super_admin or data_operator
+    if (!userData.role || !['super_admin', 'data_operator'].includes(userData.role)) {
+      return NextResponse.json(
+        { error: 'Role must be either "super_admin" or "data_operator"' },
+        { status: 400 }
+      );
+    }
+    
     // Create user with Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
@@ -99,9 +118,13 @@ export async function POST(request: NextRequest) {
         name: userData.name,
         role: userData.role,
         contact: userData.contact,
+        group: 'internalusers',
+        is_verified: userData.is_verified ?? true,
+        email_verified: userData.is_verified ?? true
       },
       app_metadata: {
-        is_super_admin: true,
+        // Optional: Keep is_super_admin for backward compatibility
+        is_super_admin: userData.role === 'super_admin'
       }
     });
 
@@ -114,7 +137,8 @@ export async function POST(request: NextRequest) {
       role: userData.role,
       contact: userData.contact,
       created_at: authData.user.created_at,
-      is_super_admin: true
+      group: 'internalusers',
+      is_verified: userData.is_verified ?? true
     };
 
     return NextResponse.json(newUser);
@@ -140,13 +164,34 @@ export async function PUT(request: NextRequest) {
   try {
     const { userId, userData } = await request.json();
     
+    // Validate role - must be super_admin or data_operator
+    if (!userData.role || !['super_admin', 'data_operator'].includes(userData.role)) {
+      return NextResponse.json(
+        { error: 'Role must be either "super_admin" or "data_operator"' },
+        { status: 400 }
+      );
+    }
+    
+    // Get current user metadata
+    const { data: currentUserData, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (fetchError) throw fetchError;
+    
     // Update user metadata
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       email: userData.email,
       user_metadata: {
+        ...currentUserData.user.user_metadata,
         name: userData.name,
         role: userData.role,
         contact: userData.contact,
+        group: 'internalusers',
+        is_verified: userData.is_verified ?? true,
+        email_verified: userData.is_verified ?? true
+      },
+      app_metadata: {
+        ...currentUserData.user.app_metadata,
+        // Optional: Keep is_super_admin for backward compatibility
+        is_super_admin: userData.role === 'super_admin'
       }
     });
 
@@ -159,7 +204,8 @@ export async function PUT(request: NextRequest) {
       role: userData.role,
       contact: userData.contact,
       created_at: data.user.created_at,
-      is_super_admin: true
+      group: 'internalusers',
+      is_verified: userData.is_verified ?? true
     };
 
     return NextResponse.json(updatedUser);
@@ -193,12 +239,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Soft delete by setting deleted_at timestamp
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      app_metadata: {
-        deleted_at: new Date().toISOString()
-      }
-    });
+    // Permanently delete the user from Supabase Auth
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) throw error;
 

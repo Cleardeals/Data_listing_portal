@@ -16,5 +16,8 @@ export const EditConfirmationModal = ({
     message="Are You Sure You Want To Edit\nThis Item?"
     onConfirm={onConfirm}
     onClose={onClose}
+    type="warning"
+    confirmText="Save Changes"
+    cancelText="Cancel"
   />
 ); 

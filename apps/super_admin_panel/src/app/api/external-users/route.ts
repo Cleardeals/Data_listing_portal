@@ -52,13 +52,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch external users (non-super admins)
+    // Fetch external users (users with group "customers")
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
     
     if (error) throw error;
 
     const externalUsers = data.users
-      .filter(user => user.app_metadata?.is_super_admin !== true && !user.app_metadata?.deleted_at)
+      .filter(user => {
+        const userGroup = user.user_metadata?.group;
+        
+        // Filter for customer users (group: "customers") including deleted ones
+        // Include users with no group set (they default to customers) or explicitly set to "customers"
+        return (userGroup === 'customers' || !userGroup);
+      })
       .map(user => ({
         id: user.id,
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
@@ -70,6 +76,7 @@ export async function GET(request: NextRequest) {
         contact: user.user_metadata?.contact || user.phone || '',
         subscription: user.user_metadata?.subscription || 'Free',
         created_at: user.created_at
+        // Note: Ignoring deleted_at field - treating previously soft-deleted users as normal users
       }));
 
     return NextResponse.json(externalUsers);
@@ -101,12 +108,12 @@ export async function POST(request: NextRequest) {
       password: userData.password || 'tempPassword123!',
       user_metadata: {
         name: userData.name,
-        role: 'Unverified Customer',
+        role: userData.role || 'Unverified Customer',
         group: 'customers',
-        is_verified: false,
+        is_verified: userData.is_verified || false,
         business: userData.business,
         contact: userData.contact,
-        subscription: userData.subscription,
+        subscription: 'Free', // Default subscription
       },
       app_metadata: {
         is_super_admin: false,
@@ -119,12 +126,12 @@ export async function POST(request: NextRequest) {
       id: authData.user.id,
       name: userData.name,
       email: userData.email,
-      role: 'Unverified Customer',
+      role: userData.role || 'Unverified Customer',
       group: 'customers',
-      is_verified: false,
+      is_verified: userData.is_verified || false,
       business: userData.business,
       contact: userData.contact,
-      subscription: userData.subscription,
+      subscription: 'Free',
       created_at: authData.user.created_at
     };
 
@@ -151,14 +158,21 @@ export async function PUT(request: NextRequest) {
   try {
     const { userId, userData } = await request.json();
     
-    // Update user metadata
+    // First, get the current user data to preserve existing metadata
+    const { data: currentUser, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (fetchError) throw fetchError;
+    
+    // Update user metadata, preserving existing values
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       email: userData.email,
       user_metadata: {
+        ...currentUser.user.user_metadata,
         name: userData.name,
         business: userData.business,
         contact: userData.contact,
-        subscription: userData.subscription,
+        role: userData.role || currentUser.user.user_metadata?.role || 'Unverified Customer',
+        is_verified: userData.is_verified !== undefined ? userData.is_verified : currentUser.user.user_metadata?.is_verified || false,
+        group: 'customers', // Ensure group is always set to customers
       }
     });
 
@@ -168,9 +182,12 @@ export async function PUT(request: NextRequest) {
       id: data.user.id,
       name: userData.name,
       email: userData.email,
+      role: userData.role || data.user.user_metadata?.role || 'Unverified Customer',
+      group: data.user.user_metadata?.group || 'customers',
+      is_verified: userData.is_verified !== undefined ? userData.is_verified : data.user.user_metadata?.is_verified || false,
       business: userData.business,
       contact: userData.contact,
-      subscription: userData.subscription,
+      subscription: data.user.user_metadata?.subscription || 'Free',
       created_at: data.user.created_at
     };
 
@@ -205,12 +222,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Soft delete by setting deleted_at timestamp
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      app_metadata: {
-        deleted_at: new Date().toISOString()
-      }
-    });
+    // Permanently delete the user from Supabase Auth
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) throw error;
 

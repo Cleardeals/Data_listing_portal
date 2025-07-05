@@ -68,7 +68,8 @@ export async function PUT(request: NextRequest) {
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       user_metadata: {
         ...userData.user.user_metadata,
-        subscription: subscription
+        subscription: subscription,
+        group: 'customers' // Ensure group is always set to customers
       }
     });
 

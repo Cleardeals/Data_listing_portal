@@ -145,7 +145,7 @@ export default function LoginPage() {
               placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mb-4 px-4 py-3 border border-blue-400 rounded-md bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+              className="w-full mb-4 px-4 py-3 border border-blue-400 rounded-md bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black placeholder:text-gray-600"
               disabled={isLoading}
               required
             />
@@ -170,7 +170,7 @@ export default function LoginPage() {
               placeholder="Enter OTP"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              className="w-full mb-4 px-4 py-3 border border-blue-400 rounded-md bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+              className="w-full mb-4 px-4 py-3 border border-blue-400 rounded-md bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black placeholder:text-gray-600"
               disabled={isLoading}
               maxLength={6}
               required

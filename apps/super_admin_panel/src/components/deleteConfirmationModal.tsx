@@ -16,5 +16,8 @@ export const DeleteConfirmationModal = ({
     message="Are You Sure You Want To Delete\nThis Item?"
     onConfirm={onConfirm}
     onClose={onClose}
+    type="danger"
+    confirmText="Delete"
+    cancelText="Cancel"
   />
 ); 

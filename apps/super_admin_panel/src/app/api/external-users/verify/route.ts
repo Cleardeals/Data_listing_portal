@@ -61,11 +61,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // First, get the current user data to preserve existing metadata
+    const { data: currentUser, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (fetchError) throw fetchError;
+
     let updateData;
     
     if (action === 'verify') {
       updateData = {
         user_metadata: {
+          ...currentUser.user.user_metadata,
           role: 'Verified Customer',
           group: 'customers',
           is_verified: true
@@ -74,6 +79,7 @@ export async function PUT(request: NextRequest) {
     } else if (action === 'unverify') {
       updateData = {
         user_metadata: {
+          ...currentUser.user.user_metadata,
           role: 'Unverified Customer', 
           group: 'customers',
           is_verified: false
