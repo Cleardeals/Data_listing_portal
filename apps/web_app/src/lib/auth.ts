@@ -276,7 +276,11 @@ export class AuthService {
   // Sign out
   async signOut(): Promise<void> {
     try {
-      await supabase.auth.signOut();
+      // Sign out from all sessions (global scope)
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Add a small delay to ensure the auth state change event is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {

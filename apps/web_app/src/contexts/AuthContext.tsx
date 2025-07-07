@@ -34,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
+          console.error('Error getting session:', error);
           await authService.signOut();
           return;
         }
@@ -65,20 +66,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           authService.storeSession(authSession);
         } else {
-          // No Supabase session, check our stored session as fallback
-          const storedSession = authService.getStoredSession();
-          if (storedSession) {
-            const tokenResult = await authService.verifyToken(storedSession.access_token);
-            if (tokenResult.valid) {
-              setUser(storedSession.user);
-            } else {
-              // Token is invalid, clear it
-              await authService.signOut();
-            }
-          }
+          // No Supabase session, make sure we clear any stored session
+          authService.clearSession();
+          setUser(null);
         }
-      } catch {
+      } catch (error) {
+        console.error('Error during auth initialization:', error);
         await authService.signOut();
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -89,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener to handle session changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        
         if (event === 'SIGNED_IN' && session) {
           const userRole = session.user.user_metadata?.role || 'Unverified Customer';
           const userGroup = session.user.user_metadata?.group || 'customers';
@@ -106,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
 
           setUser(user);
+          setLoading(false); // Set loading to false when signed in
           
           // Store in our custom auth service for consistency
           const authSession = {
@@ -118,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           authService.clearSession();
+          setLoading(false); // Set loading to false when signed out
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Update our stored session with the new tokens
           // Get current user from the existing session
@@ -158,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await authService.verifyOTP(email, otp);
       
       if (result.success && result.session) {
-        setUser(result.session.user);
+        // Don't manually set user here - let the auth state change event handle it
         return { success: true, message: result.message, user: result.session.user };
       }
       return { success: false, message: result.message };
@@ -173,10 +169,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       await authService.signOut();
-      setUser(null);
-    } catch {
-      // Error during logout
-    } finally {
+      // Don't manually set user to null here - let the auth state change event handle it
+      // Also don't set loading to false here - let the auth state change handle the loading state
+    } catch (error) {
+      console.error('Error during logout:', error);
       setLoading(false);
     }
   };

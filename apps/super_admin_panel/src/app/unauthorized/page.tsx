@@ -1,25 +1,18 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function UnauthorizedPage() {
-  const router = useRouter()
   const { logout } = useAuth()
 
   const handleGoToLogin = async () => {
     try {
       await logout()
-      router.push('/auth/login')
+      // Don't manually redirect - let auth state change handle it
     } catch (error) {
       console.error('Error during logout:', error)
-      // Force navigation even if logout fails
-      router.push('/auth/login')
+      // If logout fails, still let the auth system handle the redirect
     }
-  }
-
-  const handleGoToHome = () => {
-    router.push('/')
   }
 
   return (
@@ -32,15 +25,9 @@ export default function UnauthorizedPage() {
         </p>
         <button
           onClick={handleGoToLogin}
-          className="w-full bg-blue-600 text-white py-3 rounded-md shadow-md font-semibold text-lg hover:bg-blue-700 transition mb-4"
+          className="w-full bg-blue-600 text-white py-3 rounded-md shadow-md font-semibold text-lg hover:bg-blue-700 transition"
         >
           Go to Login
-        </button>
-        <button
-          onClick={handleGoToHome}
-          className="text-blue-600 text-sm hover:underline"
-        >
-          Go to Home
         </button>
       </div>
     </div>

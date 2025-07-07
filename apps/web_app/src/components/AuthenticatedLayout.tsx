@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
 import { useState } from "react";
@@ -13,13 +13,12 @@ interface AuthenticatedLayoutProps {
 export default function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const { user, logout, loading, isAuthenticated } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login");
+    // Don't manually redirect - let the auth state change and ProtectedRoute handle it
   };
 
   // Handle scroll effect for navbar
@@ -30,17 +29,6 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !isAuthenticated && pathname !== "/login" && pathname !== "/") {
-      router.push("/login");
-    }
-    // Redirect unverified users to unverified page (except if already on unverified page)
-    else if (!loading && isAuthenticated && user && !user.is_verified && pathname !== "/unverified") {
-      router.push("/unverified");
-    }
-  }, [loading, isAuthenticated, user, pathname, router]);
 
   // Don't show navbar on login page, homepage, or unverified page
   const showNavBar = pathname !== "/login" && pathname !== "/" && pathname !== "/unverified";

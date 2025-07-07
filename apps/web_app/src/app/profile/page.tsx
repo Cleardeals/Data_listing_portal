@@ -96,7 +96,8 @@ function ProfilePageContent() {
     setIsLoggingOut(true);
     try {
       await logout();
-      router.push('/login');
+      // ProtectedRoute will handle the redirect to login automatically
+      // when the user becomes unauthenticated
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoggingOut(false);

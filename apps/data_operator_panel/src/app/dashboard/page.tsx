@@ -1,7 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback } from "react";
 import { FaBell, FaUserCircle, FaPlus, FaSignOutAlt } from "react-icons/fa";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import BulkUploadButton from "@/components/modals/BulkUploadModal"; 
@@ -20,7 +19,6 @@ import { supabase } from "../../lib/supabase";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 function DashboardContent() {
-  const router = useRouter();
   const { user, logout, refreshSession } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -61,7 +59,7 @@ function DashboardContent() {
       if (error || !session) {
         console.log('Session expired or invalid, logging out...');
         await logout();
-        router.push('/auth/login');
+        // Don't manually redirect - let auth state change handle it
         return;
       }
       
@@ -79,9 +77,9 @@ function DashboardContent() {
     } catch (error) {
       console.error('Error monitoring session:', error);
       await logout();
-      router.push('/auth/login');
+      // Don't manually redirect - let auth state change handle it
     }
-  }, [logout, router, refreshSession]);
+  }, [logout, refreshSession]);
 
   // Fetch properties from Supabase with pagination, sorting, and filtering
   const fetchPropertiesWithFilters = React.useCallback(async (
@@ -893,7 +891,7 @@ function DashboardContent() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/');
+      // Don't manually redirect - let auth state change handle it
     } catch (error) {
       console.error('Logout error:', error);
     }

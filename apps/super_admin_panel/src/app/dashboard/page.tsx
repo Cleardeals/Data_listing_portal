@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { MdAddCall } from 'react-icons/md'
 import { FaBell, FaUserCircle, FaSignOutAlt } from 'react-icons/fa'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { DashboardContext, useDashboardContext } from '@/contexts/DashboardContext'
 import ProfileModal from '../../components/ProfileModal'
@@ -16,11 +15,10 @@ import InternalUserTable from './internalUser'
 function DashboardHeader() {
   const [showProfile, setShowProfile] = useState(false)
   const { logout, session } = useAuth()
-  const router = useRouter()
 
   const handleLogout = async () => {
     await logout()
-    router.push('/')
+    // Don't manually redirect - let auth state change handle it
   }
 
   return (

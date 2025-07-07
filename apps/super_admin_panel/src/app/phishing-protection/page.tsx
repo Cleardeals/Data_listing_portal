@@ -1,22 +1,20 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function PhishingProtectionPage() {
-  const router = useRouter()
   const { logout } = useAuth()
 
   useEffect(() => {
     // Auto-logout and redirect to login after 3 seconds
     const timer = setTimeout(() => {
       logout()
-      router.push('/auth/login')
+      // Don't manually redirect - let auth state change handle it
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [logout, router])
+  }, [logout])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50">

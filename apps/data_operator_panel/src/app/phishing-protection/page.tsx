@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function PhishingProtectionPage() {
-  const router = useRouter()
   const { logout } = useAuth()
   const [countdown, setCountdown] = useState(5)
 
@@ -16,7 +14,7 @@ export default function PhishingProtectionPage() {
         if (prev <= 1) {
           clearInterval(timer)
           logout()
-          router.push('/auth/login')
+          // Don't manually redirect - let auth state change handle it
           return 0
         }
         return prev - 1
@@ -24,11 +22,11 @@ export default function PhishingProtectionPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [logout, router])
+  }, [logout])
 
   const handleManualLogout = async () => {
     await logout()
-    router.push('/auth/login')
+    // Don't manually redirect - let auth state change handle it
   }
 
   return (

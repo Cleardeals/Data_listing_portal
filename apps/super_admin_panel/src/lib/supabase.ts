@@ -13,7 +13,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
-    persistSession: false, // Disable automatic session persistence to prevent magic link auto-login
+    persistSession: true, // Enable session persistence to maintain session on refresh
     detectSessionInUrl: false, // Disable automatic session detection from URL to prevent magic link issues
     flowType: 'pkce'
   }

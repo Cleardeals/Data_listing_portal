@@ -1,20 +1,17 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AccessDeniedPage() {
-  const router = useRouter();
   const { logout } = useAuth();
 
   const handleOk = async () => {
     try {
       await logout();
-      router.push('/auth/login');
+      // Don't manually redirect - let auth state change handle it
     } catch (error) {
       console.error('Error during logout:', error);
-      // Force navigation even if logout fails
-      router.push('/auth/login');
+      // If logout fails, still let the auth system handle the redirect
     }
   };
 
