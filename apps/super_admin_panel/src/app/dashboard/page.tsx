@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { DashboardContext, useDashboardContext } from '@/contexts/DashboardContext'
 import ProfileModal from '../../components/ProfileModal'
-import DashboardCharts from './DashboardCharts'
+// Removed DashboardCharts import
 import GeneralUserTable from './generalUser'
 import InternalUserTable from './internalUser'
 
@@ -54,12 +54,7 @@ function DashboardNav() {
   
   return (
     <nav className="dashboard-nav flex justify-center space-x-4 my-6 bg-gray-50 py-3">
-      <button
-        className={`px-6 py-2 rounded-full font-medium focus:outline-none transition-colors ${activeTab === 'dashboard' ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
-        onClick={() => setActiveTab('dashboard')}
-      >
-        Dashboard
-      </button>
+      {/* Removed Dashboard tab button */}
       <button
         className={`px-6 py-2 rounded-full font-medium focus:outline-none transition-colors ${activeTab === 'generalUser' ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
         onClick={() => setActiveTab('generalUser')}
@@ -82,7 +77,7 @@ function DashboardContent() {
   
   return (
     <div className="dashboard-content px-8 py-6 bg-white">
-      {activeTab === 'dashboard' && <DashboardCharts />}
+      {/* Removed DashboardCharts rendering */}
       {activeTab === 'generalUser' && <GeneralUserTable />}
       {activeTab === 'internalUser' && <InternalUserTable />}
     </div>
@@ -91,7 +86,7 @@ function DashboardContent() {
 
 // Main Dashboard Page Component
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState('generalUser') // Default to generalUser
   
   return (
     <ProtectedRoute requiredRole="super_admin">
