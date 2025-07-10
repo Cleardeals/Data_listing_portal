@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authService, User } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { realtimeUserService } from '@/lib/realtimeUserService';
 
 interface AuthContextType {
   user: User | null;
@@ -57,6 +58,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           setUser(user);
           
+          // Initialize real-time verification tracking for this user
+          if (realtimeUserService) {
+            realtimeUserService.setUserStatus({
+              id: user.id,
+              email: user.email,
+              is_verified: user.is_verified || false,
+              role: user.role || 'Unverified Customer',
+              group: user.group || 'customers'
+            });
+          }
+          
           // Also store in our custom auth service for consistency
           const authSession = {
             user,
@@ -69,17 +81,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // No Supabase session, make sure we clear any stored session
           authService.clearSession();
           setUser(null);
+          // Clear real-time tracking
+          if (realtimeUserService) {
+            realtimeUserService.setUserStatus(null);
+          }
         }
       } catch (error) {
         console.error('Error during auth initialization:', error);
         await authService.signOut();
         setUser(null);
+        if (realtimeUserService) {
+          realtimeUserService.setUserStatus(null);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     initializeAuth();
+
+    // Set up real-time verification status listener
+    let verificationSubscription: { unsubscribe: () => void } | null = null;
+    
+    if (realtimeUserService) {
+      verificationSubscription = realtimeUserService.getUserStatus().subscribe(
+        (userUpdate) => {
+          if (userUpdate) {
+            console.log('🔄 [AuthContext] User verification status updated:', userUpdate);
+            
+            // Update the user state with new verification status if it's the current user
+            setUser(prevUser => {
+              if (!prevUser || prevUser.id !== userUpdate.id) return prevUser;
+              
+              // Only update if verification status actually changed
+              if (prevUser.is_verified === userUpdate.is_verified && 
+                  prevUser.role === userUpdate.role && 
+                  prevUser.group === userUpdate.group) {
+              return prevUser; // No change needed
+            }
+            
+            const updatedUser = {
+              ...prevUser,
+              is_verified: userUpdate.is_verified,
+              role: userUpdate.role,
+              group: userUpdate.group
+            };
+            
+            console.log('📝 [AuthContext] Updating user state:', {
+              from: { 
+                is_verified: prevUser.is_verified, 
+                role: prevUser.role, 
+                group: prevUser.group 
+              },
+              to: { 
+                is_verified: updatedUser.is_verified, 
+                role: updatedUser.role, 
+                group: updatedUser.group 
+              }
+            });
+            
+            // Also update the stored session
+            const storedSession = authService.getStoredSession();
+            if (storedSession) {
+              const updatedSession = {
+                ...storedSession,
+                user: updatedUser
+              };
+              authService.storeSession(updatedSession);
+            }
+            
+            return updatedUser;
+          });
+        }
+      }
+    );
+    }
 
     // Set up auth state listener to handle session changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -114,6 +190,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           authService.clearSession();
           setLoading(false); // Set loading to false when signed out
+          // Clear real-time tracking
+          if (realtimeUserService) {
+            realtimeUserService.setUserStatus(null);
+          }
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Update our stored session with the new tokens
           // Get current user from the existing session
@@ -134,6 +214,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
+      if (verificationSubscription) {
+        verificationSubscription.unsubscribe();
+      }
     };
   }, []);
 

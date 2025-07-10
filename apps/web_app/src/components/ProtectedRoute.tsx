@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,45 +12,98 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const [hasRedirected, setHasRedirected] = useState(false);
+  const [lastRedirectTime, setLastRedirectTime] = useState(0);
 
   useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated) {
-        router.push("/login");
-        return;
-      }
+    // Reset redirect flag when pathname changes
+    setHasRedirected(false);
+  }, [pathname]);
 
-      // Allow internal users with admin roles (super_admin or data_operator) to access web app
-      if (user?.group === 'internalusers') {
-        // Allow super_admin and data_operator roles from internalusers group
-        if (user?.role !== 'super_admin' && user?.role !== 'data_operator') {
-          console.warn('Access denied: Internal users must have super_admin or data_operator role to access web app')
-          router.push('/access-denied')
-          return
-        }
-        // Internal users with proper roles can continue
-      } else if (user?.group === 'customers') {
-        // Customers can access (existing logic)
-      } else {
-        // Block any other groups
-        console.warn('Access denied: Only customer group or internal admin users can access web app')
-        router.push('/access-denied')
-        return
-      }
-
-      // Check if user is unverified and redirect to unverified page
-      if (user && !user.is_verified) {
-        router.push("/unverified");
-        return;
-      }
-
-      if (requiredRole && user?.role !== requiredRole) {
-        // Redirect to unauthorized page or dashboard based on user role
-        router.push("/dashboard");
-        return;
-      }
+  useEffect(() => {
+    // Don't redirect if we're still loading, have already redirected, or too soon since last redirect
+    const now = Date.now();
+    if (loading || hasRedirected || (now - lastRedirectTime < 2000)) {
+      return;
     }
-  }, [loading, isAuthenticated, user, requiredRole, router]);
+
+    // Handle unauthenticated users
+    if (!isAuthenticated) {
+      console.log('🔄 [ProtectedRoute] Not authenticated, redirecting to login');
+      setHasRedirected(true);
+      setLastRedirectTime(now);
+      router.push("/login");
+      return;
+    }
+
+    // Handle authenticated users
+    if (user) {
+      console.log('🔍 [ProtectedRoute] Checking access for user:', {
+        email: user.email,
+        role: user.role,
+        group: user.group,
+        is_verified: user.is_verified,
+        pathname: pathname
+      });
+
+      // Handle internal users with admin roles
+      if (user.group === 'internalusers') {
+        if (user.role === 'super_admin' || user.role === 'data_operator') {
+          console.log('✅ [ProtectedRoute] Internal admin user - access granted');
+          return; // Allow access
+        } else {
+          console.warn('❌ [ProtectedRoute] Access denied: Internal users must have super_admin or data_operator role');
+          setHasRedirected(true);
+          setLastRedirectTime(now);
+          router.push('/access-denied');
+          return;
+        }
+      } 
+      
+      // Handle customer users
+      if (user.group === 'customers') {
+        // Check if they should be on unverified page
+        if (!user.is_verified || user.role !== 'Verified Customer') {
+          if (pathname !== '/unverified') {
+            console.log('🔄 [ProtectedRoute] Customer user not fully verified, redirecting to unverified page');
+            setHasRedirected(true);
+            setLastRedirectTime(now);
+            router.push("/unverified");
+            return;
+          }
+          // Already on unverified page, allow render
+          console.log('✅ [ProtectedRoute] On unverified page - allowing render');
+          return;
+        } 
+        
+        // Verified customer trying to access unverified page - redirect to dashboard
+        if (user.is_verified && user.role === 'Verified Customer' && pathname === '/unverified') {
+          console.log('🔄 [ProtectedRoute] Verified customer on unverified page, redirecting to dashboard');
+          setHasRedirected(true);
+          setLastRedirectTime(now);
+          router.push("/dashboard");
+          return;
+        }
+        
+        // Verified customer accessing protected routes
+        if (user.is_verified && user.role === 'Verified Customer') {
+          console.log('✅ [ProtectedRoute] Verified customer - access granted');
+          return;
+        }
+      }
+      
+      // Block any other groups or unknown states
+      console.warn('❌ [ProtectedRoute] Access denied: Unknown user group or state:', {
+        group: user.group,
+        role: user.role,
+        is_verified: user.is_verified
+      });
+      setHasRedirected(true);
+      setLastRedirectTime(now);
+      router.push('/access-denied');
+    }
+  }, [loading, isAuthenticated, user, pathname, router, hasRedirected, lastRedirectTime]);
 
   if (loading) {
     return (
@@ -60,30 +113,33 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return null; // Will redirect to login
   }
 
-  // Allow internal users with admin roles (super_admin or data_operator)
-  if (user?.group === 'internalusers') {
-    // Block internal users without proper admin roles
-    if (user?.role !== 'super_admin' && user?.role !== 'data_operator') {
-      return null // Will redirect to access denied
+  // Final checks before rendering content
+  if (user.group === 'internalusers') {
+    if (user.role !== 'super_admin' && user.role !== 'data_operator') {
+      return null; // Will redirect to access denied
     }
-    // Internal users with proper roles can continue
-  } else if (user?.group === 'customers') {
-    // Customers can access (existing logic)
+  } else if (user.group === 'customers') {
+    // Only allow verified customers with proper role
+    if (!user.is_verified || user.role !== 'Verified Customer') {
+      if (pathname !== '/unverified') {
+        return null; // Will redirect to unverified page
+      }
+    }
+    // Allow verified customers on any page except unverified
+    if (user.is_verified && user.role === 'Verified Customer' && pathname === '/unverified') {
+      return null; // Will redirect to dashboard
+    }
   } else {
     // Block any other groups
-    return null
+    return null;
   }
 
-  // Check if user is unverified
-  if (user && !user.is_verified) {
-    return null; // Will redirect to unverified page
-  }
-
-  if (requiredRole && user?.role !== requiredRole) {
+  // Check required role if specified
+  if (requiredRole && user.role !== requiredRole) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

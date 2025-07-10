@@ -3,6 +3,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { RealtimeVerificationProvider } from "@/contexts/RealtimeVerificationContext";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 
 const geistSans = Geist({
@@ -27,7 +28,9 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          <AuthenticatedLayout>{children}</AuthenticatedLayout>
+          <RealtimeVerificationProvider>
+            <AuthenticatedLayout>{children}</AuthenticatedLayout>
+          </RealtimeVerificationProvider>
         </AuthProvider>
       </body>
     </html>
