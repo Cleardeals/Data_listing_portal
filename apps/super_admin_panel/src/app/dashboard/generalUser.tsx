@@ -5,31 +5,21 @@ import { useState, useEffect } from 'react';
 import AddEditExternalUserModal from '../../components/addExternalUser';
 import { EditConfirmationModal } from '../../components/editConfirmationModal';
 import { DeleteConfirmationModal } from '../../components/deleteConfirmationModal';
-import { useExternalUsersRealtime } from '../../hooks/useRealtimeUsers';
-import { realtimeUserService } from '../../lib/realtimeService';
 import { 
   ExternalUser, 
   ExternalUserFormData, 
+  fetchExternalUsers, 
   deleteExternalUser, 
   addExternalUser, 
   updateExternalUser, 
   verifyUser,
   unverifyUser
 } from '../../lib/supabaseUsers';
+import { supabase } from '../../lib/supabase';
 
 export default function GeneralUserTable() {
-  // Use the real-time hook instead of manual state management
-  const {
-    users,
-    loading,
-    error,
-    isConnected,
-    updateUser,
-    addUser: addUserToState,
-    removeUser,
-    setError
-  } = useExternalUsersRealtime();
-
+  const [users, setUsers] = useState<ExternalUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
   const [showEditConfirm, setShowEditConfirm] = useState(false);
@@ -37,6 +27,7 @@ export default function GeneralUserTable() {
   const [selectedUser, setSelectedUser] = useState<ExternalUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Clear messages after 3 seconds
@@ -45,7 +36,7 @@ export default function GeneralUserTable() {
       const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }
-  }, [error, setError]);
+  }, [error]);
 
   useEffect(() => {
     if (success) {
@@ -54,15 +45,56 @@ export default function GeneralUserTable() {
     }
   }, [success]);
   
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchExternalUsers();
+        setUsers(data);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch users. Please try again.';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUsers();
+
+    // Setup real-time subscription for external users
+    const subscription = supabase
+      .channel('external_users_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'auth',
+          table: 'users'
+        },
+        (payload: Record<string, unknown>) => {
+          console.log('Real-time update received:', payload);
+          
+          // Refresh users list when auth.users table changes
+          loadUsers();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on component unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+  
   // Handle user deletion
   const handleDeleteConfirm = async () => {
     if (selectedUser) {
       try {
         setError(null);
         await deleteExternalUser(selectedUser.id);
-        removeUser(selectedUser.id); // Use real-time hook method
-        // Broadcast the deletion to other clients
-        realtimeUserService.broadcastUserUpdate('user_deleted', selectedUser);
+        setUsers(users.filter(user => user.id !== selectedUser.id));
         setSuccess('User deleted successfully');
       } catch (error) {
         console.error('Failed to delete user:', error);
@@ -86,9 +118,7 @@ export default function GeneralUserTable() {
     try {
       setError(null);
       const newUser = await addExternalUser(userData);
-      addUserToState(newUser); // Use real-time hook method
-      // Broadcast the addition to other clients
-      realtimeUserService.broadcastUserUpdate('user_added', newUser);
+      setUsers([...users, newUser]);
       setShowAddUser(false);
       setSuccess('User added successfully');
     } catch (error) {
@@ -103,9 +133,7 @@ export default function GeneralUserTable() {
       try {
         setError(null);
         const updatedUser = await updateExternalUser(selectedUser.id, userData);
-        updateUser(updatedUser); // Use real-time hook method
-        // Broadcast the update to other clients
-        realtimeUserService.broadcastUserUpdate('user_updated', updatedUser);
+        setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
         setShowEditUser(false);
         setSelectedUser(null);
         setSuccess('User updated successfully');
@@ -126,18 +154,13 @@ export default function GeneralUserTable() {
       } else {
         await unverifyUser(userId);
       }
-      // Update the user in real-time state
-      const userToUpdate = users.find(user => user.id === userId);
-      if (userToUpdate) {
-        const updatedUser = { 
-          ...userToUpdate, 
+      setUsers(users.map(user => 
+        user.id === userId ? { 
+          ...user, 
           is_verified: verify, 
           role: verify ? 'Verified Customer' : 'Unverified Customer' 
-        };
-        updateUser(updatedUser);
-        // Broadcast the update to other clients
-        realtimeUserService.broadcastUserUpdate('user_updated', updatedUser);
-      }
+        } : user
+      ));
       setSuccess(`User ${verify ? 'verified' : 'unverified'} successfully`);
     } catch (error) {
       console.error('Failed to update verification status:', error);
@@ -149,20 +172,6 @@ export default function GeneralUserTable() {
   
   return (
     <div className="p-8">
-      {/* Connection Status Indicator */}
-      <div className="mb-2 flex justify-end">
-        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
-          isConnected 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${
-            isConnected ? 'bg-green-500' : 'bg-yellow-500'
-          }`}></div>
-          <span>{isConnected ? 'Real-time Connected' : 'Real-time Disconnected'}</span>
-        </div>
-      </div>
-
       {/* Success/Error Messages */}
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">

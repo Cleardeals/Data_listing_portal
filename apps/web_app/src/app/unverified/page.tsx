@@ -1,91 +1,21 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useRealtimeVerification } from "@/hooks/useRealtimeVerification";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function UnverifiedPage() {
   const { user, logout, loading } = useAuth();
-  const { verificationStatus, isConnected } = useRealtimeVerification(user?.id);
   const router = useRouter();
-  const [hasRedirected, setHasRedirected] = useState(false);
-  const [lastRedirectTime, setLastRedirectTime] = useState(0);
 
   useEffect(() => {
-    // Reset redirect flag when pathname changes
-    setHasRedirected(false);
-  }, []);
-
-  useEffect(() => {
-    // Don't do anything if still loading or already redirected recently
-    const now = Date.now();
-    if (loading || hasRedirected || (now - lastRedirectTime < 2000)) {
-      console.log('🔄 [UnverifiedPage] Loading, already redirected, or too soon since last redirect');
-      return;
-    }
-
-    // Redirect if not authenticated
-    if (!user) {
-      console.log('🔄 [UnverifiedPage] No user found, redirecting to login...');
-      setHasRedirected(true);
-      setLastRedirectTime(now);
-      router.push("/login");
-      return;
-    }
-
-    console.log('🔍 [UnverifiedPage] Checking user status:', {
-      email: user.email,
-      group: user.group,
-      role: user.role,
-      is_verified: user.is_verified,
-      realtimeVerified: verificationStatus?.is_verified,
-      realtimeRole: verificationStatus?.role
-    });
-
-    // Internal users should not be on this page
-    if (user.group === 'internalusers') {
-      console.log('🔄 [UnverifiedPage] Internal user found, redirecting to dashboard...');
-      setHasRedirected(true);
-      setLastRedirectTime(now);
+    // Redirect if not authenticated or if user is verified
+    if (!loading && (!user || user.is_verified)) {
       router.push("/dashboard");
-      return;
     }
-
-    // For customer users, check if they are now verified
-    if (user.group === 'customers') {
-      // Get the current verification status (prioritize real-time updates if available)
-      const currentIsVerified = verificationStatus?.is_verified ?? user.is_verified;
-      const currentRole = verificationStatus?.role ?? user.role;
-      
-      // Only redirect if BOTH conditions are met: is_verified=true AND role='Verified Customer'
-      const isFullyVerified = currentIsVerified && currentRole === 'Verified Customer';
-      
-      if (isFullyVerified) {
-        console.log('🎉 [UnverifiedPage] Customer fully verified! Redirecting to dashboard...', {
-          userVerified: user.is_verified,
-          userRole: user.role,
-          realtimeVerified: verificationStatus?.is_verified,
-          realtimeRole: verificationStatus?.role
-        });
-        setHasRedirected(true);
-        setLastRedirectTime(now);
-        router.push("/dashboard");
-        return;
-      }
-      
-      // If not fully verified, stay on this page
-      console.log('ℹ️ [UnverifiedPage] Customer still not fully verified, staying on page', {
-        is_verified: currentIsVerified,
-        role: currentRole,
-        needsVerified: !currentIsVerified,
-        needsRole: currentRole !== 'Verified Customer'
-      });
-    }
-  }, [loading, user, verificationStatus?.is_verified, verificationStatus?.role, router, hasRedirected, lastRedirectTime]);
+  }, [loading, user, router]);
 
   const handleLogout = async () => {
-    setHasRedirected(true); // Prevent any more navigation logic
     await logout();
     router.push("/login");
   };
@@ -131,14 +61,6 @@ export default function UnverifiedPage() {
             <p className="text-white/70 text-lg">
               Your account is currently under review
             </p>
-            
-            {/* Real-time Connection Status */}
-            <div className="mt-4 flex justify-center items-center gap-2 text-sm">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
-              <span className="text-white/60">
-                {isConnected ? 'Real-time updates active' : 'Checking for updates...'}
-              </span>
-            </div>
           </div>
 
           {/* Main Content Card */}
@@ -165,22 +87,16 @@ export default function UnverifiedPage() {
                     <div className="space-y-2 text-white/80">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                        <span>Role: {verificationStatus?.role || user?.role || 'Unverified Customer'}</span>
+                        <span>Role: {user?.role || 'Unverified Customer'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                        <span>Group: {verificationStatus?.group || user?.group || 'customers'}</span>
+                        <span>Group: {user?.group || 'customers'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
                         <span>Status: <span className="text-yellow-300">Pending Administrator Approval</span></span>
                       </div>
-                      {verificationStatus && (
-                        <div className="flex items-center gap-2 text-green-300">
-                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                          <span>🔄 Real-time monitoring active</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
