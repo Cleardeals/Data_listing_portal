@@ -2,20 +2,62 @@
 
 // Utility function to get auth headers
 const getAuthHeaders = () => {
-  const session = localStorage.getItem('super_admin_auth_session');
-  if (!session) {
-    throw new Error('No authentication session found');
-  }
-  
   try {
-    const parsedSession = JSON.parse(session);
+    // First, try to get session from localStorage
+    const session = localStorage.getItem('super_admin_auth_session');
+    
+    if (!session) {
+      throw new Error('No authentication session found');
+    }
+    
+    // Parse the session with more defensive programming
+    let parsedSession;
+    try {
+      parsedSession = JSON.parse(session);
+    } catch (parseError) {
+      console.error('Failed to parse session JSON:', parseError);
+      localStorage.removeItem('super_admin_auth_session'); // Clear corrupted session
+      throw new Error('Invalid session data: unable to parse JSON');
+    }
+    
+    // Check if parsedSession is null or undefined
+    if (parsedSession === null || parsedSession === undefined) {
+      console.error('Session is null or undefined');
+      localStorage.removeItem('super_admin_auth_session');
+      throw new Error('Invalid session data: session is null or undefined');
+    }
+    
+    // Check if parsedSession is an object
+    if (typeof parsedSession !== 'object') {
+      console.error('Session is not an object, type:', typeof parsedSession);
+      localStorage.removeItem('super_admin_auth_session');
+      throw new Error(`Invalid session data: expected object, got ${typeof parsedSession}`);
+    }
+    
+    // Check for access_token with defensive programming
+    let accessToken = null;
+    
+    try {
+      if (parsedSession && 'access_token' in parsedSession) {
+        accessToken = parsedSession.access_token;
+      }
+    } catch (tokenError) {
+      console.error('Error accessing access_token property:', tokenError);
+    }
+    
+    if (!accessToken) {
+      console.error('No access token found in session');
+      localStorage.removeItem('super_admin_auth_session');
+      throw new Error('Invalid session data: missing access token');
+    }
+    
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${parsedSession.access_token}`
+      'Authorization': `Bearer ${accessToken}`
     };
   } catch (error) {
-    console.error('Error parsing authentication session:', error);
-    throw new Error('Invalid authentication session');
+    console.error('Error in getAuthHeaders:', error);
+    throw error;
   }
 };
 
@@ -291,19 +333,39 @@ export const updateExternalUser = async (userId: string, userData: ExternalUserF
 
 export const deleteExternalUser = async (userId: string): Promise<void> => {
   try {
-    const response = await fetch(`/api/external-users?userId=${userId}`, {
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('Invalid user ID provided for deletion');
+    }
+
+    const headers = getAuthHeaders();
+    const url = `/api/external-users?userId=${encodeURIComponent(userId)}`;
+
+    const response = await fetch(url, {
       method: 'DELETE',
-      headers: getAuthHeaders()
+      headers
     });
     
     if (!response.ok) {
+      const responseText = await response.text();
+      console.error('Delete request failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseText
+      });
+      
       if (response.status === 403) {
         throw new Error('Access denied: Insufficient permissions');
       }
-      throw new Error('Failed to delete external user');
+      if (response.status === 404) {
+        throw new Error('User not found');
+      }
+      if (response.status === 400) {
+        throw new Error('Invalid request: User ID is required');
+      }
+      throw new Error(`Failed to delete external user: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
-    console.error('Error deleting external user:', error);
+    console.error('Error in deleteExternalUser:', error);
     throw error;
   }
 };

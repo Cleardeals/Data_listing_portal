@@ -15,7 +15,6 @@ import {
   verifyUser,
   unverifyUser
 } from '../../lib/supabaseUsers';
-import { supabase } from '../../lib/supabase';
 
 export default function GeneralUserTable() {
   const [users, setUsers] = useState<ExternalUser[]>([]);
@@ -29,6 +28,7 @@ export default function GeneralUserTable() {
   const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [componentError, setComponentError] = useState<string | null>(null);
 
   // Clear messages after 3 seconds
   useEffect(() => {
@@ -62,37 +62,24 @@ export default function GeneralUserTable() {
     };
     
     loadUsers();
-
-    // Setup real-time subscription for external users
-    const subscription = supabase
-      .channel('external_users_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'auth',
-          table: 'users'
-        },
-        (payload: Record<string, unknown>) => {
-          console.log('Real-time update received:', payload);
-          
-          // Refresh users list when auth.users table changes
-          loadUsers();
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on component unmount
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
   
+  // Handle delete click
+  const handleDeleteClick = (user: ExternalUser) => {
+    setSelectedUser(user);
+    setShowDeleteConfirm(true);
+  };
+
+  // Handle edit click
+  const handleEditClick = (user: ExternalUser) => {
+    setSelectedUser(user);
+    setShowEditConfirm(true);
+  };
+
   // Handle user deletion
   const handleDeleteConfirm = async () => {
     if (selectedUser) {
       try {
-        setError(null);
         await deleteExternalUser(selectedUser.id);
         setUsers(users.filter(user => user.id !== selectedUser.id));
         setSuccess('User deleted successfully');
@@ -123,29 +110,43 @@ export default function GeneralUserTable() {
       setSuccess('User added successfully');
     } catch (error) {
       console.error('Failed to add user:', error);
-      setError('Failed to add user. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add user. Please try again.';
+      setError(errorMessage);
     }
   };
   
   // Handle updating an existing user
   const handleUpdateUser = async (userData: ExternalUserFormData) => {
-    if (selectedUser) {
-      try {
-        setError(null);
-        const updatedUser = await updateExternalUser(selectedUser.id, userData);
-        setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
-        setShowEditUser(false);
-        setSelectedUser(null);
-        setSuccess('User updated successfully');
-      } catch (error) {
-        console.error('Failed to update user:', error);
-        setError('Failed to update user. Please try again.');
-      }
+    if (!selectedUser || !selectedUser.id) {
+      console.error('No user selected for update');
+      setError('No user selected for update.');
+      setShowEditUser(false);
+      setSelectedUser(null);
+      return;
+    }
+
+    try {
+      setError(null);
+      const updatedUser = await updateExternalUser(selectedUser.id, userData);
+      setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
+      setShowEditUser(false);
+      setSelectedUser(null);
+      setSuccess('User updated successfully');
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update user. Please try again.';
+      setError(errorMessage);
     }
   };
   
   // Handle verification status change
   const handleVerificationChange = async (userId: string, verify: boolean) => {
+    if (!userId) {
+      console.error('Invalid user ID for verification change');
+      setError('Invalid user ID for verification change.');
+      return;
+    }
+
     setUpdatingVerification(userId);
     try {
       setError(null);
@@ -164,7 +165,8 @@ export default function GeneralUserTable() {
       setSuccess(`User ${verify ? 'verified' : 'unverified'} successfully`);
     } catch (error) {
       console.error('Failed to update verification status:', error);
-      setError('Failed to update verification status. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update verification status. Please try again.';
+      setError(errorMessage);
     } finally {
       setUpdatingVerification(null);
     }
@@ -172,6 +174,19 @@ export default function GeneralUserTable() {
   
   return (
     <div className="p-8">
+      {/* Component Error Message */}
+      {componentError && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <strong>Component Error:</strong> {componentError}
+          <button 
+            onClick={() => setComponentError(null)} 
+            className="ml-2 text-sm underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      
       {/* Success/Error Messages */}
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -236,8 +251,8 @@ export default function GeneralUserTable() {
                 filteredUsers.map((user, index) => (
                   <tr key={user.id} className="bg-white text-gray-800 hover:bg-gray-50">
                     <td className="border px-2 py-1">{index + 1}</td>
-                    <td className="border px-2 py-1 font-medium">{user.name}</td>
-                    <td className="border px-2 py-1">{user.email}</td>
+                    <td className="border px-2 py-1 font-medium">{user.name || 'N/A'}</td>
+                    <td className="border px-2 py-1">{user.email || 'N/A'}</td>
                     <td className="border px-2 py-1">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                         user.role === 'Verified Customer' 
@@ -256,8 +271,8 @@ export default function GeneralUserTable() {
                         {user.is_verified ? 'Verified' : 'Unverified'}
                       </span>
                     </td>
-                    <td className="border px-2 py-1">{user.business}</td>
-                    <td className="border px-2 py-1">{user.contact}</td>
+                    <td className="border px-2 py-1">{user.business || 'N/A'}</td>
+                    <td className="border px-2 py-1">{user.contact || 'N/A'}</td>
                     <td className="border px-2 py-1">
                       {updatingVerification === user.id ? (
                         <div className="flex justify-center items-center">
@@ -279,19 +294,13 @@ export default function GeneralUserTable() {
                     <td className="border px-2 py-1 text-blue-600 cursor-pointer">
                       <FaEdit 
                         className="text-blue-500 text-xl mx-auto hover:text-blue-700 transition-colors" 
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowEditConfirm(true);
-                        }} 
+                        onClick={() => handleEditClick(user)} 
                       />
                     </td>
                     <td className="border px-2 py-1 text-red-600 cursor-pointer">
                       <FaTrash 
                         className="text-red-500 text-xl mx-auto hover:text-red-700 transition-colors" 
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowDeleteConfirm(true);
-                        }} 
+                        onClick={() => handleDeleteClick(user)} 
                       />
                     </td>
                   </tr>
