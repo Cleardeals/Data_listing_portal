@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AuthSession, AuthService } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Initialize auth state
@@ -153,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async (): Promise<void> => {
     await AuthService.signOut()
     // Session will be automatically cleared by onAuthStateChange listener
+    router.push('/auth/login')
   }
 
   const value: AuthContextType = {
