@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface ProfileModalProps {
   open: boolean;
@@ -12,7 +13,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose }) => {
       <div className="bg-white rounded-lg shadow-lg w-full max-w-xs p-6 relative">
         <button onClick={onClose} className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-black font-bold">&times;</button>
         <div className="flex flex-col items-center mb-4">
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile" className="w-16 h-16 rounded-full object-cover mb-2" />
+          <Image 
+            src="https://randomuser.me/api/portraits/men/32.jpg" 
+            alt="Profile" 
+            width={64}
+            height={64}
+            className="w-16 h-16 rounded-full object-cover mb-2" 
+          />
           <div className="text-black font-medium">ID-12345</div>
           <div className="text-black">User Name</div>
         </div>
