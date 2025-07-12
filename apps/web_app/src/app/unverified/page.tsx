@@ -3,18 +3,23 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRealTimeUserStatus } from "@/hooks/useRealTimeUserStatus";
 
 export default function UnverifiedPage() {
   const { user, logout, loading } = useAuth();
+  const { currentUser, loading: userStatusLoading } = useRealTimeUserStatus();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Use real-time user data when available, fallback to auth user
+  const displayUser = currentUser || user;
+
   useEffect(() => {
     // Redirect if not authenticated or if user is verified
-    if (!loading && (!user || user.is_verified)) {
+    if (!loading && !userStatusLoading && (!displayUser || displayUser.is_verified)) {
       router.push("/dashboard");
     }
-  }, [loading, user, router]);
+  }, [loading, userStatusLoading, displayUser, router]);
 
   const handleLogout = async () => {
     try {
@@ -30,7 +35,7 @@ export default function UnverifiedPage() {
     }
   };
 
-  if (loading) {
+  if (loading || userStatusLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center relative">
         {/* 3D Background Elements - Mobile Optimized */}
@@ -97,11 +102,11 @@ export default function UnverifiedPage() {
                     <div className="space-y-2 text-white/80 text-sm sm:text-base">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></span>
-                        <span>Role: {user?.role || 'Unverified Customer'}</span>
+                        <span>Role: {displayUser?.role || 'Unverified Customer'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></span>
-                        <span>Group: {user?.group || 'customers'}</span>
+                        <span>Group: {displayUser?.group || 'customers'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse flex-shrink-0"></span>

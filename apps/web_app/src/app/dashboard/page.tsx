@@ -7,6 +7,7 @@ import LazyAreaChart from "@/components/LazyAreaChart";
 import LazyStatsGrid from "@/components/LazyStatsGrid";
 import PropertyStatsOverview from "@/components/PropertyStatsOverview";
 import { usePropertyStats } from "@/hooks/usePropertyStats";
+import { useRealTimeUserStatus } from "@/hooks/useRealTimeUserStatus";
 import AISalesScriptGenerator from "@/components/AISalesScriptGenerator";
 import AIPropertySearch from "@/components/AIPropertySearch";
 import RealEstateMentor from "@/components/RealEstateMentor";
@@ -18,7 +19,11 @@ import { SalesScriptResponse } from "@/types/aiTypes";
 // Main Dashboard page component
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { currentUser } = useRealTimeUserStatus();
   const { stats, loading, error, clearCache } = usePropertyStats();
+  
+  // Use real-time user data when available, fallback to auth user
+  const displayUser = currentUser || user;
   
   // State for AI components
   const [properties, setProperties] = useState<PropertyData[]>([]);
@@ -27,7 +32,7 @@ export default function DashboardPage() {
   // Load properties for AI components with full pagination support
   useEffect(() => {
     const loadAllProperties = async () => {
-      if (!user) return;
+      if (!displayUser) return;
       
       setLoadingAIData(true);
       try {
@@ -80,7 +85,7 @@ export default function DashboardPage() {
     };
 
     loadAllProperties();
-  }, [user]);
+  }, [displayUser]);
 
   // Add error display for property stats
   const ErrorDisplay = () => (
@@ -111,17 +116,17 @@ export default function DashboardPage() {
           {error && <ErrorDisplay />}
           
           {/* Welcome Message */}
-          {user && (
+          {displayUser && (
             <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row items-center sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center pulse-glow flex-shrink-0">
-                  <span className="text-white text-lg sm:text-2xl font-bold">{user.email.charAt(0).toUpperCase()}</span>
+                  <span className="text-white text-lg sm:text-2xl font-bold">{(displayUser?.email || '').charAt(0).toUpperCase()}</span>
                 </div>
                 <div className="text-center sm:text-left">
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gradient-animate mb-1">
-                    Welcome back, {user.email.split('@')[0]}!
+                    Welcome back, {(displayUser?.email || '').split('@')[0]}!
                   </h1>
-                  <p className="text-white/70 text-sm sm:text-base lg:text-lg">Role: <span className="text-cyan-400 font-semibold">{user.role}</span></p>
+                  <p className="text-white/70 text-sm sm:text-base lg:text-lg">Role: <span className="text-cyan-400 font-semibold">{displayUser?.role || 'Unknown'}</span></p>
                 </div>
               </div>
             </div>

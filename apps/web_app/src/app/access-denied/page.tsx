@@ -3,11 +3,21 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRealTimeUserStatus } from '@/hooks/useRealTimeUserStatus'
 
 export default function AccessDeniedPage() {
   const router = useRouter()
   const { logout } = useAuth()
+  const { currentUser } = useRealTimeUserStatus()
   const [countdown, setCountdown] = useState(5)
+
+  // Monitor for verification status changes - if user gets verified, redirect to dashboard
+  useEffect(() => {
+    if (currentUser?.is_verified) {
+      router.push('/dashboard')
+      return
+    }
+  }, [currentUser?.is_verified, router])
 
   useEffect(() => {
     // Countdown timer

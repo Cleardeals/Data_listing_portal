@@ -1,6 +1,23 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authService, User } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+
+// Type for user profile from database
+interface UserProfile {
+  id: string;
+  email?: string;
+  raw_user_meta_data?: {
+    name?: string;
+    role?: string;
+    group?: string;
+    is_verified?: boolean;
+    contact?: string;
+    business?: string;
+    subscription?: string;
+  };
+  email_confirmed_at?: string;
+  created_at?: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +27,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   isAuthenticated: boolean;
+  isValidDataOperator: boolean;
+  userStatusLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +44,126 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userStatusLoading, setUserStatusLoading] = useState(true);
+  const [isValidDataOperator, setIsValidDataOperator] = useState(false);
+  
+  // Helper function to handle session termination
+  const terminateSession = useCallback(async () => {
+    try {
+      await authService.signOut();
+      setUser(null);
+      setIsValidDataOperator(false);
+      
+      // Redirect to landing page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Error during session termination:', error);
+      // Force redirect even if logout fails
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+    }
+  }, []);
+  
+  // Check if user meets data operator requirements
+  const checkValidDataOperator = useCallback((userProfile: UserProfile | null): boolean => {
+    return !!(
+      userProfile &&
+      userProfile.raw_user_meta_data?.role === 'data_operator' &&
+      userProfile.raw_user_meta_data?.is_verified === true &&
+      userProfile.raw_user_meta_data?.group === 'internalusers'
+    );
+  }, []);
+
+  // Fetch user profile from public.user_profiles
+  const fetchUserProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        // On user profile fetch error, end session and redirect to landing page
+        await terminateSession();
+        return null;
+      }
+
+      return data as UserProfile;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      // On any fetch error, end session and redirect to landing page
+      await terminateSession();
+      return null;
+    }
+  }, [terminateSession]);
+
+  // Real-time user status monitoring
+  useEffect(() => {
+    let subscription: ReturnType<typeof supabase.channel> | null = null;
+
+    const setupRealTimeUserStatus = async () => {
+      if (!user?.id) {
+        setIsValidDataOperator(false);
+        setUserStatusLoading(false);
+        return;
+      }
+
+      try {
+        setUserStatusLoading(true);
+
+        // Initial fetch
+        const userProfile = await fetchUserProfile(user.id);
+        setIsValidDataOperator(checkValidDataOperator(userProfile));
+
+        // Set up real-time subscription
+        subscription = supabase
+          .channel(`user_profile_${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_profiles',
+              filter: `id=eq.${user.id}`,
+            },
+            async (payload) => {
+              console.log('Real-time user profile change:', payload);
+              
+              if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                const updatedProfile = payload.new as UserProfile;
+                setIsValidDataOperator(checkValidDataOperator(updatedProfile));
+              } else if (payload.eventType === 'DELETE') {
+                setIsValidDataOperator(false);
+              }
+            }
+          )
+          .subscribe();
+
+      } catch (error) {
+        console.error('Error setting up real-time user status:', error);
+        setIsValidDataOperator(false);
+        
+        // If real-time setup fails, it might indicate profile access issues
+        // Terminate session to prevent stuck states
+        await terminateSession();
+      } finally {
+        setUserStatusLoading(false);
+      }
+    };
+
+    setupRealTimeUserStatus();
+
+    return () => {
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
+  }, [user?.id, fetchUserProfile, checkValidDataOperator, terminateSession]);
 
   useEffect(() => {
     // Check for existing session on mount (with proper session persistence)
@@ -203,6 +342,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     refreshSession,
     isAuthenticated: !!user,
+    isValidDataOperator,
+    userStatusLoading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

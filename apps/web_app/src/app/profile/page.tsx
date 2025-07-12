@@ -10,46 +10,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { supabase } from "../../lib/supabase";
+import { useRealTimeUserStatus } from "@/hooks/useRealTimeUserStatus";
 
 function ProfilePageContent() {
   const router = useRouter();
-  const { user, loading, logout, refreshSession } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const { currentUser } = useRealTimeUserStatus();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Setup real-time subscription to monitor user verification status changes
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const subscription = supabase
-      .channel(`user_verification_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'auth',
-          table: 'users',
-          filter: `id=eq.${user.id}`
-        },
-        () => {
-          // Refresh the auth session to get latest user data
-          if (refreshSession) {
-            refreshSession();
-          } else {
-            // If refreshSession is not available, force a page reload
-            window.location.reload();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user?.id, refreshSession]);
+  // Use real-time user data when available, fallback to auth user
+  const displayUser = currentUser || user;
 
 
 
@@ -135,15 +108,15 @@ function ProfilePageContent() {
               <div className="flex flex-col sm:flex-row lg:flex-row items-center lg:items-start space-y-4 sm:space-y-0 sm:space-x-6 lg:space-x-8 w-full lg:w-auto">
                 <div className="relative flex-shrink-0">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-400 via-cyan-400 to-purple-400 rounded-full flex items-center justify-center pulse-glow">
-                    <span className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold">{user.email.charAt(0).toUpperCase()}</span>
+                    <span className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold">{(displayUser?.email || '').charAt(0).toUpperCase()}</span>
                   </div>
                   <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full border-2 sm:border-4 border-white/20 animate-pulse"></div>
                 </div>
                 <div className="text-center sm:text-left flex-grow">
-                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3 break-all">{user.email}</h3>
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3 break-all">{displayUser?.email || ''}</h3>
                   <div className="space-y-2 sm:space-y-3">
                     <span className="inline-block bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-sm sm:text-base lg:text-lg font-semibold">
-                      👤 {user.role}
+                      👤 {displayUser?.role || 'Unknown'}
                     </span>
                     <div className="flex items-center justify-center sm:justify-start space-x-2 text-white/70 text-sm sm:text-base">
                       <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -185,7 +158,7 @@ function ProfilePageContent() {
                 </div>
                 <span className="font-semibold text-white text-sm sm:text-base">User ID</span>
               </div>
-              <span className="text-white/90 font-mono text-xs sm:text-sm break-all">{user.id}</span>
+              <span className="text-white/90 font-mono text-xs sm:text-sm break-all">{displayUser?.id || ''}</span>
             </div>
             
             <div className="card-hover-3d backdrop-blur-sm bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 rounded-xl p-4 sm:p-6">
@@ -195,7 +168,7 @@ function ProfilePageContent() {
                 </div>
                 <span className="font-semibold text-white text-sm sm:text-base">Email</span>
               </div>
-              <span className="text-white/90 text-xs sm:text-sm lg:text-base break-all">{user.email}</span>
+              <span className="text-white/90 text-xs sm:text-sm lg:text-base break-all">{displayUser?.email || ''}</span>
             </div>
             
             <div className="card-hover-3d backdrop-blur-sm bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-xl p-4 sm:p-6">
@@ -205,7 +178,7 @@ function ProfilePageContent() {
                 </div>
                 <span className="font-semibold text-white text-sm sm:text-base">Role</span>
               </div>
-              <span className="text-white/90 text-sm sm:text-base">{user.role}</span>
+              <span className="text-white/90 text-sm sm:text-base">{displayUser?.role || 'Unknown'}</span>
             </div>
             
             <div className="card-hover-3d backdrop-blur-sm bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 rounded-xl p-4 sm:p-6">
@@ -216,7 +189,7 @@ function ProfilePageContent() {
                 <span className="font-semibold text-white text-sm sm:text-base">Joined</span>
               </div>
               <span className="text-white/90 text-sm sm:text-base">
-                {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
+                {displayUser?.created_at ? new Date(displayUser.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric'

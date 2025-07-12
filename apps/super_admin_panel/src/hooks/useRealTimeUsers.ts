@@ -139,7 +139,12 @@ export const useRealTimeUsers = (): UseRealTimeUsersReturn => {
       }
     } catch (err) {
       console.error('Error in fetchFromAPI:', err)
-      setError('Failed to fetch user data from API')
+      // Only set error if it's a critical failure that prevents data loading
+      if (err instanceof Error && err.message.includes('authentication')) {
+        setError('Authentication failed. Please log in again.')
+      } else {
+        console.warn('API fetch failed, but user data may still be available from cache')
+      }
     } finally {
       setLoading(false)
     }
@@ -195,8 +200,13 @@ export const useRealTimeUsers = (): UseRealTimeUsersReturn => {
 
       if (profilesError) {
         console.error('Error fetching user profiles:', profilesError)
-        // Fallback to API if user_profiles table doesn't exist or fails
-        await fetchFromAPI()
+        // Only set error if fallback to API also fails
+        try {
+          await fetchFromAPI()
+        } catch (apiError) {
+          console.error('API fallback also failed:', apiError)
+          setError('Unable to load user data. Please refresh the page.')
+        }
         return
       }
 
@@ -215,9 +225,13 @@ export const useRealTimeUsers = (): UseRealTimeUsersReturn => {
       }
     } catch (err) {
       console.error('Error in fetchUserProfiles:', err)
-      setError('Failed to fetch user data')
-      // Fallback to API
-      await fetchFromAPI()
+      // Only set error if fallback to API also fails
+      try {
+        await fetchFromAPI()
+      } catch (apiError) {
+        console.error('API fallback also failed:', apiError)
+        setError('Unable to load user data. Please refresh the page.')
+      }
     } finally {
       setLoading(false)
     }
@@ -226,6 +240,14 @@ export const useRealTimeUsers = (): UseRealTimeUsersReturn => {
   // Setup real-time subscription
   useEffect(() => {
     let subscription: RealtimeChannel | null = null
+    let isPageVisible = true
+
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      isPageVisible = !document.hidden
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     const setupRealTimeSubscription = async () => {
       try {
@@ -245,21 +267,26 @@ export const useRealTimeUsers = (): UseRealTimeUsersReturn => {
               table: 'user_profiles'
             },
             () => {
-              // Small delay to ensure database consistency
-              setTimeout(async () => {
-                await fetchUserProfiles()
-              }, 100)
+              // Only update if page is visible to avoid unnecessary updates
+              if (isPageVisible) {
+                // Small delay to ensure database consistency
+                setTimeout(async () => {
+                  await fetchUserProfiles()
+                }, 100)
+              }
             }
           )
           .subscribe((status) => {
             if (status === 'CHANNEL_ERROR') {
-              setError('Real-time connection failed')
+              console.warn('Real-time connection encountered an error, continuing with existing data')
+              // Don't set user-facing error for real-time connection issues
             }
           })
 
       } catch (err) {
         console.error('Error setting up real-time subscription:', err)
-        setError('Failed to setup real-time updates')
+        // Don't set user-facing error for real-time setup issues
+        // The app will continue to work with manual refresh
       }
     }
 
@@ -267,6 +294,7 @@ export const useRealTimeUsers = (): UseRealTimeUsersReturn => {
 
     // Cleanup subscription on unmount
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (subscription) {
         supabase.removeChannel(subscription)
       }

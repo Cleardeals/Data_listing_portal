@@ -1,32 +1,35 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function PhishingProtectionPage() {
-  const { logout } = useAuth()
-  const [countdown, setCountdown] = useState(5)
+  const { logout, isValidDataOperator, userStatusLoading, loading, isAuthenticated } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    // Countdown timer
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          logout()
-          // Don't manually redirect - let auth state change handle it
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [logout])
+    // If user becomes valid data operator, redirect to dashboard
+    if (!loading && !userStatusLoading && isAuthenticated && isValidDataOperator) {
+      router.push('/dashboard')
+    }
+  }, [loading, userStatusLoading, isAuthenticated, isValidDataOperator, router])
 
   const handleManualLogout = async () => {
     await logout()
     // Don't manually redirect - let auth state change handle it
+  }
+
+  // Show loading state while checking permissions
+  if (loading || userStatusLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying access permissions...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -56,7 +59,7 @@ export default function PhishingProtectionPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-800">
-                You will be automatically logged out and redirected to the login page in {countdown} seconds.
+                Your access permissions are being monitored in real-time. If your verification status changes, you will be automatically redirected to the dashboard.
               </p>
             </div>
           </div>
@@ -66,7 +69,7 @@ export default function PhishingProtectionPage() {
           onClick={handleManualLogout}
           className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition mb-4"
         >
-          Logout Now
+          Logout
         </button>
 
         <div className="text-xs text-gray-400">

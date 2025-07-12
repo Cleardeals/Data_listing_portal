@@ -10,78 +10,60 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, isValidDataOperator, userStatusLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated) {
-        router.push("/auth/login");
-        return;
-      }
+    // Wait for both auth and user status to load
+    if (loading || userStatusLoading) return;
 
-      // Validate user has proper metadata structure
-      if (!user) {
-        console.warn('Access denied: No user data available');
-        router.push('/auth/login');
-        return;
-      }
-
-      // Check if user belongs to "customers" group - block all customer users
-      if (user?.group === 'customers') {
-        console.warn('Access denied: Customer group users cannot access data operator panel');
-        router.push('/phishing-protection');
-        return;
-      }
-
-      // Only allow "internalusers" group to access data operator panel
-      if (user?.group !== 'internalusers') {
-        console.warn('Access denied: Only internal users can access data operator panel. User group:', user?.group);
-        router.push('/phishing-protection');
-        return;
-      }
-
-      // Verify user has data_operator role
-      if (user?.role !== 'data_operator') {
-        console.warn('Access denied: Only data operators can access this panel. User role:', user?.role);
-        router.push('/auth/denied');
-        return;
-      }
-
-      // Check for required role if specified
-      if (requiredRole && user?.role !== requiredRole) {
-        console.warn('Access denied: Required role not met. Required:', requiredRole, 'User:', user?.role);
-        router.push("/dashboard");
-        return;
-      }
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
     }
-  }, [loading, isAuthenticated, user, requiredRole, router]);
 
-  if (loading) {
+    // Validate user has proper metadata structure
+    if (!user) {
+      console.warn('Access denied: No user data available');
+      router.push('/auth/login');
+      return;
+    }
+
+    // Use real-time validation for data operator requirements
+    if (!isValidDataOperator) {
+      console.warn('Access denied: User does not meet data operator requirements', {
+        role: user?.role,
+        group: user?.group,
+        is_verified: user?.is_verified
+      });
+      router.push('/phishing-protection');
+      return;
+    }
+
+    // Check for required role if specified
+    if (requiredRole && user?.role !== requiredRole) {
+      console.warn('Access denied: Required role not met. Required:', requiredRole, 'User:', user?.role);
+      router.push("/dashboard");
+      return;
+    }
+  }, [loading, userStatusLoading, isAuthenticated, user, isValidDataOperator, requiredRole, router]);
+
+  if (loading || userStatusLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <p className="mt-4 text-gray-600">Verifying access permissions...</p>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return null; // Will redirect to login
   }
 
-  // Block customers group from accessing data operator panel
-  if (user?.group === 'customers') {
+  // Use real-time validation for access control
+  if (!isValidDataOperator) {
     return null; // Will redirect to phishing protection
-  }
-
-  // Only allow internalusers group
-  if (user?.group !== 'internalusers') {
-    return null; // Will redirect to phishing protection
-  }
-
-  // Only allow data_operator role
-  if (user?.role !== 'data_operator') {
-    return null; // Will redirect to access denied
   }
 
   if (requiredRole && user?.role !== requiredRole) {
