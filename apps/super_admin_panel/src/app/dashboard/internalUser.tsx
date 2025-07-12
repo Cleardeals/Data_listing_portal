@@ -5,43 +5,48 @@ import { useState, useEffect, useRef } from 'react';
 import AddEditInternalUserModal from '../../components/addInternalUser';
 import { EditConfirmationModal } from '../../components/editConfirmationModal';
 import { DeleteConfirmationModal } from '../../components/deleteConfirmationModal';
+import { useRealTimeUsers } from '../../hooks/useRealTimeUsers';
 import { 
   InternalUser, 
   InternalUserFormData, 
-  availableRoles,
-  fetchInternalUsers,
-  addInternalUser,
-  updateInternalUser,
-  deleteInternalUser,
-  updateInternalUserRole
+  availableRoles
 } from '../../lib/supabaseUsers';
 
 export default function InternalUserTable() {
-  const [users, setUsers] = useState<InternalUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    internalUsers: users,
+    loading,
+    error: hookError,
+    addInternalUser,
+    updateInternalUser,
+    deleteInternalUser,
+    updateInternalUserRole
+  } = useRealTimeUsers();
+
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<InternalUser | null>(null);
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
+  // Combine hook error with local error
+  const displayError = hookError || error;
+
+  // Clear messages after 3 seconds
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setError(null);
-        setLoading(true);
-        const internalUsers = await fetchInternalUsers();
-        setUsers(internalUsers);
-      } catch (error) {
-        console.error('Failed to fetch internal users:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load internal users');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadUsers();
-  }, []);
+    if (error) {
+      const timer = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -63,22 +68,22 @@ export default function InternalUserTable() {
   // Handle save function for the UserFormData that AddEditUserModal provides
   const handleSaveUser = async (formData: InternalUserFormData) => {
     try {
+      setError(null);
       if (showEditUser && selectedUser) {
         // Update existing user
-        const updatedUser = await updateInternalUser(selectedUser.id, formData);
-        setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
+        await updateInternalUser(selectedUser.id, formData);
         setShowEditUser(false);
+        setSuccess('User updated successfully');
       } else if (showAddUser) {
         // Add new user
-        const newUser = await addInternalUser(formData);
-        setUsers([...users, newUser]);
+        await addInternalUser(formData);
         setShowAddUser(false);
+        setSuccess('User added successfully');
       }
       setSelectedUser(null);
     } catch (error) {
       console.error('Failed to save user:', error);
-      // TODO: You might want to show an error message to the user here
-      alert('Failed to save user. Please try again.');
+      setError('Failed to save user. Please try again.');
     }
   };
   
@@ -98,23 +103,25 @@ export default function InternalUserTable() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
+      setError(null);
       await updateInternalUserRole(userId, newRole);
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
-      ));
       setOpenDropdownIndex(null);
+      setSuccess('Role updated successfully');
     } catch (error) {
       console.error('Failed to update user role:', error);
+      setError('Failed to update user role. Please try again.');
     }
   };
 
   const handleDeleteConfirm = async () => {
     if (selectedUser) {
       try {
+        setError(null);
         await deleteInternalUser(selectedUser.id);
-        setUsers(users.filter(user => user.id !== selectedUser.id));
+        setSuccess('User deleted successfully');
       } catch (error) {
         console.error('Failed to delete user:', error);
+        setError('Failed to delete user. Please try again.');
       }
     }
     setShowDeleteConfirm(false);
@@ -129,6 +136,28 @@ export default function InternalUserTable() {
   
   return (
     <div className="p-8">    
+      {/* Success/Error Messages */}
+      {displayError && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-3xl mx-auto">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>{displayError}</span>
+          </div>
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded max-w-3xl mx-auto">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>{success}</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center mb-4 border-2 border-blue-400 rounded-lg w-full max-w-3xl mx-auto bg-white px-2 py-1">
         <input 
           className="flex-1 px-4 py-2 rounded-l-full focus:outline-none placeholder-gray-800 bg-white text-black" 
@@ -141,18 +170,6 @@ export default function InternalUserTable() {
           <button onClick={() => setShowAddUser(true)} className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-blue-400 bg-blue-100 hover:bg-blue-200 transition"><FaPlus className="text-blue-700 text-lg" /></button>
         </div>
       </div>
-      
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-3xl mx-auto">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span>{error}</span>
-          </div>
-        </div>
-      )}
       
       <AddEditInternalUserModal 
         open={showAddUser} 

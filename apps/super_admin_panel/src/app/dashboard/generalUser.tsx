@@ -5,20 +5,24 @@ import { useState, useEffect } from 'react';
 import AddEditExternalUserModal from '../../components/addExternalUser';
 import { EditConfirmationModal } from '../../components/editConfirmationModal';
 import { DeleteConfirmationModal } from '../../components/deleteConfirmationModal';
+import { useRealTimeUsers } from '../../hooks/useRealTimeUsers';
 import { 
   ExternalUser, 
-  ExternalUserFormData, 
-  fetchExternalUsers, 
-  deleteExternalUser, 
-  addExternalUser, 
-  updateExternalUser, 
-  verifyUser,
-  unverifyUser
+  ExternalUserFormData
 } from '../../lib/supabaseUsers';
 
 export default function GeneralUserTable() {
-  const [users, setUsers] = useState<ExternalUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    externalUsers: users,
+    loading,
+    error: hookError,
+    addExternalUser,
+    updateExternalUser,
+    deleteExternalUser,
+    verifyUser,
+    unverifyUser
+  } = useRealTimeUsers();
+
   const [showAddUser, setShowAddUser] = useState(false);
   const [showEditUser, setShowEditUser] = useState(false);
   const [showEditConfirm, setShowEditConfirm] = useState(false);
@@ -28,7 +32,9 @@ export default function GeneralUserTable() {
   const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [componentError, setComponentError] = useState<string | null>(null);
+
+  // Combine hook error with local error
+  const displayError = hookError || error;
 
   // Clear messages after 3 seconds
   useEffect(() => {
@@ -44,25 +50,6 @@ export default function GeneralUserTable() {
       return () => clearTimeout(timer);
     }
   }, [success]);
-  
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchExternalUsers();
-        setUsers(data);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch users. Please try again.';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadUsers();
-  }, []);
   
   // Handle delete click
   const handleDeleteClick = (user: ExternalUser) => {
@@ -81,7 +68,6 @@ export default function GeneralUserTable() {
     if (selectedUser) {
       try {
         await deleteExternalUser(selectedUser.id);
-        setUsers(users.filter(user => user.id !== selectedUser.id));
         setSuccess('User deleted successfully');
       } catch (error) {
         console.error('Failed to delete user:', error);
@@ -104,8 +90,7 @@ export default function GeneralUserTable() {
   const handleAddUser = async (userData: ExternalUserFormData) => {
     try {
       setError(null);
-      const newUser = await addExternalUser(userData);
-      setUsers([...users, newUser]);
+      await addExternalUser(userData);
       setShowAddUser(false);
       setSuccess('User added successfully');
     } catch (error) {
@@ -127,8 +112,7 @@ export default function GeneralUserTable() {
 
     try {
       setError(null);
-      const updatedUser = await updateExternalUser(selectedUser.id, userData);
-      setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user));
+      await updateExternalUser(selectedUser.id, userData);
       setShowEditUser(false);
       setSelectedUser(null);
       setSuccess('User updated successfully');
@@ -155,13 +139,6 @@ export default function GeneralUserTable() {
       } else {
         await unverifyUser(userId);
       }
-      setUsers(users.map(user => 
-        user.id === userId ? { 
-          ...user, 
-          is_verified: verify, 
-          role: verify ? 'Verified Customer' : 'Unverified Customer' 
-        } : user
-      ));
       setSuccess(`User ${verify ? 'verified' : 'unverified'} successfully`);
     } catch (error) {
       console.error('Failed to update verification status:', error);
@@ -174,23 +151,10 @@ export default function GeneralUserTable() {
   
   return (
     <div className="p-8">
-      {/* Component Error Message */}
-      {componentError && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <strong>Component Error:</strong> {componentError}
-          <button 
-            onClick={() => setComponentError(null)} 
-            className="ml-2 text-sm underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-      
       {/* Success/Error Messages */}
-      {error && (
+      {displayError && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
+          {displayError}
         </div>
       )}
       {success && (

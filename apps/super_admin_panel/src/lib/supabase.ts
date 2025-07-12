@@ -9,13 +9,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-// Create and export the Supabase client with auth options
+// Create and export the Supabase client with auth options and real-time enabled
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true, // Enable session persistence to maintain session on refresh
     detectSessionInUrl: false, // Disable automatic session detection from URL to prevent magic link issues
     flowType: 'pkce'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
 
