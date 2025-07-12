@@ -440,7 +440,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12 mb-12 sm:mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12 mb-12 sm:mb-20 relative">
             {[
               {
                 step: "01",
@@ -503,16 +503,29 @@ export default function Home() {
                     </svg>
                   </div>
                 </div>
-                
-                {/* Connection line for desktop */}
-                {index < 2 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
-                    <div className="w-12 h-1 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"></div>
-                    <div className="absolute -right-2 -top-2 w-5 h-5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
-                  </div>
-                )}
               </div>
             ))}
+            
+            {/* Professional Connection Lines - Positioned in Card Gaps */}
+            {/* First connector: In the gap between card 1 and card 2 */}
+            <div className="hidden lg:block absolute top-1/2 transform -translate-y-1/2 z-10" style={{ left: 'calc(33.333% - 1rem)', width: '2rem' }}>
+              <div className="relative w-full h-1">
+                <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full shadow-lg"></div>
+                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-xl border-2 border-white z-10"></div>
+                {/* Flow arrow */}
+                <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-0 h-0 border-l-[4px] border-l-purple-500 border-t-[3px] border-t-transparent border-b-[3px] border-b-transparent"></div>
+              </div>
+            </div>
+            
+            {/* Second connector: In the gap between card 2 and card 3 */}
+            <div className="hidden lg:block absolute top-1/2 transform -translate-y-1/2 z-10" style={{ left: 'calc(66.666% - 1rem)', width: '2rem' }}>
+              <div className="relative w-full h-1">
+                <div className="w-full h-1 bg-gradient-to-r from-purple-500 to-emerald-500 rounded-full shadow-lg"></div>
+                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-gradient-to-r from-purple-500 to-emerald-500 rounded-full shadow-xl border-2 border-white z-10"></div>
+                {/* Flow arrow */}
+                <div className="absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-0 h-0 border-l-[4px] border-l-emerald-500 border-t-[3px] border-t-transparent border-b-[3px] border-b-transparent"></div>
+              </div>
+            </div>
           </div>
           
           {/* Professional Success Timeline */}
@@ -522,25 +535,28 @@ export default function Home() {
               <p className="text-gray-600 text-base sm:text-lg">From onboarding to market leadership</p>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
-              {[
-                { icon: "📊", title: "Setup Dashboard", time: "Day 1" },
-                { icon: "📝", title: "Checkout Daily Listings", time: "Day 2-3" },
-                { icon: "📞", title: "Generate Leads", time: "Week 1" },
-                { icon: "🤝", title: "Close Deals", time: "Week 2-4" },
-                { icon: "📈", title: "Scale Business", time: "Month 1+" }
-              ].map((phase, index) => (
-                <div key={index} className="text-center group relative">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-2xl sm:text-3xl">{phase.icon}</span>
+            <div className="relative">
+              {/* Progress line background with improved styling */}
+              <div className="hidden md:block absolute top-8 sm:top-10 left-16 right-16 h-1 bg-gradient-to-r from-blue-200 via-purple-200 to-blue-200 rounded-full shadow-sm"></div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6 relative z-10">
+                {[
+                  { icon: "📊", title: "Setup Dashboard", time: "Day 1" },
+                  { icon: "📝", title: "Checkout Daily Listings", time: "Day 2-3" },
+                  { icon: "📞", title: "Generate Leads", time: "Week 1" },
+                  { icon: "🤝", title: "Close Deals", time: "Week 2-4" },
+                  { icon: "📈", title: "Scale Business", time: "Month 1+" }
+                ].map((phase, index) => (
+                  <div key={index} className="text-center group relative">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300 relative z-20 border-2 border-white shadow-lg">
+                      <span className="text-2xl sm:text-3xl">{phase.icon}</span>
+                    </div>
+                    
+                    <h4 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">{phase.title}</h4>
+                    <p className="text-blue-600 text-xs sm:text-sm font-medium">{phase.time}</p>
                   </div>
-                  <h4 className="font-bold text-gray-900 mb-1 sm:mb-2 text-sm sm:text-base">{phase.title}</h4>
-                  <p className="text-blue-600 text-xs sm:text-sm font-medium">{phase.time}</p>
-                  {index < 4 && (
-                    <div className="hidden md:block absolute top-8 sm:top-10 left-full w-full h-0.5 bg-gradient-to-r from-blue-200 to-purple-200"></div>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
