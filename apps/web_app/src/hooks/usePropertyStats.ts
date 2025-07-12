@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PropertyData, supabaseHelpers } from '@/lib/dummyProperties';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PropertyStats {
   total: number;
@@ -57,6 +58,7 @@ const setCache = (data: PropertyStats): void => {
 };
 
 export const usePropertyStats = () => {
+  const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState<PropertyStats>({
     total: 0,
     residential_rent: 0,
@@ -184,15 +186,19 @@ export const usePropertyStats = () => {
       setLoading(true);
       setError(null);
 
+      // Check if user is authenticated before proceeding
+      if (!isAuthenticated) {
+        setLoading(false);
+        setError('Authentication required');
+        return;
+      }
+
       // Check cache first
       if (isCacheValid() && globalCache) {
-
         setStats(globalCache.data);
         setLoading(false);
         return;
       }
-
-
 
       // Check authentication first
       const { data: { session }, error: authError } = await supabase.auth.getSession();
@@ -245,42 +251,54 @@ export const usePropertyStats = () => {
     } finally {
       setLoading(false);
     }
-  }, [calculateStats]);
+  }, [calculateStats, isAuthenticated]);
 
   useEffect(() => {
+    // Only set up real-time subscription if user is authenticated
+    if (!isAuthenticated) {
+      // Clear any existing data when not authenticated
+      setStats({
+        total: 0,
+        residential_rent: 0,
+        residential_sell: 0,
+        commercial_rent: 0,
+        commercial_sell: 0,
+        today: {
+          total: 0,
+          residential_rent: 0,
+          residential_sell: 0,
+          commercial_rent: 0,
+          commercial_sell: 0,
+        },
+        yesterday: {
+          total: 0,
+          residential_rent: 0,
+          residential_sell: 0,
+          commercial_rent: 0,
+          commercial_sell: 0,
+        },
+        areas: [],
+        totalValue: 0,
+        averagePrice: 0,
+      });
+      setLoading(false);
+      setError('Authentication required for property statistics');
+      return;
+    }
+
     // Add a small delay to avoid multiple rapid calls
     const timeoutId = setTimeout(() => {
       fetchPropertyStats();
     }, 100);
 
-    // Set up real-time subscription with debouncing
-    const channel = supabase
-      .channel('property-stats-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'propertydata'
-        },
-        () => {
-          // Invalidate cache and refetch stats when data changes
-          globalCache = null;
-          // Debounce the refetch to avoid excessive calls
-          setTimeout(() => {
-            fetchPropertyStats();
-          }, 1000);
-        }
-      )
-      .subscribe(() => {
-
-      });
+    // For now, disable real-time subscription to avoid WebSocket issues
+    // This can be re-enabled once the authentication flow is more stable
+    console.log('Real-time subscription disabled to prevent WebSocket errors');
 
     return () => {
       clearTimeout(timeoutId);
-      supabase.removeChannel(channel);
     };
-  }, [fetchPropertyStats]);
+  }, [fetchPropertyStats, isAuthenticated]);
 
   return {
     stats,

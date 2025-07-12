@@ -36,30 +36,30 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
   // Show loading spinner while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center relative overflow-hidden">
-        {/* Background decorative elements */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center relative overflow-hidden px-4 sm:px-6">
+        {/* Background decorative elements - responsive */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full blur-3xl float-animation"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full blur-3xl float-animation animate-delay-300"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute top-10 sm:top-20 left-4 sm:left-20 w-32 sm:w-72 h-32 sm:h-72 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full blur-xl sm:blur-3xl float-animation"></div>
+          <div className="absolute bottom-10 sm:bottom-20 right-4 sm:right-20 w-40 sm:w-96 h-40 sm:h-96 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full blur-xl sm:blur-3xl float-animation animate-delay-300"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 sm:w-64 h-32 sm:h-64 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 rounded-full blur-xl sm:blur-2xl animate-pulse"></div>
         </div>
         
-        <div className="text-center relative z-10">
-          <div className="relative w-32 h-32 mx-auto mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl shadow-2xl animate-spin"></div>
-            <div className="absolute inset-2 bg-white rounded-2xl flex items-center justify-center">
-              <svg className="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+        <div className="text-center relative z-10 max-w-sm sm:max-w-md mx-auto">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 sm:mb-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl animate-spin"></div>
+            <div className="absolute inset-1 sm:inset-2 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center">
+              <svg className="w-8 h-8 sm:w-12 sm:h-12 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Loading PropertyHub</h3>
-          <p className="text-gray-600 max-w-md">Setting up your personalized dashboard experience...</p>
-          <div className="mt-8 flex justify-center">
-            <div className="flex space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-              <div className="w-3 h-3 bg-cyan-500 rounded-full animate-bounce animate-delay-100"></div>
-              <div className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce animate-delay-200"></div>
+          <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">Loading PropertyHub</h3>
+          <p className="text-gray-600 text-sm sm:text-base max-w-xs sm:max-w-md mx-auto">Setting up your personalized dashboard experience...</p>
+          <div className="mt-6 sm:mt-8 flex justify-center">
+            <div className="flex space-x-1.5 sm:space-x-2">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded-full animate-bounce"></div>
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-cyan-500 rounded-full animate-bounce animate-delay-100"></div>
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-indigo-500 rounded-full animate-bounce animate-delay-200"></div>
             </div>
           </div>
         </div>
@@ -75,23 +75,23 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
             ? 'bg-slate-900/95 backdrop-blur-md shadow-2xl border-b border-slate-700/50' 
             : 'bg-slate-900/80 backdrop-blur-sm shadow-lg border-b border-slate-700/30'
         }`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-20">
-              <div className="flex items-center">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+            <div className="flex justify-between h-16 sm:h-20">
+              <div className="flex items-center min-w-0 flex-1">
                 <Link href="/dashboard" className="flex-shrink-0 flex items-center group">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105"></div>
-                    <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-3 rounded-2xl">
-                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl sm:rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105"></div>
+                    <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-2 sm:p-3 rounded-xl sm:rounded-2xl">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                       </svg>
                     </div>
                   </div>
-                  <div className="ml-4">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  <div className="ml-2 sm:ml-4 min-w-0">
+                    <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent truncate block">
                       PropertyHub
                     </span>
-                    <div className="text-sm text-gray-500 font-medium">Dashboard</div>
+                    <div className="text-xs sm:text-sm text-gray-500 font-medium">Dashboard</div>
                   </div>
                 </Link>
                 
@@ -151,10 +151,11 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
               <div className="lg:hidden flex items-center">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="bg-slate-800/50 p-3 rounded-xl text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors duration-200"
+                  className="bg-slate-800/50 p-2 sm:p-3 rounded-xl text-gray-300 hover:bg-slate-700/50 hover:text-white transition-colors duration-200 touch-manipulation"
+                  aria-label="Toggle main menu"
                 >
                   <span className="sr-only">Open main menu</span>
-                  <svg className={`w-6 h-6 transform transition-transform duration-300 ${isMenuOpen ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                  <svg className={`w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 ${isMenuOpen ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                     {isMenuOpen ? (
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     ) : (
@@ -170,8 +171,8 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
           <div className={`lg:hidden transition-all duration-300 overflow-hidden ${
             isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-xl">
-              <div className="px-4 pt-4 pb-6 space-y-2">
+            <div className="bg-slate-900/98 backdrop-blur-md border-t border-slate-700/50 shadow-xl">
+              <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-4 sm:pb-6 space-y-1 sm:space-y-2">
                 {[
                   { href: "/dashboard", label: "Dashboard", icon: "🏠" },
                   { href: "/tableview", label: "Properties", icon: "📋" }
@@ -182,26 +183,26 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
                     onClick={() => setIsMenuOpen(false)}
                     className={`${
                       pathname === item.href
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
-                        : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
-                    } block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 flex items-center gap-3`}
+                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg"
+                        : "text-gray-300 hover:bg-slate-800/50 hover:text-blue-400"
+                    } block px-3 sm:px-4 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-medium transition-all duration-200 flex items-center gap-3 touch-manipulation min-h-[44px]`}
                   >
-                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-lg sm:text-xl">{item.icon}</span>
                     {item.label}
                   </Link>
                 ))}
                 
-                <div className="border-t border-slate-700 mt-4 pt-4">
+                <div className="border-t border-slate-700/50 mt-3 sm:mt-4 pt-3 sm:pt-4">
                   {user && (
-                    <div className="flex items-center px-4 py-3 mb-4 bg-slate-800/50 rounded-xl">
-                      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white w-12 h-12 rounded-xl flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="flex items-center px-3 sm:px-4 py-3 sm:py-4 mb-3 sm:mb-4 bg-slate-800/50 rounded-xl">
+                      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <div className="ml-3">
-                        <div className="text-base font-semibold text-white">{user.email}</div>
-                        <div className="text-sm text-gray-300 capitalize">{user.role}</div>
+                      <div className="ml-3 min-w-0 flex-1">
+                        <div className="text-sm sm:text-base font-semibold text-white truncate">{user.email}</div>
+                        <div className="text-xs sm:text-sm text-gray-300 capitalize">{user.role}</div>
                       </div>
                     </div>
                   )}
@@ -209,22 +210,22 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
                   <Link
                     href="/profile"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800/50 hover:text-blue-400 rounded-xl transition-colors duration-200 mb-2"
+                    className="flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 text-gray-300 hover:bg-slate-800/50 hover:text-blue-400 rounded-xl transition-colors duration-200 mb-2 sm:mb-3 touch-manipulation min-h-[44px]"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                     </svg>
-                    Your Profile
+                    <span className="text-base sm:text-lg font-medium">Your Profile</span>
                   </Link>
                   
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200"
+                    className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 touch-manipulation min-h-[44px]"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
                     </svg>
-                    Sign out
+                    <span className="text-base sm:text-lg font-medium">Sign out</span>
                   </button>
                 </div>
               </div>
@@ -232,7 +233,7 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
           </div>
         </nav>
       )}
-      <div className={showNavBar && isAuthenticated && user?.is_verified ? "pt-20" : ""}>
+      <div className={showNavBar && isAuthenticated && user?.is_verified ? "pt-16 sm:pt-20" : ""}>
         {children}
       </div>
     </>

@@ -84,49 +84,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener to handle session changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          const userRole = session.user.user_metadata?.role || 'Unverified Customer';
-          const userGroup = session.user.user_metadata?.group || 'customers';
-          const isVerified = session.user.user_metadata?.is_verified || false;
-          
-          const user: User = {
-            id: session.user.id,
-            email: session.user.email!,
-            role: userRole,
-            group: userGroup,
-            is_verified: isVerified,
-            created_at: session.user.created_at,
-            email_confirmed_at: session.user.email_confirmed_at
-          };
+        try {
+          if (event === 'SIGNED_IN' && session) {
+            const userRole = session.user.user_metadata?.role || 'Unverified Customer';
+            const userGroup = session.user.user_metadata?.group || 'customers';
+            const isVerified = session.user.user_metadata?.is_verified || false;
+            
+            const user: User = {
+              id: session.user.id,
+              email: session.user.email!,
+              role: userRole,
+              group: userGroup,
+              is_verified: isVerified,
+              created_at: session.user.created_at,
+              email_confirmed_at: session.user.email_confirmed_at
+            };
 
-          setUser(user);
-          setLoading(false); // Set loading to false when signed in
-          
-          // Store in our custom auth service for consistency
-          const authSession = {
-            user,
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at || 0
-          };
-          authService.storeSession(authSession);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          authService.clearSession();
-          setLoading(false); // Set loading to false when signed out
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          // Update our stored session with the new tokens
-          // Get current user from the existing session
-          const storedSession = authService.getStoredSession();
-          if (storedSession) {
+            setUser(user);
+            setLoading(false); // Set loading to false when signed in
+            
+            // Store in our custom auth service for consistency
             const authSession = {
-              user: storedSession.user,
+              user,
               access_token: session.access_token,
               refresh_token: session.refresh_token,
               expires_at: session.expires_at || 0
             };
             authService.storeSession(authSession);
+          } else if (event === 'SIGNED_OUT') {
+            setUser(null);
+            authService.clearSession();
+            setLoading(false); // Set loading to false when signed out
+          } else if (event === 'TOKEN_REFRESHED' && session) {
+            // Update our stored session with the new tokens
+            // Get current user from the existing session
+            const storedSession = authService.getStoredSession();
+            if (storedSession) {
+              const authSession = {
+                user: storedSession.user,
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+                expires_at: session.expires_at || 0
+              };
+              authService.storeSession(authSession);
+            }
           }
+        } catch (error) {
+          console.error('Error in auth state change handler:', error);
+          // On error, ensure we clean up and set loading to false
+          setUser(null);
+          authService.clearSession();
+          setLoading(false);
         }
       }
     );
@@ -168,11 +176,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoading(true);
+      
+      // Clear local state immediately for better UX
+      setUser(null);
+      authService.clearSession();
+      
+      // Then attempt the actual logout
       await authService.signOut();
-      // Don't manually set user to null here - let the auth state change event handle it
-      // Also don't set loading to false here - let the auth state change handle the loading state
+      
+      // The loading state will be handled by the auth state change event
+      // but set it to false after a short delay as a fallback
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+      
     } catch (error) {
       console.error('Error during logout:', error);
+      // Ensure we're in a clean state even if logout fails
+      setUser(null);
+      authService.clearSession();
       setLoading(false);
     }
   };

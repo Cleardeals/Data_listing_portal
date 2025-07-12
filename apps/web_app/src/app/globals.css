@@ -528,74 +528,224 @@ html {
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-track {
-    background: #1e293b;
+/* Mobile-first responsive enhancements */
+@media (max-width: 640px) {
+  /* Disable 3D effects on mobile for better performance */
+  .card-hover-3d:hover {
+    transform: none !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #475569, #334155);
+  .btn-3d:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Reduce animation intensity on mobile */
+  .float-animation {
+    animation-duration: 8s !important;
+  }
+
+  .pulse-glow {
+    animation-duration: 4s !important;
+  }
+
+  /* Touch-friendly button sizing */
+  .btn-3d {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better text readability on small screens */
+  .text-gradient-animate {
+    background-size: 200% 200% !important;
+  }
+
+  /* Optimized spacing for mobile */
+  .card-hover-3d {
+    padding: clamp(1rem, 4vw, 1.5rem) !important;
+  }
+
+  /* Reduce backdrop blur on mobile for performance */
+  .backdrop-blur-3d {
+    backdrop-filter: blur(10px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(150%) !important;
   }
 }
 
-/* Custom scrollbar for legend */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
+/* Tablet enhancements */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .card-hover-3d:hover {
+    transform: translateY(-4px) rotateX(1deg) rotateY(1deg) !important;
+  }
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
+/* Enhanced touch interactions */
+@media (hover: none) and (pointer: coarse) {
+  .card-hover-3d:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease !important;
+  }
+
+  .btn-3d:active {
+    transform: scale(0.95) !important;
+    transition: transform 0.1s ease !important;
+  }
+
+  /* Remove hover effects on touch devices */
+  .group:hover > div {
+    transform: none !important;
+    background-color: initial !important;
+  }
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+/* Safe area adjustments for mobile devices with notches */
+@supports (padding: max(0px)) {
+  .mobile-safe-area {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 }
 
-.scrollbar-thin:hover::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+/* Better focus states for accessibility */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-.scrollbar-thumb-white\/20::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .backdrop-blur-3d {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: none !important;
+  }
+
+  .text-white\/70,
+  .text-white\/80,
+  .text-white\/90 {
+    color: white !important;
+  }
+
+  .border-white\/20,
+  .border-white\/30 {
+    border-color: rgba(255, 255, 255, 0.6) !important;
+  }
 }
 
-.scrollbar-track-transparent::-webkit-scrollbar-track {
-  background: transparent;
+/* Loading skeleton animations for mobile */
+@keyframes mobile-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
 }
 
-/* Line clamp utilities for text truncation */
-.line-clamp-1 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
+.mobile-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 200px 100%;
+  animation: mobile-shimmer 1.5s infinite;
 }
 
-.line-clamp-2 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+/* Container queries for adaptive layouts */
+@container (max-width: 400px) {
+  .container-sm {
+    padding: 0.75rem;
+  }
 }
 
-.line-clamp-3 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+/* Improved scroll behavior */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Accessibility improvements */
-@media (prefers-reduced-motion: reduce) {
-  .ai-tool-card,
-  .ai-tool-hover,
-  .status-pulse {
-    animation: none !important;
-    transition: none !important;
+.mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch-friendly interactive elements */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Better modal behavior on mobile */
+@media (max-width: 640px) {
+  .modal-mobile {
+    margin: 0;
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 1rem 1rem 0 0;
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .modal-mobile.open {
+    transform: translateY(0);
+  }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 640px) {
+  * {
+    will-change: auto;
+  }
+
+  .performance-optimized {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+}
+
+/* Better typography scaling */
+.responsive-text {
+  font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+  line-height: 1.6;
+}
+
+.responsive-heading {
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  line-height: 1.2;
+}
+
+/* Enhanced button states */
+.mobile-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mobile-button:active {
+  transform: scale(0.96);
+}
+
+/* Better form controls on mobile */
+@media (max-width: 640px) {
+  input[type="email"],
+  input[type="text"],
+  input[type="password"] {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
   }
 }

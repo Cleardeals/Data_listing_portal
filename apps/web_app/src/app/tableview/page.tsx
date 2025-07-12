@@ -1016,8 +1016,34 @@ export default function TableViewPage() {
   if (authLoading || loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center">
-          <div className="text-white text-xl">Loading properties...</div>
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center relative overflow-hidden px-4 sm:px-6">
+          {/* Background decorative elements - responsive */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="float-animation absolute top-10 sm:top-20 left-4 sm:left-20 w-16 h-16 sm:w-32 sm:h-32 bg-blue-500/20 rounded-full blur-sm"></div>
+            <div className="float-animation absolute top-20 sm:top-40 right-4 sm:right-32 w-12 h-12 sm:w-24 sm:h-24 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+            <div className="float-animation absolute bottom-20 sm:bottom-40 left-6 sm:left-40 w-14 h-14 sm:w-28 sm:h-28 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+          </div>
+          
+          <div className="text-center relative z-10 max-w-sm sm:max-w-md mx-auto">
+            <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl shadow-xl animate-spin"></div>
+              <div className="absolute inset-1 sm:inset-2 bg-slate-900 rounded-lg sm:rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
+              </div>
+            </div>
+            <div className="text-white text-lg sm:text-xl lg:text-2xl font-semibold mb-2">Loading Properties...</div>
+            <div className="text-white/60 text-sm sm:text-base">Fetching the latest property data for you</div>
+            
+            <div className="mt-4 sm:mt-6 flex justify-center">
+              <div className="flex space-x-1.5">
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-cyan-500 rounded-full animate-bounce animate-delay-100"></div>
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-indigo-500 rounded-full animate-bounce animate-delay-200"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </ProtectedRoute>
     );
@@ -1028,8 +1054,8 @@ export default function TableViewPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative">
         <BackgroundElements />
         
-        <div className="relative z-10 py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 py-4 sm:py-6 lg:py-8">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <PageHeader />
 
             <PropertyStatsOverview stats={stats} loading={statsLoading} />
@@ -1053,10 +1079,15 @@ export default function TableViewPage() {
               onFetchProperties={fetchPropertiesWithDateFilter}
             />
 
-            {/* Error Display */}
+            {/* Error Display - Mobile Enhanced */}
             {error && (
-              <div className="backdrop-blur-md bg-red-500/20 border border-red-500/40 rounded-lg p-4 mb-6">
-                <p className="text-red-200">{error}</p>
+              <div className="backdrop-blur-md bg-red-500/20 border border-red-500/40 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 mx-3 sm:mx-0">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs">!</span>
+                  </div>
+                  <p className="text-red-200 text-sm sm:text-base flex-1">{error}</p>
+                </div>
               </div>
             )}
 
@@ -1072,9 +1103,9 @@ export default function TableViewPage() {
               canEditRentSoldOut={canEditRentSoldOut}
             />
 
-            {/* Pagination */}
+            {/* Pagination - Mobile Enhanced */}
             {totalCount > 0 && (
-              <div className="mt-8">
+              <div className="mt-6 sm:mt-8 px-3 sm:px-0">
                 <Pagination
                   currentPage={currentPage}
                   totalItems={totalCount}

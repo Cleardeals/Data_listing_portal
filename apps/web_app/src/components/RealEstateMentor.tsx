@@ -77,7 +77,7 @@ const RealEstateMentor: React.FC = () => {
       <div className="mb-6">
         <Button
           onClick={() => setShowChat(true)}
-          className="btn-3d bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white hover:scale-105 hover:shadow-lg transition-all duration-200"
+          className="btn-3d bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white hover:scale-105 hover:shadow-lg transition-all duration-200 w-full text-base sm:text-sm py-3 sm:py-2 touch-manipulation"
         >
           💬 Chat with Kaka
         </Button>
@@ -86,18 +86,18 @@ const RealEstateMentor: React.FC = () => {
   }
 
   return (
-    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-6 mb-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-3">
+    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 mb-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-white text-sm">🏠</span>
             </div>
-            <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 hover:from-green-300 hover:to-emerald-300 transition-all duration-300">
+            <h3 className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 hover:from-green-300 hover:to-emerald-300 transition-all duration-300">
               Real Estate Mentor (Kaka)
             </h3>
           </div>
-          <div className="text-sm text-white/60 hover:text-white/80 transition-colors duration-200">
+          <div className="text-xs sm:text-sm text-white/60 hover:text-white/80 transition-colors duration-200">
             Experienced Pune broker • {getChatSummary()}
           </div>
         </div>
@@ -105,14 +105,14 @@ const RealEstateMentor: React.FC = () => {
           onClick={() => setShowChat(false)}
           variant="outline"
           size="sm"
+          className="self-start sm:self-auto touch-manipulation"
         >
           Close
         </Button>
       </div>
-
       {/* Context and Level Settings */}
-      <div className="mb-6 p-4 bg-white/5 border border-white/20 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mb-6 p-3 sm:p-4 bg-white/5 border border-white/20 rounded-lg">
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium text-white/80 mb-2">
               Conversation Context
@@ -120,7 +120,7 @@ const RealEstateMentor: React.FC = () => {
             <select
               value={chatState.currentContext}
               onChange={(e) => setContext(e.target.value as 'training' | 'legal' | 'market' | 'general')}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm"
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm touch-manipulation"
             >
               <option value="general">🏠 General Real Estate</option>
               <option value="training">📚 Broker Training</option>
@@ -136,7 +136,7 @@ const RealEstateMentor: React.FC = () => {
             <select
               value={chatState.userLevel}
               onChange={(e) => setUserLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm"
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm touch-manipulation"
             >
               <option value="beginner">🌱 Beginner (New to Real Estate)</option>
               <option value="intermediate">📈 Intermediate (Some Experience)</option>
@@ -148,16 +148,16 @@ const RealEstateMentor: React.FC = () => {
 
       {/* Example Questions */}
       {chatState.messages.length === 0 && (
-        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+        <div className="mb-6 p-3 sm:p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
           <h4 className="text-sm font-semibold text-blue-200 mb-3">
             💡 Try asking Kaka about:
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {exampleQuestions[chatState.currentContext].map((question: string, index: number) => (
               <button
                 key={index}
                 onClick={() => setInputMessage(question)}
-                className="text-left text-xs text-blue-300 hover:text-blue-200 p-2 rounded hover:bg-blue-500/20 transition-colors"
+                className="text-left text-xs sm:text-sm text-blue-300 hover:text-blue-200 p-2 sm:p-3 rounded hover:bg-blue-500/20 transition-colors touch-manipulation"
               >
                 {question}
               </button>
@@ -168,12 +168,12 @@ const RealEstateMentor: React.FC = () => {
 
       {/* Chat Messages */}
       <div className="mb-6">
-        <div className="h-96 overflow-y-auto bg-white/5 border border-white/20 rounded-lg p-4 space-y-4">
+        <div className="h-64 sm:h-96 overflow-y-auto bg-white/5 border border-white/20 rounded-lg p-3 sm:p-4 space-y-4">
           {chatState.messages.length === 0 ? (
-            <div className="text-center text-white/60 py-12">
-              <div className="text-4xl mb-4">🏠</div>
-              <div className="text-lg font-semibold mb-2">Welcome to Real Estate Mentor!</div>
-              <div className="text-sm">
+            <div className="text-center text-white/60 py-8 sm:py-12">
+              <div className="text-3xl sm:text-4xl mb-4">🏠</div>
+              <div className="text-base sm:text-lg font-semibold mb-2">Welcome to Real Estate Mentor!</div>
+              <div className="text-sm px-4">
                 I&apos;m Kaka, your experienced Pune real estate guide. Ask me anything about properties, 
                 legalities, market trends, or how to become a successful broker!
               </div>
@@ -214,20 +214,21 @@ const RealEstateMentor: React.FC = () => {
 
       {/* Message Input */}
       <div className="mb-4">
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask Kaka anything about real estate in Pune..."
-            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 resize-none"
+            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 resize-none text-base font-size-16 touch-manipulation"
+            style={{ fontSize: '16px' }} // Prevents zoom on iOS
             rows={3}
             disabled={!canSendMessage}
           />
           <Button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || !canSendMessage}
-            className={`px-6 py-3 ${
+            className={`px-4 sm:px-6 py-3 min-w-[100px] sm:min-w-[120px] touch-manipulation ${
               !inputMessage.trim() || !canSendMessage
                 ? 'bg-gray-500/50 cursor-not-allowed'
                 : 'btn-3d bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
@@ -236,7 +237,7 @@ const RealEstateMentor: React.FC = () => {
             {chatState.isLoading ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border border-white/40 border-t-white rounded-full animate-spin"></div>
-                <span>Sending...</span>
+                <span className="hidden sm:inline">Sending...</span>
               </div>
             ) : (
               <span>Send 📤</span>
@@ -247,11 +248,11 @@ const RealEstateMentor: React.FC = () => {
 
       {/* Chat Controls */}
       {chatState.messages.length > 0 && (
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-white/60">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="text-xs sm:text-sm text-white/60 order-2 sm:order-1">
             {chatState.messages.length} messages • Context: {chatState.currentContext} • Level: {chatState.userLevel}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 order-1 sm:order-2">
             <Button
               onClick={() => {
                 const chatExport = exportChat();
@@ -260,7 +261,7 @@ const RealEstateMentor: React.FC = () => {
               }}
               variant="outline"
               size="sm"
-              className="text-xs"
+              className="text-xs touch-manipulation"
             >
               📋 Copy Chat
             </Button>
@@ -268,7 +269,7 @@ const RealEstateMentor: React.FC = () => {
               onClick={clearChat}
               variant="outline"
               size="sm"
-              className="text-xs text-red-400 hover:text-red-300"
+              className="text-xs text-red-400 hover:text-red-300 touch-manipulation"
             >
               🗑️ Clear Chat
             </Button>
@@ -288,20 +289,20 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
   });
 
   return (
-    <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex gap-2 sm:gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
-        <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-          <div className="text-sm">🏠</div>
+        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+          <div className="text-xs sm:text-sm">🏠</div>
         </div>
       )}
       
-      <div className={`max-w-[80%] ${isUser ? 'order-first' : ''}`}>
+      <div className={`max-w-[85%] sm:max-w-[80%] ${isUser ? 'order-first' : ''}`}>
         <div className={`rounded-lg p-3 ${
           isUser 
             ? 'bg-blue-600/30 border border-blue-500/30 text-blue-100' 
             : 'bg-white/10 border border-white/20 text-white'
         }`}>
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </div>
         </div>
@@ -311,8 +312,8 @@ const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
       </div>
 
       {isUser && (
-        <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-          <div className="text-sm">👤</div>
+        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+          <div className="text-xs sm:text-sm">👤</div>
         </div>
       )}
     </div>

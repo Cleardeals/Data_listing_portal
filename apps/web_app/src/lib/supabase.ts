@@ -16,6 +16,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true, // Enable session persistence to maintain session on refresh
     detectSessionInUrl: false, // Disable automatic session detection from URL to prevent magic link issues
     flowType: 'pkce'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    },
+    // Add better reconnection handling
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
+    logger: undefined, // Disable realtime logging to reduce noise
+    // Add timeout for connections
+    timeout: 20000
+  },
+  // Add better error handling
+  global: {
+    headers: {
+      'apikey': supabaseAnonKey
+    }
   }
 });
 

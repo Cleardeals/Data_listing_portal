@@ -84,10 +84,10 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
 
   if (!showGenerator) {
     return (
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <button
           onClick={() => setShowGenerator(true)}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg"
+          className="w-full px-4 sm:px-6 py-3 sm:py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg touch-manipulation text-sm sm:text-base"
         >
           🤖 AI Sales Script Generator
         </button>
@@ -96,28 +96,28 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
   }
 
   return (
-    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-6 mb-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-xl sm:rounded-2xl p-3 sm:p-6 mb-4 sm:mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-6 gap-3 sm:gap-0">
+        <h3 className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
           🤖 AI Sales Script Generator
         </h3>
         <button
           onClick={() => setShowGenerator(false)}
-          className="px-3 py-1.5 text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors"
+          className="self-start sm:self-auto px-3 py-1.5 text-xs sm:text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors touch-manipulation"
         >
           Close
         </button>
       </div>
 
       {/* Selected Properties Summary */}
-      <div className="mb-4 flex justify-between items-center">
+      <div className="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
         <div className="text-sm text-white/80">
           {selectedCount > 0 ? `${selectedCount} properties selected` : 'No properties selected'}
         </div>
         {selectedCount > 0 && (
           <button
             onClick={clearSelection}
-            className="px-3 py-1.5 text-sm bg-red-600/80 border border-red-400/30 text-white rounded-md hover:bg-red-500/80 transition-colors"
+            className="px-3 py-1.5 text-sm bg-red-600/80 border border-red-400/30 text-white rounded-md hover:bg-red-500/80 transition-colors touch-manipulation self-start sm:self-auto"
           >
             Clear All
           </button>
@@ -125,39 +125,40 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
       </div>
 
       {/* Property Selection with Search and Pagination */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="text-lg font-semibold text-white">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
+          <h4 className="text-sm sm:text-lg font-semibold text-white">
             Select Properties ({selectedCount}/5)
           </h4>
-          <div className="text-sm text-white/60">
+          <div className="text-xs sm:text-sm text-white/60">
             Total: {filteredProperties.length} properties
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <input
             type="text"
-            placeholder="Search by area, address, owner name, property type, or serial number..."
+            placeholder="Search properties..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1); // Reset to first page when searching
             }}
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base touch-manipulation"
+            style={{ fontSize: '16px' }}
           />
         </div>
 
         {/* Property Cards - Horizontal Scroll */}
         <div className="relative">
-          <div className="flex gap-3 overflow-x-auto pb-4 max-h-48 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+          <div className="flex gap-3 overflow-x-auto pb-4 max-h-64 sm:max-h-48 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
             {paginatedProperties.map((property) => {
             const isSelected = isPropertySelected(property.serial_number);
             return (
               <div
                 key={property.serial_number}
-                className={`card-hover-3d backdrop-blur-sm border rounded-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer flex-shrink-0 w-80 ${
+                className={`card-hover-3d backdrop-blur-sm border rounded-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] cursor-pointer flex-shrink-0 w-72 sm:w-80 ${
                   isSelected
                     ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-400/50 ring-2 ring-purple-400/30'
                     : 'bg-gradient-to-br from-white/10 to-white/5 border-white/20 hover:border-blue-400/40'
@@ -168,18 +169,18 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
                   }
                 }}
               >
-                <div className="flex flex-row h-40">
+                <div className="flex flex-row h-36 sm:h-40">
                   {/* Image/Icon Section - Left Side */}
-                  <div className={`w-20 h-full flex items-center justify-center border-r flex-shrink-0 ${
+                  <div className={`w-16 sm:w-20 h-full flex items-center justify-center border-r flex-shrink-0 ${
                     isSelected 
                       ? 'bg-gradient-to-br from-purple-500/30 to-pink-500/30 border-purple-400/50' 
                       : 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-white/20'
                   }`}>
                     <div className="text-center">
-                      <div className="text-2xl mb-1">
+                      <div className="text-xl sm:text-2xl mb-1">
                         {property.property_type?.includes('Res') ? '🏠' : '🏢'}
                       </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mx-auto ${
+                      <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center mx-auto ${
                         isSelected 
                           ? 'bg-purple-500 border-purple-400' 
                           : 'border-white/40'
@@ -190,7 +191,7 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
                   </div>
 
                   {/* Content Section - Right Side */}
-                  <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+                  <div className="flex-1 p-2 sm:p-3 flex flex-col justify-between min-w-0">
                     {/* Top Section - Title and Serial */}
                     <div>
                       <div className="flex items-start justify-between mb-1">
@@ -274,17 +275,17 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-white/60">
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+            <div className="text-xs sm:text-sm text-white/60 order-2 sm:order-1">
               Page {currentPage} of {totalPages} • Showing {paginatedProperties.length} of {filteredProperties.length} properties
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 order-1 sm:order-2">
               <button
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
-                Previous
+                Prev
               </button>
               
               {/* Page numbers */}
@@ -296,7 +297,7 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`w-8 h-8 text-sm rounded-md transition-colors ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 text-xs sm:text-sm rounded-md transition-colors touch-manipulation ${
                           currentPage === pageNum 
                             ? 'bg-purple-500 text-white border border-purple-400' 
                             : 'bg-slate-700/80 border border-white/20 text-white hover:bg-slate-600/80'
@@ -313,7 +314,7 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
                 Next
               </button>
@@ -323,11 +324,11 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
       </div>
 
       {/* Generate Button */}
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-center mb-4 sm:mb-6">
         <button
           onClick={handleGenerate}
           disabled={selectedCount === 0 || isGenerating}
-          className="px-8 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-6 sm:px-8 py-3 sm:py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-sm sm:text-base"
         >
           {isGenerating ? 'Generating Scripts...' : `Generate Scripts (${selectedCount} properties)`}
         </button>
@@ -335,34 +336,34 @@ const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
 
       {/* Error Display */}
       {generationError && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-400/30 rounded-lg text-red-300 text-sm">
+        <div className="mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-400/30 rounded-lg text-red-300 text-xs sm:text-sm break-words">
           {generationError}
         </div>
       )}
 
       {/* Generated Scripts Display */}
       {scripts.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="text-lg font-semibold text-white">Generated Sales Scripts</h4>
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+            <h4 className="text-sm sm:text-lg font-semibold text-white">Generated Sales Scripts</h4>
             <button
               onClick={clearScripts}
-              className="px-3 py-1.5 text-sm bg-red-600/80 border border-red-400/30 text-white rounded-md hover:bg-red-500/80 transition-colors"
+              className="px-3 py-1.5 text-sm bg-red-600/80 border border-red-400/30 text-white rounded-md hover:bg-red-500/80 transition-colors touch-manipulation self-start sm:self-auto"
             >
               Clear Scripts
             </button>
           </div>
           
           {scripts.map((script, index) => (
-            <div key={index} className="bg-white/5 border border-white/20 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
+            <div key={index} className="bg-white/5 border border-white/20 rounded-lg p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2 sm:gap-0">
                 <div>
                   <h5 className="font-medium text-white">Property #{script.propertyId}</h5>
                   <div className="text-sm text-white/60">{script.metadata.scriptType} • {script.metadata.targetAudience}</div>
                 </div>
               </div>
               
-              <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap break-words">
                 {script.script}
               </div>
               

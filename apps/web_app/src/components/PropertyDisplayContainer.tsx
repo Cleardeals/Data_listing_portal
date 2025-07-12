@@ -73,15 +73,15 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   };
 
   return (
-    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl overflow-hidden">
-      {/* View Mode Header */}
-      <div className="bg-white/10 border-b border-white/20 px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-white">
+    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-xl sm:rounded-2xl overflow-hidden mx-3 sm:mx-0">
+      {/* View Mode Header - Mobile Enhanced */}
+      <div className="bg-white/10 border-b border-white/20 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <h3 className="text-base sm:text-lg font-semibold text-white">
               {getViewModeTitle()}
             </h3>
-            <div className="text-sm text-white/70">
+            <div className="text-xs sm:text-sm text-white/70">
               {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
             </div>
             {viewMode !== 'map' && (
@@ -90,21 +90,25 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
               </div>
             )}
           </div>
-          {viewMode === 'master' && properties.length > 100 && (
-            <div className="text-xs text-yellow-400 bg-yellow-500/20 px-3 py-1 rounded-full">
-              ⚠️ Large dataset - performance may vary
-            </div>
-          )}
-          {viewMode === 'map' && (
-            <div className="text-xs text-blue-400 bg-blue-500/20 px-3 py-1 rounded-full">
-              🗺️ Interactive location view
-            </div>
-          )}
+          
+          {/* Status indicators - responsive */}
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            {viewMode === 'master' && properties.length > 100 && (
+              <div className="text-xs text-yellow-400 bg-yellow-500/20 px-2 sm:px-3 py-1 rounded-full">
+                ⚠️ Large dataset - performance may vary
+              </div>
+            )}
+            {viewMode === 'map' && (
+              <div className="text-xs text-blue-400 bg-blue-500/20 px-2 sm:px-3 py-1 rounded-full">
+                🗺️ Interactive location view
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Content based on view mode */}
-      <div className="p-6">
+      {/* Content based on view mode - Mobile padding */}
+      <div className="p-3 sm:p-4 lg:p-6">
         {renderContent()}
       </div>
     </div>

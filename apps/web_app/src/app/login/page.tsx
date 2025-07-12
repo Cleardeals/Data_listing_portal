@@ -129,14 +129,14 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <div className="float-animation absolute top-10 left-10 w-20 h-20 bg-blue-500/20 rounded-full blur-sm"></div>
-          <div className="float-animation absolute top-40 right-20 w-32 h-32 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
-          <div className="float-animation absolute bottom-32 left-32 w-24 h-24 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+        <div className="absolute inset-0 opacity-20 sm:opacity-30">
+          <div className="float-animation absolute top-4 left-4 sm:top-10 sm:left-10 w-12 h-12 sm:w-20 sm:h-20 bg-blue-500/20 rounded-full blur-sm"></div>
+          <div className="float-animation absolute top-20 right-8 sm:top-40 sm:right-20 w-16 h-16 sm:w-32 sm:h-32 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+          <div className="float-animation absolute bottom-16 left-8 sm:bottom-32 sm:left-32 w-14 h-14 sm:w-24 sm:h-24 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
         </div>
-        <div className="relative z-10 text-center">
-          <div className="pulse-glow w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-spin border-4 border-transparent"></div>
-          <div className="text-white/80 text-lg">Loading...</div>
+        <div className="relative z-10 text-center px-4">
+          <div className="pulse-glow w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-spin border-2 sm:border-4 border-transparent"></div>
+          <div className="text-white/80 text-base sm:text-lg">Loading...</div>
         </div>
       </div>
     );
@@ -146,24 +146,24 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       {/* 3D Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
-        <div className="absolute inset-0 opacity-30">
-          <div className="float-animation absolute top-10 left-10 w-20 h-20 bg-blue-500/20 rounded-full blur-sm"></div>
-          <div className="float-animation absolute top-40 right-20 w-32 h-32 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
-          <div className="float-animation absolute bottom-32 left-32 w-24 h-24 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
-          <div className="float-animation absolute bottom-10 right-10 w-16 h-16 bg-pink-500/20 rounded-full blur-sm" style={{animationDelay: '0.5s'}}></div>
+        <div className="absolute inset-0 opacity-20 sm:opacity-30">
+          <div className="float-animation absolute top-4 left-4 sm:top-10 sm:left-10 w-12 h-12 sm:w-20 sm:h-20 bg-blue-500/20 rounded-full blur-sm"></div>
+          <div className="float-animation absolute top-20 right-8 sm:top-40 sm:right-20 w-16 h-16 sm:w-32 sm:h-32 bg-purple-500/20 rounded-full blur-sm" style={{animationDelay: '1s'}}></div>
+          <div className="float-animation absolute bottom-16 left-8 sm:bottom-32 sm:left-32 w-14 h-14 sm:w-24 sm:h-24 bg-cyan-500/20 rounded-full blur-sm" style={{animationDelay: '2s'}}></div>
+          <div className="float-animation absolute bottom-4 right-4 sm:bottom-10 sm:right-10 w-8 h-8 sm:w-16 sm:h-16 bg-pink-500/20 rounded-full blur-sm" style={{animationDelay: '0.5s'}}></div>
         </div>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.1),transparent_50%)]"></div>
       </div>
 
       {/* Header */}
-      <div className="relative z-10 flex items-center px-6 py-4 backdrop-blur-3d bg-white/10 border-b border-white/20">
+      <div className="relative z-10 flex items-center px-4 sm:px-6 py-3 sm:py-4 backdrop-blur-3d bg-white/10 border-b border-white/20">
         <Link href="/" className="group">
           <div className="flex items-center">
             <div className="relative">
-              <Image src="/globe.svg" alt="PropertyHub" width={40} height={40} className="h-10 mr-3 group-hover:scale-110 transition-transform duration-300" />
+              <Image src="/globe.svg" alt="PropertyHub" width={32} height={32} className="h-8 sm:h-10 mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300" />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
             </div>
-            <span className="text-3xl bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold animate-pulse" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+            <span className="text-xl sm:text-2xl lg:text-3xl bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent font-bold animate-pulse" style={{ fontFamily: 'Orbitron, sans-serif' }}>
               PropertyHub
             </span>
           </div>
@@ -171,50 +171,50 @@ export default function LoginPage() {
       </div>
 
       {/* Centered Card */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-8">
-        <div className="text-center mb-8">
-          <div className="text-gradient-animate text-3xl md:text-4xl font-bold mb-4">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="text-gradient-animate text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2">
             Welcome To PropertyHub
           </div>
-          <div className="text-white/80 text-lg md:text-xl">
+          <div className="text-white/80 text-base sm:text-lg lg:text-xl px-2">
             LOGIN as a Customer to explore properties
           </div>
         </div>
         
         <form
           onSubmit={showOTPField ? handleVerifyOTP : handleSendOTP}
-          className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl w-full max-w-md overflow-hidden"
+          className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-xl sm:rounded-2xl w-full max-w-sm sm:max-w-md overflow-hidden"
         >
-          <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 px-6 py-4 border-b border-white/20">
-            <h2 className="text-xl font-bold text-white text-center">
+          <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/20">
+            <h2 className="text-lg sm:text-xl font-bold text-white text-center">
               {showOTPField ? 'Verify OTP' : 'Sign In'}
             </h2>
           </div>
           
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {error && (
-              <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 backdrop-blur-sm">
+              <div className="text-red-400 text-xs sm:text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg px-3 sm:px-4 py-2 sm:py-3 backdrop-blur-sm">
                 {error}
               </div>
             )}
             {success && (
-              <div className="text-green-400 text-sm text-center bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3 backdrop-blur-sm">
+              <div className="text-green-400 text-xs sm:text-sm text-center bg-green-500/10 border border-green-500/20 rounded-lg px-3 sm:px-4 py-2 sm:py-3 backdrop-blur-sm">
                 {success}
               </div>
             )}
             
             {!showOTPField ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  <div className="relative flex items-center backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-3">
-                    <span className="text-white/60 mr-3">
-                      <i className="fa fa-envelope"></i>
+                  <div className="relative flex items-center backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3">
+                    <span className="text-white/60 mr-2 sm:mr-3 text-sm sm:text-base">
+                      📧
                     </span>
                     <input
                       type="email"
                       placeholder="Enter Email Address"
-                      className="w-full outline-none bg-transparent text-white placeholder-white/50"
+                      className="w-full outline-none bg-transparent text-white placeholder-white/50 text-sm sm:text-base"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       required
@@ -224,12 +224,12 @@ export default function LoginPage() {
                 </div>
                 <button
                   type="submit"
-                  className="btn-3d w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-3d w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"></div>
+                      <div className="animate-spin w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full mr-2"></div>
                       Sending OTP...
                     </div>
                   ) : (
@@ -238,17 +238,17 @@ export default function LoginPage() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="text-center text-white/80 text-sm">
-                  <div className="mb-3">
-                    Verification sent to: <span className="text-cyan-400 font-semibold">{email}</span>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="text-center text-white/80 text-xs sm:text-sm">
+                  <div className="mb-2 sm:mb-3">
+                    Verification sent to: <span className="text-cyan-400 font-semibold break-all">{email}</span>
                   </div>
-                  <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <div className="font-semibold text-blue-300 mb-2">Check your email for:</div>
-                    <ul className="text-left text-white/70 space-y-1">
+                  <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4">
+                    <div className="font-semibold text-blue-300 mb-1 sm:mb-2 text-xs sm:text-sm">Check your email for:</div>
+                    <ul className="text-left text-white/70 space-y-1 text-xs sm:text-sm">
                       <li>• A 6-digit verification code</li>
                     </ul>
-                    <div className="mt-2 text-cyan-300 text-xs">
+                    <div className="mt-1 sm:mt-2 text-cyan-300 text-xs">
                       Enter the 6-digit code sent to your email to complete sign in.
                     </div>
                   </div>
@@ -256,14 +256,14 @@ export default function LoginPage() {
                 
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-cyan-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  <div className="relative flex items-center backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-4 py-3">
-                    <span className="text-white/60 mr-3">
-                      <i className="fa fa-lock"></i>
+                  <div className="relative flex items-center backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3">
+                    <span className="text-white/60 mr-2 sm:mr-3 text-sm sm:text-base">
+                      🔒
                     </span>
                     <input
                       type="text"
                       placeholder="Enter 6-digit code"
-                      className="w-full outline-none bg-transparent text-white placeholder-white/50 text-center text-lg tracking-widest font-mono"
+                      className="w-full outline-none bg-transparent text-white placeholder-white/50 text-center text-base sm:text-lg tracking-widest font-mono"
                       value={otp}
                       onChange={e => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -281,12 +281,12 @@ export default function LoginPage() {
                 
                 <button
                   type="submit"
-                  className="btn-3d w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-3d w-full bg-gradient-to-r from-purple-600 to-cyan-600 text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   disabled={isLoading || otp.length < 4}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"></div>
+                      <div className="animate-spin w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full mr-2"></div>
                       Verifying...
                     </div>
                   ) : (
@@ -298,7 +298,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={handleResendOTP}
-                    className={`text-sm transition-colors ${
+                    className={`text-xs sm:text-sm transition-colors ${
                       countdown > 0 
                         ? 'text-white/40 cursor-not-allowed' 
                         : 'text-cyan-400 hover:text-cyan-300'
@@ -311,7 +311,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="text-sm text-white/60 hover:text-white/80 transition-colors"
+                    className="text-xs sm:text-sm text-white/60 hover:text-white/80 transition-colors"
                     disabled={isLoading}
                   >
                     Change Email
@@ -320,8 +320,8 @@ export default function LoginPage() {
               </div>
             )}
             
-            <div className="text-center pt-4 border-t border-white/20">
-              <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm">
+            <div className="text-center pt-3 sm:pt-4 border-t border-white/20">
+              <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-xs sm:text-sm">
                 ← Back to Home
               </Link>
             </div>
@@ -330,14 +330,16 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <footer className="relative z-10 backdrop-blur-3d bg-black/30 border-t border-white/20 text-white text-sm py-4 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+      <footer className="relative z-10 backdrop-blur-3d bg-black/30 border-t border-white/20 text-white text-xs sm:text-sm py-3 sm:py-4 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
           <span className="text-white/80">Terms &amp; Condition</span>
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4 text-white/70">
-            <span>Customer Care</span>
-            <span className="flex items-center"><i className="fa fa-phone mr-1"></i> +91-7984071224</span>
-            <span className="flex items-center"><i className="fa fa-phone mr-1"></i> +91-7046327745</span>
-            <span className="flex items-center"><i className="fa fa-phone mr-1"></i> 079-40054959</span>
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-2 sm:gap-4 text-white/70">
+            <span className="font-medium">Customer Care</span>
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-center">
+              <span className="flex items-center justify-center">📞 +91-7984071224</span>
+              <span className="flex items-center justify-center">📞 +91-7046327745</span>
+              <span className="flex items-center justify-center">📞 079-40054959</span>
+            </div>
           </div>
         </div>
       </footer>

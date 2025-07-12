@@ -4,12 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  const [isVisible, setIsVisible] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    setIsVisible(true);
-    
     // Add smooth scrolling behavior
     document.documentElement.style.scrollBehavior = 'smooth';
     
@@ -143,9 +140,7 @@ export default function Home() {
         {/* Hero Content - Broker-Focused */}
         <div className="relative z-20 flex flex-col items-center justify-center min-h-[85vh] sm:min-h-[90vh] md:min-h-screen px-4 sm:px-6 pt-4 pb-6 sm:pt-8 sm:pb-10 md:pt-0 md:pb-0">
           {/* Main Hero Text */}
-          <div className={`text-center text-white max-w-6xl mb-6 sm:mb-12 md:mb-16 transform transition-all duration-1000 ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-          }`}>
+          <div className={`text-center text-white max-w-6xl mb-6 sm:mb-12 md:mb-16 transform transition-all duration-1000 translate-y-0 opacity-100`}>
             <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight">
               <span className="text-gradient-animate">
                 Professional Platform

@@ -1,5 +1,6 @@
 import { supabase, supabaseAdmin } from './supabase';
 import { SignJWT, jwtVerify } from 'jose';
+import { logError, safeAsync } from './errorHandler';
 
 export interface User {
   id: string;
@@ -275,16 +276,52 @@ export class AuthService {
 
   // Sign out
   async signOut(): Promise<void> {
+    // For more reliable logout, prioritize local cleanup over API calls
     try {
-      // Sign out from all sessions (global scope)
-      await supabase.auth.signOut({ scope: 'global' });
-      
-      // Add a small delay to ensure the auth state change event is processed
-      await new Promise(resolve => setTimeout(resolve, 100));
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
+      // First, immediately clear local session to ensure user appears logged out
       this.clearSession();
+      
+      // Try to clear Supabase session locally without making API calls
+      try {
+        // Clear the session from Supabase's local storage
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (localError) {
+        // If local signout fails, that's fine - we've already cleared our session
+        logError('Auth.signOut.local', localError);
+      }
+      
+      // Only attempt server-side logout if we can verify we have a valid session
+      // and the previous local logout didn't work
+      const sessionCheck = await safeAsync(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session;
+      });
+      
+      if (sessionCheck.success && sessionCheck.data) {
+        // We still have a session after local logout, try server logout
+        const serverLogoutResult = await safeAsync(async () => {
+          await supabase.auth.signOut({ scope: 'global' });
+        });
+        
+        if (!serverLogoutResult.success) {
+          // Server logout failed, but that's ok since we've cleared locally
+          logError('Auth.signOut.server', serverLogoutResult.error, { 
+            errorCode: serverLogoutResult.error.code,
+            userId: sessionCheck.data.user?.id,
+            message: 'Server logout failed, but local logout succeeded'
+          });
+        }
+      }
+      
+    } catch (error) {
+      // Any error in the logout process - just log and continue
+      logError('Auth.signOut.general', error);
+    } finally {
+      // Ensure local session is cleared no matter what
+      this.clearSession();
+      
+      // Add a small delay to let any auth state changes propagate
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
 

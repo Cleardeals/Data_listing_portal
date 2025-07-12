@@ -136,48 +136,51 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
   }
 
   return (
-    <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-8 mb-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 mb-2">
+    <div className="card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 mx-3 sm:mx-0">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 mb-2">
           🔍 Advanced Property Filters
         </h2>
-        <p className="text-white/70">Configure your search criteria to find the perfect property</p>
+        <p className="text-white/70 text-sm sm:text-base">Configure your search criteria to find the perfect property</p>
       </div>
 
+      {/* Mobile-first responsive layout */}
       <div className="w-full overflow-hidden">
-        <table className="w-full border-collapse border border-white/20 rounded-lg overflow-hidden">
-          <tbody>
-            {/* Property Type */}
-            <tr className="border-b border-white/20">
-              <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white w-1/4">
-                <div className="flex flex-col">
-                  <span>Property Type:</span>
-                  <span className="text-xs text-orange-200 font-normal mt-1">
-                    🔧 Requires Apply
-                  </span>
-                </div>
-              </th>
-              <td className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  {dynamicOptions.propertyTypes.map((type) => (
-                    <label key={type} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.propertyType.includes(type)}
-                        onChange={() => handleFilterChange('propertyType', type)}
-                        className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
-                      />
-                      <span className="text-sm">
-                        {type === 'Res_resale' ? 'Residential Resale' :
-                         type === 'Res_rental' ? 'Residential Rental' :
-                         type === 'Com_resale' ? 'Commercial Resale' :
-                         type === 'Com_rental' ? 'Commercial Rental' : type}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </td>
-            </tr>
+        {/* Hidden on mobile, shown on larger screens */}
+        <div className="hidden lg:block">
+          <table className="w-full border-collapse border border-white/20 rounded-lg overflow-hidden">
+            <tbody>
+              {/* Property Type */}
+              <tr className="border-b border-white/20">
+                <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white w-1/4">
+                  <div className="flex flex-col">
+                    <span>Property Type:</span>
+                    <span className="text-xs text-orange-200 font-normal mt-1">
+                      🔧 Requires Apply
+                    </span>
+                  </div>
+                </th>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {dynamicOptions.propertyTypes.map((type) => (
+                      <label key={type} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={pendingFilters.propertyType.includes(type)}
+                          onChange={() => handleFilterChange('propertyType', type)}
+                          className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
+                        />
+                        <span className="text-sm">
+                          {type === 'Res_resale' ? 'Residential Resale' :
+                           type === 'Res_rental' ? 'Residential Rental' :
+                           type === 'Com_resale' ? 'Commercial Resale' :
+                           type === 'Com_rental' ? 'Commercial Rental' : type}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </td>
+              </tr>
 
             {/* Sub Property Type */}
             <tr className="border-b border-white/20">
@@ -485,6 +488,249 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             </tr>
           </tbody>
         </table>
+        </div>
+
+        {/* Mobile-friendly card layout - shown on small screens */}
+        <div className="lg:hidden space-y-4">
+          {/* Property Type Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Property Type</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {dynamicOptions.propertyTypes.map((type) => (
+                <label key={type} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={pendingFilters.propertyType.includes(type)}
+                    onChange={() => handleFilterChange('propertyType', type)}
+                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm flex-1">
+                    {type === 'Res_resale' ? 'Residential Resale' :
+                     type === 'Res_rental' ? 'Residential Rental' :
+                     type === 'Com_resale' ? 'Commercial Resale' :
+                     type === 'Com_rental' ? 'Commercial Rental' : type}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Sub Property Type Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Sub Property Type</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 max-h-32 overflow-y-auto">
+              {dynamicOptions.subPropertyTypes.map((subType) => (
+                <label key={subType} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={pendingFilters.subPropertyType.includes(subType)}
+                    onChange={() => handleFilterChange('subPropertyType', subType)}
+                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm flex-1">{subType}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Furnishing Status Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Furnishing Status</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {dynamicOptions.furnishingStatuses.map((status) => (
+                <label key={status} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={pendingFilters.condition.includes(status)}
+                    onChange={() => handleFilterChange('condition', status)}
+                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm flex-1">{status}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Area Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Area</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 max-h-32 overflow-y-auto">
+              {dynamicOptions.areas.map((area) => (
+                <label key={area} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={pendingFilters.area.includes(area)}
+                    onChange={() => handleFilterChange('area', area)}
+                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm flex-1">{area}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Availability Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Availability</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {dynamicOptions.availabilities.map((availability) => (
+                <label key={availability} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={pendingFilters.availability.includes(availability)}
+                    onChange={() => handleFilterChange('availability', availability)}
+                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm flex-1">{availability}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Tenant Preference Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Tenant Preference</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 max-h-32 overflow-y-auto">
+              {dynamicOptions.tenantPreferences.map((preference) => (
+                <label key={preference} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={pendingFilters.availabilityType.includes(preference)}
+                    onChange={() => handleFilterChange('availabilityType', preference)}
+                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm flex-1">{preference}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Budget Range Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Budget</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor="budgetMin-mobile" className="text-sm text-white/80 min-w-[40px]">Min:</label>
+                <input
+                  type="number"
+                  id="budgetMin-mobile"
+                  value={pendingFilters.budgetMin}
+                  onChange={(e) => handleFilterChange('budgetMin', e.target.value)}
+                  placeholder="Min Budget"
+                  className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  style={{ fontSize: '16px' }} // iOS zoom prevention
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="budgetMax-mobile" className="text-sm text-white/80 min-w-[40px]">Max:</label>
+                <input
+                  type="number"
+                  id="budgetMax-mobile"
+                  value={pendingFilters.budgetMax}
+                  onChange={(e) => handleFilterChange('budgetMax', e.target.value)}
+                  placeholder="Max Budget"
+                  className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  style={{ fontSize: '16px' }} // iOS zoom prevention
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sort Options Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Sort By</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor="sortBy-mobile" className="text-sm text-white/80 min-w-[45px]">Field:</label>
+                <select
+                  id="sortBy-mobile"
+                  value={pendingFilters.sortBy}
+                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  style={{ fontSize: '16px' }} // iOS zoom prevention
+                >
+                  <option value="serial_number" className="bg-gray-800">Serial Number</option>
+                  <option value="price" className="bg-gray-800">Price</option>
+                  <option value="date" className="bg-gray-800">Date Added</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="sortOrder-mobile" className="text-sm text-white/80 min-w-[45px]">Order:</label>
+                <select
+                  id="sortOrder-mobile"
+                  value={pendingFilters.sortOrder}
+                  onChange={(e) => handleFilterChange('sortOrder', e.target.value as 'asc' | 'desc')}
+                  className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  style={{ fontSize: '16px' }} // iOS zoom prevention
+                >
+                  <option value="asc" className="bg-gray-800">Lowest to Highest</option>
+                  <option value="desc" className="bg-gray-800">Highest to Lowest</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Search/Premises Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Search in Premises</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <input
+              type="text"
+              value={pendingFilters.premise}
+              onChange={(e) => handleFilterChange('premise', e.target.value)}
+              placeholder="Search in premises..."
+              className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+              style={{ fontSize: '16px' }} // iOS zoom prevention
+            />
+          </div>
+
+          {/* Quick Action Buttons for Mobile */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button
+              onClick={applyFilters}
+              disabled={loading || !hasUnappliedChanges}
+              className={`flex-1 py-3 px-4 text-white rounded-lg font-medium transition-all duration-200 touch-manipulation text-base ${
+                hasUnappliedChanges && !loading
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl hover:scale-105'
+                  : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+              }`}
+            >
+              {loading ? "🔄 Applying..." : "✅ Apply Filters"}
+            </Button>
+            <Button
+              onClick={clearAndApplyFilters}
+              className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 touch-manipulation text-base"
+            >
+              🗑️ Clear All
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

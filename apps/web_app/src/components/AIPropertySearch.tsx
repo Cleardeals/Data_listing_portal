@@ -48,26 +48,38 @@ const AIPropertySearch: React.FC = () => {
 
   if (!showSearch) {
     return (
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <button
           onClick={() => setShowSearch(true)}
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg"
+          className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg sm:rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] touch-manipulation text-sm sm:text-base group"
         >
-          🔍 AI Property Search
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
+            <span className="text-lg sm:text-xl group-hover:scale-110 transition-transform duration-200">🔍</span>
+            <span className="font-semibold">AI Property Search</span>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          </div>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-6 mb-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-          🔍 AI Property Search
-        </h3>
+    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg hover:shadow-xl transition-all duration-300">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-md">
+            <span className="text-white text-sm sm:text-base">🔍</span>
+          </div>
+          <div>
+            <h3 className="text-base sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+              AI Property Search
+            </h3>
+            <p className="text-white/70 text-xs sm:text-sm">Natural language property discovery</p>
+          </div>
+        </div>
         <button
           onClick={() => setShowSearch(false)}
-          className="px-3 py-1.5 text-sm bg-slate-700/80 border border-white/20 text-white rounded-md hover:bg-slate-600/80 transition-colors"
+          className="px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-600/50 hover:bg-slate-500/50 text-white rounded-lg text-xs sm:text-sm transition-colors touch-manipulation self-start sm:self-auto"
         >
           Close
         </button>
@@ -75,8 +87,8 @@ const AIPropertySearch: React.FC = () => {
 
       {/* Search Input */}
       <div className="mb-6">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-white/80 mb-2">
+        <div className="mb-3 sm:mb-4">
+          <label className="block text-xs sm:text-sm font-medium text-white/80 mb-2">
             Describe what you&apos;re looking for
           </label>
           <div className="relative">
@@ -85,18 +97,15 @@ const AIPropertySearch: React.FC = () => {
               onChange={(e) => setSearchPrompt(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="e.g., '3 BHK apartment near metro station with parking under 80 lakhs' or 'Affordable housing for young professionals in tech hubs'"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 resize-none"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 resize-none"
               rows={3}
               disabled={searchState.isSearching}
             />
-            <div className="absolute bottom-2 right-2 text-xs text-white/40">
-              Press Enter to search
-            </div>
           </div>
         </div>
 
         {/* Example Prompts */}
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <div className="text-xs text-white/60 mb-2">Try these examples:</div>
           <div className="flex flex-wrap gap-2">
             {examplePrompts.slice(0, 3).map((example, index) => (
@@ -114,7 +123,7 @@ const AIPropertySearch: React.FC = () => {
 
         {/* Search Options */}
         <div className="mb-4">
-          <div className="text-sm text-white/80 mb-2">Search Options:</div>
+          <div className="text-xs sm:text-sm text-white/80 mb-2">Search Options:</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search Type */}
             <div>
@@ -128,7 +137,7 @@ const AIPropertySearch: React.FC = () => {
                   searchType: e.target.value as 'basic' | 'detailed' | 'investment'
                 }))}
                 disabled={searchState.isSearching}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                className="w-full px-2.5 sm:px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
               >
                 <option value="basic">Basic Search</option>
                 <option value="detailed">Detailed Analysis</option>
@@ -148,7 +157,7 @@ const AIPropertySearch: React.FC = () => {
                   priceRange: e.target.value as 'budget' | 'mid' | 'premium'
                 }))}
                 disabled={searchState.isSearching}
-                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                className="w-full px-2.5 sm:px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
               >
                 <option value="budget">Budget-Friendly</option>
                 <option value="mid">Mid-Range</option>
@@ -163,7 +172,7 @@ const AIPropertySearch: React.FC = () => {
           <button
             onClick={handleSearch}
             disabled={!searchPrompt.trim() || searchState.isSearching}
-            className={`px-8 py-3 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg ${
+            className={`px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg touch-manipulation ${
               !searchPrompt.trim()
                 ? 'bg-gray-500/50 cursor-not-allowed text-white'
                 : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white'
@@ -183,8 +192,8 @@ const AIPropertySearch: React.FC = () => {
 
       {/* Error Display */}
       {searchState.error && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-400/30 rounded-lg">
-          <div className="text-red-200 text-sm">
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-400/30 rounded-lg">
+          <div className="text-red-200 text-xs sm:text-sm">
             <strong>Search Error:</strong> {searchState.error}
           </div>
           <div className="text-xs text-red-300 mt-2">
@@ -219,17 +228,17 @@ const AIPropertySearch: React.FC = () => {
 
           {/* AI Explanation */}
           {searchState.aiExplanation && (
-            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
-              <h5 className="text-sm font-medium text-blue-300 mb-2">🤖 AI Search Analysis:</h5>
-              <p className="text-sm text-blue-200">{searchState.aiExplanation}</p>
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-500/10 border border-blue-400/30 rounded-lg">
+              <h5 className="text-xs sm:text-sm font-medium text-blue-300 mb-2">🤖 AI Search Analysis:</h5>
+              <p className="text-xs sm:text-sm text-blue-200">{searchState.aiExplanation}</p>
             </div>
           )}
 
           {/* Search Criteria */}
           {searchState.searchCriteria && (
-            <div className="mb-6 p-4 bg-white/5 border border-white/20 rounded-lg">
-              <h5 className="text-sm font-medium text-white/80 mb-3">🎯 Applied Search Criteria:</h5>
-              <div className="text-sm text-cyan-400">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/5 border border-white/20 rounded-lg">
+              <h5 className="text-xs sm:text-sm font-medium text-white/80 mb-2 sm:mb-3">🎯 Applied Search Criteria:</h5>
+              <div className="text-xs sm:text-sm text-cyan-400">
                 {searchState.searchCriteria}
               </div>
             </div>
@@ -308,7 +317,7 @@ const AIPropertySearch: React.FC = () => {
                       <div className="border-t border-white/10 pt-2">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm font-bold text-green-400">
+                            <div className="text-xs sm:text-sm font-bold text-green-400">
                               ₹{property.rent_or_sell_price ? parseFloat(property.rent_or_sell_price).toLocaleString() : 'N/A'}
                             </div>
                             <div className="text-xs text-white/60">
@@ -318,7 +327,7 @@ const AIPropertySearch: React.FC = () => {
                           
                           {/* AI Match Indicator */}
                           <div className="ml-2">
-                            <div className="text-xs text-cyan-300 font-medium">
+                            <div className="text-xs sm:text-sm text-cyan-300 font-medium">
                               🤖 AI Suggested
                             </div>
                           </div>
@@ -340,9 +349,9 @@ const AIPropertySearch: React.FC = () => {
 
           {/* No Results Message */}
           {searchState.results.length === 0 && searchState.searchCriteria && (
-            <div className="text-center py-8">
-              <div className="text-white/60 mb-2">🔍 No properties found matching your criteria</div>
-              <div className="text-sm text-white/40">
+            <div className="text-center py-6 sm:py-8">
+              <div className="text-white/60 mb-2 text-sm sm:text-base">🔍 No properties found matching your criteria</div>
+              <div className="text-xs sm:text-sm text-white/40">
                 Try adjusting your search terms or expanding your budget/location preferences.
               </div>
             </div>
