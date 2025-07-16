@@ -300,7 +300,7 @@ export default function DashboardPage() {
                       <span className="text-white text-sm sm:text-base lg:text-lg">🏠</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base sm:text-lg font-semibold text-white">Expert Mentor (Kaka)</h3>
+                      <h3 className="text-base sm:text-lg font-semibold text-white">Expert Real Estate Mentor (Kaka)</h3>
                       <p className="text-white/80 text-xs sm:text-sm">25+ years Pune real estate wisdom</p>
                     </div>
                     <div className="w-2 h-2 bg-green-400 rounded-full pulse-glow"></div>
