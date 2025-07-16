@@ -86,7 +86,7 @@ const RealEstateMentor: React.FC = () => {
   }
 
   return (
-    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 mb-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+    <div className="backdrop-blur-md bg-slate-900/80 border border-white/30 rounded-2xl p-4 sm:p-6 mb-6 hover:bg-slate-900/90 hover:border-white/40 transition-all duration-300">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
