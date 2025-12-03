@@ -710,6 +710,32 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
             />
           </div>
 
+          {/* View Mode Card */}
+          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">View Mode</h3>
+              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="viewMode-mobile" className="text-sm text-white/80">Display Style:</label>
+              <select
+                id="viewMode-mobile"
+                value={pendingFilters.viewMode}
+                onChange={(e) => handleFilterChange('viewMode', e.target.value as ViewMode)}
+                className="w-full px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                style={{ fontSize: '16px' }} // iOS zoom prevention
+              >
+                <option value="compact" className="bg-gray-800">📊 Compact Table</option>
+                <option value="gallery" className="bg-gray-800">🖼️ Gallery View</option>
+                <option value="map" className="bg-gray-800">🗺️ Map View</option>
+                <option value="master" className="bg-gray-800">📜 Master View</option>
+              </select>
+              <p className="text-xs text-white/60 mt-1">
+                Choose how to display property data
+              </p>
+            </div>
+          </div>
+
           {/* Quick Action Buttons for Mobile */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
