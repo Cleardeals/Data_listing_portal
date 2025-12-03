@@ -342,7 +342,7 @@ export default function Home() {
                     <path fillRule="evenodd" d="M9.663 17h4.673a1.847 1.847 0 001.847-1.847v-9.67a1.002 1.002 0 00-.211-.608L11.25 1.566C11.124 1.389 10.927 1.278 10.716 1.278H6.04a1.847 1.847 0 00-1.847 1.847v13.028A1.847 1.847 0 006.04 17.953z" clipRule="evenodd" />
                   </svg>
                 ),
-                title: "Real Estate Mentor AI",
+                title: "AI Real Estate Mentor",
                 description: "Professional AI mentor providing expert guidance on market strategies, negotiation tactics, client management, and business growth. Get personalized advice from your intelligent real estate consultant.",
                 gradient: "from-amber-500 to-orange-500",
                 delay: "animate-delay-100"
