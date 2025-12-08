@@ -58,7 +58,7 @@ The portal implements a comprehensive authentication system with email-based OTP
 
 #### ✅ Email-Based Authentication
 - **Dual Method Support**: OTP codes and magic link authentication
-- **Email Verification**: 6-digit OTP sent via Supabase Auth
+- **Email Verification**: 6-digit OTP sent via Supabase Auth on email
 - **Magic Link Flow**: One-click authentication via email links
 - **Session Management**: Persistent sessions with localStorage
 - **Auto-refresh**: 30-minute automatic token refresh
