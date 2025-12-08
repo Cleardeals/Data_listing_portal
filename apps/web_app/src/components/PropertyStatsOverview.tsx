@@ -15,7 +15,7 @@ interface PropertyStatsOverviewProps {
   loading: boolean;
 }
 
-const PropertyStatsOverview: React.FC<PropertyStatsOverviewProps> = ({ stats, loading }) => {
+function PropertyStatsOverview({ stats, loading }: PropertyStatsOverviewProps) {
   if (loading) {
     return null;
   }

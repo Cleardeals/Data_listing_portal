@@ -8,10 +8,10 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+export function LoadingSpinner({ 
   size = 'md', 
   className 
-}) => {
+}: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
@@ -34,12 +34,12 @@ interface RefreshIndicatorProps {
   className?: string;
 }
 
-export const RefreshIndicator: React.FC<RefreshIndicatorProps> = ({
+export function RefreshIndicator({
   isLoading,
   lastUpdated,
   onRefresh,
   className
-}) => {
+}: RefreshIndicatorProps) {
   const formatLastUpdated = (date: Date) => {
     const now = new Date();
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -106,10 +106,10 @@ interface SkeletonProps {
   variant?: 'text' | 'rectangle' | 'circle';
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({ 
+export function Skeleton({ 
   className, 
   variant = 'rectangle' 
-}) => {
+}: SkeletonProps) {
   const baseClasses = "animate-pulse bg-white/20 rounded";
   
   const variantClasses = {
@@ -136,14 +136,14 @@ interface DataCardProps {
   className?: string;
 }
 
-export const DataCard: React.FC<DataCardProps> = ({
+export function DataCard({
   title,
   children,
   isLoading = false,
   lastUpdated,
   onRefresh,
   className
-}) => {
+}: DataCardProps) {
   return (
     <div className={cn(
       "card-hover-3d backdrop-blur-3d bg-white/10 border border-white/20 rounded-2xl p-6",

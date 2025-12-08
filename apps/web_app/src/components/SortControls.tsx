@@ -8,13 +8,13 @@ interface SortControlsProps {
   className?: string;
 }
 
-const SortControls: React.FC<SortControlsProps> = ({
+function SortControls({
   sortColumn,
   sortDirection,
   onSort,
   onClearSort,
   className = ''
-}) => {
+}: SortControlsProps) {
   const getSortIcon = (column: 'serial_number' | 'rent_or_sell_price') => {
     if (sortColumn === column) {
       return sortDirection === 'asc' ? '↑' : '↓';

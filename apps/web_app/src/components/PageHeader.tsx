@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-const PageHeader: React.FC = () => {
+function PageHeader() {
   return (
     <div className="text-center mb-6 sm:mb-8 lg:mb-12 px-3 sm:px-0">
       <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gradient-animate mb-3 sm:mb-4 lg:mb-6">

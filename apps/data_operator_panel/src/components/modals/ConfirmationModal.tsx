@@ -1,7 +1,7 @@
 "use client"
 
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, JSX } from 'react';
 
 // Reusable confirmation modal component
 interface ConfirmationModalProps {
@@ -14,7 +14,7 @@ interface ConfirmationModalProps {
   variant?: 'danger' | 'warning' | 'info';
 }
 
-export const ConfirmationModal = ({
+export function ConfirmationModal({
   isOpen,
   message,
   onConfirm,
@@ -22,7 +22,7 @@ export const ConfirmationModal = ({
   confirmText = "Yes",
   cancelText = "No",
   variant = "warning",
-}: ConfirmationModalProps) => {
+}: ConfirmationModalProps): JSX.Element | null {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -100,5 +100,5 @@ export const ConfirmationModal = ({
       </div>
     </div>,
     document.body
-  );
-};
+  ) as unknown as JSX.Element;
+}

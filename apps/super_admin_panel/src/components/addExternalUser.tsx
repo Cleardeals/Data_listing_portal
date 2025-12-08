@@ -14,13 +14,13 @@ interface FormErrors {
   [key: string]: string | null;
 }
 
-const AddEditExternalUserModal: React.FC<AddEditExternalUserModalProps> = ({
+function AddEditExternalUserModal({
   open,
   onClose,
   mode = 'add',
   userData = null,
   onSave
-}) => {
+}: AddEditExternalUserModalProps) {
   // Initialize form data based on mode and userData
   const initialData = mode === 'edit' && userData ? {
     name: userData.name || '',

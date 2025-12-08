@@ -12,7 +12,7 @@ interface PaginationProps {
   viewMode?: 'compact' | 'gallery' | 'master' | 'map';
 }
 
-const Pagination: React.FC<PaginationProps> = ({
+function Pagination({
   currentPage,
   totalItems,
   pageSize,
@@ -20,7 +20,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageSizeChange,
   className = '',
   viewMode,
-}) => {
+}: PaginationProps) {
   const pagination = calculatePagination(currentPage, pageSize, totalItems);
   const pageNumbers = generatePageNumbers(currentPage, pagination.totalPages);
 

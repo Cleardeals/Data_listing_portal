@@ -12,12 +12,12 @@ interface GalleryViewProps {
   getVisibleContactsCount: () => number;
 }
 
-const GalleryView: React.FC<GalleryViewProps> = ({ 
+function GalleryView({ 
   properties, 
   loading, 
   toggleContactVisibility, 
   isContactVisible
-}) => {
+}: GalleryViewProps) {
   if (loading || properties.length === 0) {
     return (
       <div className="text-center py-8 text-white/60">

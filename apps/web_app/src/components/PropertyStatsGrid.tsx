@@ -18,7 +18,7 @@ interface StatCardProps {
   isLoading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
+function StatCard({ 
   title, 
   value, 
   icon, 
@@ -26,7 +26,7 @@ const StatCard: React.FC<StatCardProps> = ({
   bgGradient, 
   link,
   isLoading = false 
-}) => {
+}: StatCardProps) {
   const content = (
     <div className={cn(
       "card-hover-3d backdrop-blur-3d border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-6 transition-all duration-300",
@@ -66,9 +66,9 @@ const StatCard: React.FC<StatCardProps> = ({
   }
 
   return content;
-};
+}
 
-const PropertyStatsGrid: React.FC<{ className?: string }> = ({ className }) => {
+function PropertyStatsGrid({ className }: { className?: string }) {
   const { stats, loading } = usePropertyStats();
 
   const kpiCards = [

@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-const BackgroundElements: React.FC = () => {
+function BackgroundElements() {
   return (
     <>
       {/* Background Elements */}

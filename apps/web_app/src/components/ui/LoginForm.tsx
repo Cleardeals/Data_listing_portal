@@ -5,7 +5,7 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ isOpen, onClose }) => {
+function LoginForm({ isOpen, onClose }: LoginFormProps) {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
 

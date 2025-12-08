@@ -10,10 +10,10 @@ interface AISalesScriptGeneratorProps {
   onScriptGenerated?: (scripts: SalesScriptResponse[]) => void;
 }
 
-const AISalesScriptGenerator: React.FC<AISalesScriptGeneratorProps> = ({
+function AISalesScriptGenerator({
   properties,
   onScriptGenerated
-}) => {
+}: AISalesScriptGeneratorProps) {
   const [showGenerator, setShowGenerator] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');

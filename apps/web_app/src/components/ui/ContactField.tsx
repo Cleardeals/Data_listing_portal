@@ -12,7 +12,7 @@ interface ContactFieldProps {
   showIcon?: boolean;
 }
 
-const ContactField: React.FC<ContactFieldProps> = ({
+function ContactField({
   contact,
   propertyId,
   isVisible,
@@ -20,7 +20,7 @@ const ContactField: React.FC<ContactFieldProps> = ({
   className = "",
   iconClassName = "",
   showIcon = true,
-}) => {
+}: ContactFieldProps) {
   if (!contact || contact === 'N/A') {
     return (
       <span className={`text-white/40 ${className}`}>

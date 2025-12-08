@@ -12,7 +12,7 @@ interface TrendItemProps {
   isLoading?: boolean;
 }
 
-const TrendItem: React.FC<TrendItemProps> = ({ label, value, trend, isLoading = false }) => {
+function TrendItem({ label, value, trend, isLoading = false }: TrendItemProps) {
   const getTrendColor = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
       case 'up':
@@ -80,7 +80,7 @@ interface RecentActivityItemProps {
   isLoading?: boolean;
 }
 
-const RecentActivityItem: React.FC<RecentActivityItemProps> = ({ type, message, timeAgo, isLoading = false }) => {
+function RecentActivityItem({ type, message, timeAgo, isLoading = false }: RecentActivityItemProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'new':
@@ -114,13 +114,13 @@ const RecentActivityItem: React.FC<RecentActivityItemProps> = ({ type, message, 
       </div>
     </div>
   );
-};
+}
 
 interface MarketTrendsProps {
   className?: string;
 }
 
-const MarketTrends: React.FC<MarketTrendsProps> = ({ className }) => {
+function MarketTrends({ className }: MarketTrendsProps) {
   const { stats, loading } = usePropertyStats();
 
   const recentActivities = [

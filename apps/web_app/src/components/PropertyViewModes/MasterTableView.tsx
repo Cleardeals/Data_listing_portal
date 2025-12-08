@@ -14,14 +14,15 @@ interface MasterTableViewProps {
   canEditRentSoldOut?: boolean;
 }
 
-const MasterTableView: React.FC<MasterTableViewProps> = ({ 
+function MasterTableView({ 
   properties, 
   loading, 
   toggleContactVisibility, 
   isContactVisible,
   onToggleRentSoldOut,
   canEditRentSoldOut = false
-}) => (
+}: MasterTableViewProps) {
+  return (
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
       <thead className="bg-white/10 border-b border-white/20 sticky top-0">
@@ -145,6 +146,7 @@ const MasterTableView: React.FC<MasterTableViewProps> = ({
       </tbody>
     </table>
   </div>
-);
+  );
+}
 
 export default MasterTableView;

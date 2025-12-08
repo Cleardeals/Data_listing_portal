@@ -106,12 +106,12 @@ const geocodeAddress = async (area: string, address: string): Promise<{ lat: num
 
 
 
-const MapView: React.FC<MapViewProps> = ({
+function MapView({
   properties,
   loading,
   toggleContactVisibility,
   isContactVisible
-}) => {
+}: MapViewProps) {
   console.log('MapView: Starting with', properties.length, 'properties');
 
   const [propertiesWithCoords, setPropertiesWithCoords] = useState<PropertyWithCoords[]>([]);

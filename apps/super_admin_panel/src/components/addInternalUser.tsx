@@ -14,13 +14,13 @@ interface FormErrors {
   [key: string]: string | null;
 }
 
-const AddEditInternalUserModal: React.FC<AddEditInternalUserModalProps> = ({
+function AddEditInternalUserModal({
   open,
   onClose,
   mode = 'add',
   userData = null,
   onSave
-}) => {
+}: AddEditInternalUserModalProps) {
   // Initialize form data based on mode and userData - removed permission field
   const initialData = mode === 'edit' && userData ? {
     name: userData.name || '',

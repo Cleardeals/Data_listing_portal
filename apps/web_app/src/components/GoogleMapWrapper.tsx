@@ -16,7 +16,7 @@ interface GoogleMapProps {
   isContactVisible: (propertyId: string) => boolean;
 }
 
-const GoogleMapComponent: React.FC<GoogleMapProps> = ({
+function GoogleMapComponent({
   center,
   zoom,
   properties,
@@ -24,7 +24,7 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({
   onPropertySelect,
   toggleContactVisibility,
   isContactVisible
-}) => {
+}: GoogleMapProps) {
   console.log('GoogleMapComponent: Rendering with', {
     center,
     zoom,
@@ -476,7 +476,7 @@ interface GoogleMapWrapperProps {
   isContactVisible: (propertyId: string) => boolean;
 }
 
-const GoogleMapWrapper: React.FC<GoogleMapWrapperProps> = (props) => {
+function GoogleMapWrapper(props: GoogleMapWrapperProps) {
   console.log('GoogleMapWrapper: Rendering with props', {
     propertiesCount: props.properties.length,
     hasApiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,

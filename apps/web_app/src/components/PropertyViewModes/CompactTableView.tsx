@@ -12,12 +12,13 @@ interface CompactTableViewProps {
   getVisibleContactsCount: () => number;
 }
 
-const CompactTableView: React.FC<CompactTableViewProps> = ({ 
+function CompactTableView({ 
   properties, 
   loading, 
   toggleContactVisibility, 
   isContactVisible 
-}) => (
+}: CompactTableViewProps) {
+  return (
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
       <thead className="bg-white/10 border-b border-white/20">
@@ -79,6 +80,7 @@ const CompactTableView: React.FC<CompactTableViewProps> = ({
       </tbody>
     </table>
   </div>
-);
+  );
+}
 
 export default CompactTableView;

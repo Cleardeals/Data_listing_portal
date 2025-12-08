@@ -22,7 +22,7 @@ interface PropertyDisplayContainerProps {
   canEditRentSoldOut?: boolean;
 }
 
-const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
+function PropertyDisplayContainer({
   properties,
   loading,
   totalCount,
@@ -32,7 +32,7 @@ const PropertyDisplayContainer: React.FC<PropertyDisplayContainerProps> = ({
   getVisibleContactsCount,
   onToggleRentSoldOut,
   canEditRentSoldOut = false,
-}) => {
+}: PropertyDisplayContainerProps) {
   const getViewModeTitle = () => {
     switch (viewMode) {
       case 'compact': return '📊 Compact Table';

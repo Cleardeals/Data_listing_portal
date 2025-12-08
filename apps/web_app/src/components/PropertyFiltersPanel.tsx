@@ -50,7 +50,7 @@ interface PropertyFiltersPanelProps {
   onFetchProperties: (page: number, size: number, filterState: FilterState, useCache?: boolean) => void;
 }
 
-const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
+function PropertyFiltersPanel({
   showFilters,
   filters,
   setFilters,
@@ -58,7 +58,7 @@ const PropertyFiltersPanel: React.FC<PropertyFiltersPanelProps> = ({
   pageSize,
   loading,
   onFetchProperties,
-}) => {
+}: PropertyFiltersPanelProps) {
   // Internal state for pending filters
   const [pendingFilters, setPendingFilters] = useState<FilterState>(filters);
   const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);

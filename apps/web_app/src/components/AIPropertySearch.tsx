@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PropertyData } from '@/lib/dummyProperties';
 import { useAIPropertySearch } from '@/hooks/useAIPropertySearch';
 
-const AIPropertySearch: React.FC = () => {
+function AIPropertySearch() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchPrompt, setSearchPrompt] = useState('');
   const [searchOptions, setSearchOptions] = useState<{
@@ -360,6 +360,6 @@ const AIPropertySearch: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
 export default AIPropertySearch;

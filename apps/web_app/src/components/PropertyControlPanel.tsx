@@ -12,14 +12,14 @@ interface PropertyControlPanelProps {
   activeDateFilter?: 'today' | 'yesterday' | 'all';
 }
 
-const PropertyControlPanel: React.FC<PropertyControlPanelProps> = ({
+function PropertyControlPanel({
   hasActiveFilters,
   backgroundLoading,
   showFilters,
   onToggleFilters,
   onDateFilter,
   activeDateFilter = 'all',
-}) => {
+}: PropertyControlPanelProps) {
   return (
     <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8 px-3 sm:px-0">
       {/* Top Row - Status Indicators */}

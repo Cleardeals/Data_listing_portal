@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useRealEstateMentor } from '@/hooks/useRealEstateMentor';
 import { ChatMessage } from '@/types/aiTypes';
 
-const RealEstateMentor: React.FC = () => {
+function RealEstateMentor() {
   const [showChat, setShowChat] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -278,10 +278,10 @@ const RealEstateMentor: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
 // Chat Message Bubble Component
-const ChatMessageBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
+function ChatMessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
   const timestamp = new Date(message.timestamp).toLocaleTimeString([], { 
     hour: '2-digit', 
