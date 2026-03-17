@@ -134,7 +134,7 @@ export const csvRowToPropertyData = (csvRow: CSVRow): PropertyFormData => {
   return {
     owner_name: cleanFieldValueWithDefault(csvRow.owner_name),
     owner_contact: cleanFieldValueWithDefault(csvRow.owner_contact),
-    area: cleanFieldValueWithDefault(csvRow.area),
+    area: cleanFieldValue(csvRow.area),
     address: cleanFieldValueWithDefault(csvRow.address),
     property_type: cleanFieldValueWithDefault(csvRow.property_type),
     sub_property_type: cleanFieldValueWithDefault(csvRow.sub_property_type),
