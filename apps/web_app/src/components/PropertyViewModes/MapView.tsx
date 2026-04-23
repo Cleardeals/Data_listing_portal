@@ -367,11 +367,14 @@ function MapView({
 
   if (!apiKey) return body;
 
-  // Wrapper loads the Maps JS SDK once on mount; it's idempotent with the
-  // <Wrapper> inside GoogleMapWrapper, so we don't double-fetch the script.
+  // Wrapper loads the Maps JS SDK once on mount. The `libraries` array MUST
+  // match the one passed by GoogleMapWrapper — js-api-loader is a singleton
+  // and throws "Loader must not be called again with different options" if
+  // any caller requests different libraries.
   return (
     <Wrapper
       apiKey={apiKey}
+      libraries={['geometry', 'places']}
       callback={(status) => {
         if (status === Status.SUCCESS) setSdkReady(true);
       }}
