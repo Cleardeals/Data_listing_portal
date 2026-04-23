@@ -1,8 +1,23 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import { PropertyData } from '@/lib/dummyProperties';
 import GoogleMapWrapper from '@/components/GoogleMapWrapper';
+
+type GoogleNs = {
+  maps?: {
+    Geocoder?: new () => {
+      geocode: (
+        req: { address: string },
+        cb: (
+          results: Array<{ geometry: { location: { lat: () => number; lng: () => number } } }> | null,
+          status: string
+        ) => void
+      ) => void;
+    };
+  };
+};
 
 interface MapViewProps {
   properties: PropertyData[];
@@ -38,36 +53,34 @@ const geocodeAddress = async (area: string, address: string): Promise<{ lat: num
     // Add delay to prevent rate limiting
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Try Google Maps Geocoding API first if available
-    if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+    // Use the Maps JS SDK Geocoder. The REST /maps/api/geocode/json endpoint
+    // rejects HTTP-referrer-restricted keys (REQUEST_DENIED: "API keys with
+    // referer restrictions cannot be used with this API"). The SDK's Geocoder
+    // does accept referrer-locked keys, so we route through it.
+    const googleNs =
+      typeof window !== 'undefined'
+        ? (window as unknown as { google?: GoogleNs }).google
+        : undefined;
+    if (googleNs?.maps?.Geocoder) {
       try {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'OK' && data.results && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            const result = {
-              lat: location.lat,
-              lng: location.lng
-            };
-            // Cache the result
-            geocodeCache.set(cacheKey, result);
-            return result;
-          }
-          
-          // Handle rate limiting
-          if (data.status === 'OVER_QUERY_LIMIT') {
-            console.warn('Google Maps API rate limit exceeded');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            geocodeCache.set(cacheKey, null);
-            return null;
-          }
+        const geocoder = new googleNs.maps.Geocoder();
+        const sdkResult = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+          geocoder.geocode({ address: query }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+              const loc = results[0].geometry.location;
+              resolve({ lat: loc.lat(), lng: loc.lng() });
+              return;
+            }
+            if (status === 'OVER_QUERY_LIMIT') console.warn('Google Maps Geocoder rate limit exceeded');
+            resolve(null);
+          });
+        });
+        if (sdkResult) {
+          geocodeCache.set(cacheKey, sdkResult);
+          return sdkResult;
         }
       } catch (error) {
-        console.warn('Google Maps API error:', error);
+        console.warn('Google Maps Geocoder error:', error);
       }
     }
 
@@ -114,11 +127,18 @@ function MapView({
 }: MapViewProps) {
   console.log('MapView: Starting with', properties.length, 'properties');
 
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [propertiesWithCoords, setPropertiesWithCoords] = useState<PropertyWithCoords[]>([]);
   const [mapCenter, setMapCenter] = useState({ lat: 18.5204, lng: 73.8567 }); // Default to Pune
   const [selectedProperty, setSelectedProperty] = useState<PropertyWithCoords | null>(null);
   const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0 });
   const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
+  // Flips true once the Maps JS SDK script has finished loading so that
+  // geocodeAddress can safely use window.google.maps.Geocoder.
+  const [sdkReady, setSdkReady] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return !!(window as unknown as { google?: GoogleNs }).google?.maps?.Geocoder;
+  });
 
   // Geocode properties with batching and error handling
   useEffect(() => {
@@ -127,6 +147,9 @@ function MapView({
         setPropertiesWithCoords([]);
         return;
       }
+      // Wait for the Maps SDK to be loaded before geocoding — using the REST
+      // endpoint with a referrer-restricted key is blocked by Google.
+      if (apiKey && !sdkReady) return;
 
       console.log('MapView: Starting geocoding for', properties.length, 'properties');
       setGeocodingProgress({ current: 0, total: properties.length });
@@ -213,7 +236,7 @@ function MapView({
     };
 
     geocodeProperties();
-  }, [properties]);
+  }, [properties, sdkReady, apiKey]);
 
   const handlePropertyClick = useCallback((property: PropertyWithCoords) => {
     setSelectedProperty(property);
@@ -241,7 +264,7 @@ function MapView({
     );
   }
 
-  return (
+  const body = (
     <div className="space-y-4">
       {/* API Key Warning */}
       {showApiKeyWarning && (
@@ -340,6 +363,21 @@ function MapView({
         </div>
       )}
     </div>
+  );
+
+  if (!apiKey) return body;
+
+  // Wrapper loads the Maps JS SDK once on mount; it's idempotent with the
+  // <Wrapper> inside GoogleMapWrapper, so we don't double-fetch the script.
+  return (
+    <Wrapper
+      apiKey={apiKey}
+      callback={(status) => {
+        if (status === Status.SUCCESS) setSdkReady(true);
+      }}
+    >
+      {body}
+    </Wrapper>
   );
 };
 
