@@ -352,11 +352,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Area-wise Property Breakdown Chart */}
-          <div className="mb-4">
-            <LazyAreaChart className="w-full" />
-          </div>
-
           {/* Footer with Grid Background */}
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="h-full w-full" style={{

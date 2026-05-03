@@ -92,7 +92,7 @@ function GalleryView({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-bold text-green-400">
-                      {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+                      {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price.replace(/[,\s]/g, '')).toLocaleString()}` : 'N/A'}
                     </div>
                     <div className="text-xs text-white/60">
                       {property.property_type?.includes('rental') ? 'Per Month' : 'Total'}

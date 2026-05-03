@@ -50,7 +50,7 @@ function CompactTableView({
               <td className="px-2 py-2 text-yellow-400 text-xs">{property.owner_name || 'N/A'}</td>
               <td className="px-2 py-2 text-white/80 text-xs">{property.area || 'N/A'}</td>
               <td className="px-2 py-2 text-green-400 font-semibold text-xs">
-                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price.replace(/[,\s]/g, '')).toLocaleString()}` : 'N/A'}
               </td>
               <td className="px-2 py-2 text-white/80 text-xs">{property.size || 'N/A'}</td>
               <td className="px-2 py-2 text-xs">

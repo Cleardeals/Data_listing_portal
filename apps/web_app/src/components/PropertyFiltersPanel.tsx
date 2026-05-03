@@ -263,33 +263,6 @@ function PropertyFiltersPanel({
               </td>
             </tr>
 
-            {/* Availability */}
-            <tr className="border-b border-white/20">
-              <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
-                <div className="flex flex-col">
-                  <span>Availability:</span>
-                  <span className="text-xs text-orange-200 font-normal mt-1">
-                    🔧 Requires Apply
-                  </span>
-                </div>
-              </th>
-              <td className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  {dynamicOptions.availabilities.map((availability) => (
-                    <label key={availability} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.availability.includes(availability)}
-                        onChange={() => handleFilterChange('availability', availability)}
-                        className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
-                      />
-                      <span className="text-sm">{availability}</span>
-                    </label>
-                  ))}
-                </div>
-              </td>
-            </tr>
-
             {/* Tenant Preference */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
@@ -581,27 +554,6 @@ function PropertyFiltersPanel({
             </div>
           </div>
 
-          {/* Availability Card */}
-          <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-semibold text-sm">Availability</h3>
-              <span className="text-xs text-orange-200">🔧 Requires Apply</span>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {dynamicOptions.availabilities.map((availability) => (
-                <label key={availability} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
-                  <input
-                    type="checkbox"
-                    checked={pendingFilters.availability.includes(availability)}
-                    onChange={() => handleFilterChange('availability', availability)}
-                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
-                  />
-                  <span className="text-sm flex-1">{availability}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
           {/* Tenant Preference Card */}
           <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
@@ -639,7 +591,7 @@ function PropertyFiltersPanel({
                   onChange={(e) => handleFilterChange('budgetMin', e.target.value)}
                   placeholder="Min Budget"
                   className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                  style={{ fontSize: '16px' }} // iOS zoom prevention
+                  style={{ fontSize: '16px' }}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -651,7 +603,7 @@ function PropertyFiltersPanel({
                   onChange={(e) => handleFilterChange('budgetMax', e.target.value)}
                   placeholder="Max Budget"
                   className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white placeholder-white/50 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                  style={{ fontSize: '16px' }} // iOS zoom prevention
+                  style={{ fontSize: '16px' }}
                 />
               </div>
             </div>

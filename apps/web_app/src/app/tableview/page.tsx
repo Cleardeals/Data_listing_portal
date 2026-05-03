@@ -70,13 +70,18 @@ export default function TableViewPage() {
     size: number,
     filterState: FilterState,
     useCache: boolean = true,
-    dateFilter: 'today' | 'yesterday' | 'all' = 'all'
+    dateFilter: 'today' | 'yesterday' | 'all' = 'all',
+    silent: boolean = false
   ) => {
     console.log('=== FETCH PROPERTIES START ===');
     console.log('Parameters:', { page, size, filterState, useCache });
-    
+
     try {
-      setLoading(true);
+      if (silent) {
+        setBackgroundLoading(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
       // Validate supabase client
@@ -488,7 +493,7 @@ export default function TableViewPage() {
           const minBudget = filterState.budgetMin ? parseFloat(filterState.budgetMin) : null;
           const maxBudget = filterState.budgetMax ? parseFloat(filterState.budgetMax) : null;
           
-          filteredData = allData.filter(item => {
+          filteredData = filteredData.filter(item => {
             const price = item.rent_or_sell_price;
             
             // Enhanced regex to handle various number formats (including commas, spaces)
@@ -777,7 +782,7 @@ export default function TableViewPage() {
       setLoading(false);
       setBackgroundLoading(false);
     }
-  }, [setBackgroundLoading]);
+  }, [setBackgroundLoading, setLoading]);
 
   // Debug function to test basic connectivity
   const testSupabaseConnection = useCallback(async () => {
@@ -828,7 +833,7 @@ export default function TableViewPage() {
   // Pagination handlers
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-    fetchProperties(page, pageSize, filters, true, activeDateFilter);
+    fetchProperties(page, pageSize, filters, true, activeDateFilter, true);
   }, [pageSize, filters, fetchProperties, activeDateFilter]);
 
   const handlePageSizeChange = useCallback((newPageSize: number) => {

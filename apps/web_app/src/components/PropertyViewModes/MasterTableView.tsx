@@ -67,7 +67,7 @@ function MasterTableView({
                 />
               </td>
               <td className="px-3 py-2 text-green-400 font-semibold text-xs">
-                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price).toLocaleString()}` : 'N/A'}
+                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price.replace(/[,\s]/g, '')).toLocaleString()}` : 'N/A'}
               </td>
               <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.property_id || 'N/A'}</td>
               <td className="px-3 py-2 text-white/80 text-xs">
