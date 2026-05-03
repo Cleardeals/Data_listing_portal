@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import LazyAreaChart from "@/components/LazyAreaChart";
 import LazyStatsGrid from "@/components/LazyStatsGrid";
 import PropertyStatsOverview from "@/components/PropertyStatsOverview";
 import { usePropertyStats } from "@/hooks/usePropertyStats";
