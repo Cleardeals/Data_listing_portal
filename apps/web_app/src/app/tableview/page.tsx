@@ -1018,7 +1018,7 @@ export default function TableViewPage() {
     }
   }, [filters, hasActiveFilters]);
 
-  if (authLoading || loading) {
+  if (authLoading || (loading && properties.length === 0)) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center relative overflow-hidden px-4 sm:px-6">
