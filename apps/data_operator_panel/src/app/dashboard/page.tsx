@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { FaBell, FaUserCircle, FaPlus, FaSignOutAlt } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -18,10 +18,16 @@ import { SupabasePropertyData } from "@/lib/propertyData";
 import { supabase } from "../../lib/supabase";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
+interface DemoRequest { id: string; name: string; mobile: string; created_at: string; }
+
 function DashboardContent() {
   const { user, logout, refreshSession } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([]);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const demoFetched = useRef(false);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<PropertyData | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -1025,6 +1031,19 @@ function DashboardContent() {
     }
   }, [currentPage, pageSize, filters, activeDateFilter, fetchPropertiesWithFilters]);
 
+  const openDemoRequests = useCallback(async () => {
+    setShowDemoModal(true);
+    if (demoFetched.current) return;
+    setDemoLoading(true);
+    const { data } = await supabase
+      .from('demo_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setDemoRequests(data || []);
+    setDemoLoading(false);
+    demoFetched.current = true;
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Enhanced Header Section */}
@@ -1227,11 +1246,17 @@ function DashboardContent() {
                 <span className="text-slate-600 font-medium">Quick Actions:</span>
               </div>
               <BulkUploadButton />
-              <button 
-                onClick={() => setShowAddForm(true)} 
+              <button
+                onClick={() => setShowAddForm(true)}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl flex items-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium transform hover:scale-105"
               >
                 <FaPlus className="w-4 h-4" /> Add New Property
+              </button>
+              <button
+                onClick={openDemoRequests}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl flex items-center gap-2 hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium transform hover:scale-105"
+              >
+                📋 Demo Requests
               </button>
             </div>
 
@@ -1396,6 +1421,62 @@ function DashboardContent() {
           onConfirm={handleDeleteConfirm}
           onClose={() => setShowDeleteModal(false)}
         />
+
+        {/* Demo Requests Modal */}
+        {showDemoModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <h2 className="text-xl font-bold text-gray-800">📋 Demo Requests</h2>
+                <button
+                  onClick={() => setShowDemoModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="overflow-auto flex-1 p-2">
+                {demoLoading ? (
+                  <p className="text-center text-gray-400 py-12">Loading...</p>
+                ) : demoRequests.length === 0 ? (
+                  <div className="text-center py-16 text-gray-400">
+                    <div className="text-4xl mb-3">📭</div>
+                    <p className="font-medium">No demo requests yet.</p>
+                  </div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 text-left">
+                        <th className="px-4 py-3 font-semibold text-gray-600 border-b">#</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600 border-b">Name</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600 border-b">Mobile</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600 border-b">Submitted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {demoRequests.map((req, i) => (
+                        <tr key={req.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
+                          <td className="px-4 py-3 font-semibold text-gray-800">{req.name}</td>
+                          <td className="px-4 py-3 text-blue-600 font-medium">{req.mobile}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {new Date(req.created_at).toLocaleString('en-IN', {
+                              day: 'numeric', month: 'short', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <div className="p-4 border-t border-gray-100 text-right">
+                <span className="text-xs text-gray-400">{demoRequests.length} total request{demoRequests.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       </div>
     </div>
