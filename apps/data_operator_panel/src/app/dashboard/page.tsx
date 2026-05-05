@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import ReactDOM from "react-dom";
 import { FaBell, FaUserCircle, FaPlus, FaSignOutAlt } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -1422,9 +1423,9 @@ function DashboardContent() {
           onClose={() => setShowDeleteModal(false)}
         />
 
-        {/* Demo Requests Modal */}
-        {showDemoModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        {/* Demo Requests Modal — rendered via portal to escape parent transform stacking context */}
+        {showDemoModal && typeof document !== 'undefined' && ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
               <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800">📋 Demo Requests</h2>
@@ -1475,7 +1476,8 @@ function DashboardContent() {
                 <span className="text-xs text-gray-400">{demoRequests.length} total request{demoRequests.length !== 1 ? 's' : ''}</span>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
       </div>
