@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { usePropertyStats } from '@/hooks/usePropertyStats';
@@ -9,6 +10,7 @@ import Pagination from '@/components/ui/pagination';
 import { PropertyData } from '@/lib/dummyProperties';
 import { usePropertyCache } from '@/hooks/usePropertyCache';
 import { useContactVisibility } from '@/hooks/useContactVisibility';
+import { fallbackOptions } from '@/lib/propertyConstants';
 
 // Components
 import BackgroundElements from '@/components/BackgroundElements';
@@ -20,7 +22,7 @@ import PropertyDisplayContainer from '@/components/PropertyDisplayContainer';
 
 export default function TableViewPage() {
   // Auth state
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   
   // State management
   const [properties, setProperties] = useState<PropertyData[]>([]);
@@ -38,6 +40,9 @@ export default function TableViewPage() {
   // Abort controller for request cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // URL search params (for dashboard redirect with ?type=)
+  const searchParams = useSearchParams();
+
   // Hooks
   const { stats, loading: statsLoading } = usePropertyStats();
   const cache = usePropertyCache();
@@ -53,13 +58,14 @@ export default function TableViewPage() {
            filters.condition.length > 0 ||
            filters.area.length > 0 ||
            filters.availability.length > 0 ||
-           filters.availabilityType.length > 0 ||
            !!filters.budgetMin ||
            !!filters.budgetMax ||
            !!filters.premise ||
+           !!filters.dateFrom ||
+           !!filters.dateTo ||
            filters.sortBy !== 'serial_number' ||
-           filters.sortOrder !== 'asc' ||
-           filters.viewMode !== 'compact' ||
+           filters.sortOrder !== 'desc' ||
+           filters.viewMode !== 'master' ||
            activeDateFilter !== 'all';
     return filterCheck;
   }, [filters, activeDateFilter]);
@@ -159,11 +165,6 @@ export default function TableViewPage() {
         query = query.in('furnishing_status', filterState.condition);
       }
 
-      if (filterState.availabilityType.length > 0) {
-        console.log('Applying availability type filter:', filterState.availabilityType);
-        query = query.in('tenant_preference', filterState.availabilityType);
-      }
-
       // Apply date filter
       if (dateFilter !== 'all') {
         console.log('Applying date filter:', dateFilter);
@@ -191,13 +192,21 @@ export default function TableViewPage() {
           );
         }
         
-        console.log('Date filter applied:', { 
-          dateFilter, 
-          todayString, 
-          yesterdayString, 
-          todayDDMMYYYY, 
-          yesterdayDDMMYYYY 
+        console.log('Date filter applied:', {
+          dateFilter,
+          todayString,
+          yesterdayString,
+          todayDDMMYYYY,
+          yesterdayDDMMYYYY
         });
+      }
+
+      // Apply date upload range filter (server-side)
+      if (filterState.dateFrom) {
+        query = query.gte('date_stamp', filterState.dateFrom);
+      }
+      if (filterState.dateTo) {
+        query = query.lte('date_stamp', filterState.dateTo);
       }
 
       // Check if we need comprehensive dataset (for price sorting OR budget filtering OR premise search OR date filtering)
@@ -417,20 +426,6 @@ export default function TableViewPage() {
           });
         }
 
-        // Apply availability type (tenant preference) filter
-        if (filterState.availabilityType.length > 0) {
-          console.log('Applying client-side tenant preference filter:', filterState.availabilityType);
-          const beforeFilter = filteredData.length;
-          filteredData = filteredData.filter(item => 
-            filterState.availabilityType.includes(item.tenant_preference || '')
-          );
-          console.log('Tenant preference filtering results:', {
-            beforeFilter,
-            afterFilter: filteredData.length,
-            excludedCount: beforeFilter - filteredData.length
-          });
-        }
-
         // Apply client-side date filter
         if (dateFilter !== 'all') {
           console.log('Applying client-side date filter:', dateFilter);
@@ -480,6 +475,17 @@ export default function TableViewPage() {
             dateFilter,
             todayString,
             yesterdayString
+          });
+        }
+
+        // Apply date upload range filter (client-side)
+        if (filterState.dateFrom || filterState.dateTo) {
+          filteredData = filteredData.filter(item => {
+            if (!item.date_stamp) return false;
+            const itemDate = item.date_stamp.includes('T') ? item.date_stamp.split('T')[0] : item.date_stamp;
+            if (filterState.dateFrom && itemDate < filterState.dateFrom) return false;
+            if (filterState.dateTo && itemDate > filterState.dateTo) return false;
+            return true;
           });
         }
 
@@ -537,32 +543,41 @@ export default function TableViewPage() {
         // Apply client-side premise (search keyword) filtering if needed
         if (filterState.premise) {
           console.log('Applying client-side premise filter:', filterState.premise);
-          
-          const searchTerm = filterState.premise.toLowerCase();
+
+          const searchTerm = filterState.premise.toLowerCase().trim();
           const beforePremiseFilter = filteredData.length;
-          
-          filteredData = filteredData.filter(item => {
-            // Search in multiple fields: address, sub_property_type, property_type, area, owner_name, property_id
-            const searchFields = [
-              item.address,
-              item.sub_property_type,
-              item.property_type,
-              item.area,
-              item.owner_name,
-              item.property_id
-            ];
-            
-            // Check if any field contains the search term (case-insensitive)
-            return searchFields.some(field => 
-              field && String(field).toLowerCase().includes(searchTerm)
+
+          // If the search term matches a known area, only search the area field
+          const isAreaSearch = fallbackOptions.areas.some(area =>
+            area.toLowerCase().includes(searchTerm) || searchTerm.includes(area.toLowerCase())
+          );
+
+          if (isAreaSearch) {
+            filteredData = filteredData.filter(item =>
+              item.area && item.area.toLowerCase().includes(searchTerm)
             );
-          });
-          
+          } else {
+            filteredData = filteredData.filter(item => {
+              const searchFields = [
+                item.address,
+                item.sub_property_type,
+                item.property_type,
+                item.area,
+                item.owner_name,
+                item.property_id
+              ];
+              return searchFields.some(field =>
+                field && String(field).toLowerCase().includes(searchTerm)
+              );
+            });
+          }
+
           console.log('Premise filtering results:', {
             beforeFilter: beforePremiseFilter,
             afterFilter: filteredData.length,
             excludedCount: beforePremiseFilter - filteredData.length,
-            searchTerm: filterState.premise
+            searchTerm: filterState.premise,
+            isAreaSearch
           });
         }
         
@@ -883,57 +898,17 @@ export default function TableViewPage() {
     return fetchProperties(page, size, filterState, useCache, activeDateFilter);
   }, [fetchProperties, activeDateFilter]);
 
-  // Toggle rent_sold_out status function
-  const handleToggleRentSoldOut = useCallback(async (serialNumber: number, rentSoldOut: boolean) => {
-    try {
-      setError(null); // Clear any previous errors
-      
-      // Update local state immediately for better UX (optimistic update)
-      setProperties(currentData => 
-        currentData.map(item => 
-          item.serial_number === serialNumber 
-            ? { ...item, rent_sold_out: rentSoldOut }
-            : item
-        )
-      );
-      
-      const { error } = await supabase
-        .from('propertydata')
-        .update({ rent_sold_out: rentSoldOut })
-        .eq('serial_number', serialNumber);
-
-      if (error) {
-        console.error('Supabase update error:', error);
-        // Revert the optimistic update on error
-        setProperties(currentData => 
-          currentData.map(item => 
-            item.serial_number === serialNumber 
-              ? { ...item, rent_sold_out: !rentSoldOut }
-              : item
-          )
-        );
-        throw error;
-      }
-
-      console.log(`Successfully updated rent_sold_out status for property ${serialNumber} to ${rentSoldOut}`);
-      
-    } catch (err: unknown) {
-      console.error('Error updating rent_sold_out status:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update property status');
-    }
-  }, []);
-
-  // Check if user can edit rent_sold_out status (super_admin, data_operator, and customers)
-  const canEditRentSoldOut = useMemo(() => {
-    return user?.role === 'super_admin' || user?.role === 'data_operator' || user?.group === 'customers';
-  }, [user?.role, user?.group]);
-
-  // Initial load effect
+  // Initial load effect — apply ?type= param from dashboard redirect
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      fetchProperties(1, pageSize, initialFilters, true, 'all');
+      const typeParam = searchParams.get('type');
+      const startFilters: FilterState = typeParam
+        ? { ...initialFilters, propertyType: [typeParam] }
+        : initialFilters;
+      if (typeParam) setFilters(startFilters);
+      fetchProperties(1, pageSize, startFilters, true, 'all');
     }
-  }, [isAuthenticated, authLoading, fetchProperties, pageSize]);
+  }, [isAuthenticated, authLoading, fetchProperties, pageSize, searchParams]);
 
   // Real-time subscription with cache invalidation and optimistic updates
   useEffect(() => {
@@ -1104,8 +1079,6 @@ export default function TableViewPage() {
               toggleContactVisibility={toggleContactVisibility}
               isContactVisible={isContactVisible}
               getVisibleContactsCount={getVisibleContactsCount}
-              onToggleRentSoldOut={handleToggleRentSoldOut}
-              canEditRentSoldOut={canEditRentSoldOut}
             />
 
             {/* Pagination - Mobile Enhanced */}

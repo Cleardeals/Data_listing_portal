@@ -10,17 +10,13 @@ interface MasterTableViewProps {
   toggleContactVisibility: (propertyId: string) => void;
   isContactVisible: (propertyId: string) => boolean;
   getVisibleContactsCount: () => number;
-  onToggleRentSoldOut?: (serialNumber: number, rentSoldOut: boolean) => void;
-  canEditRentSoldOut?: boolean;
 }
 
-function MasterTableView({ 
-  properties, 
-  loading, 
-  toggleContactVisibility, 
+function MasterTableView({
+  properties,
+  loading,
+  toggleContactVisibility,
   isContactVisible,
-  onToggleRentSoldOut,
-  canEditRentSoldOut = false
 }: MasterTableViewProps) {
   return (
   <div className="overflow-x-auto">
@@ -43,19 +39,18 @@ function MasterTableView({
           <th className="px-3 py-2 text-left text-white font-medium">Floor</th>
           <th className="px-3 py-2 text-left text-white font-medium">Tenant Preference</th>
           <th className="px-3 py-2 text-left text-white font-medium">Additional Details</th>
-          <th className="px-3 py-2 text-left text-white font-medium">Age</th>
           <th className="px-3 py-2 text-left text-white font-medium">Deposit</th>
           <th className="px-3 py-2 text-left text-white font-medium">Date Stamp</th>
+          <th className="px-3 py-2 text-left text-white font-medium">Source</th>
           <th className="px-3 py-2 text-left text-white font-medium">Location</th>
-          <th className="px-3 py-2 text-left text-white font-medium">Rent Sold Out</th>
         </tr>
       </thead>
       <tbody>
         {properties.length > 0 ? (
           properties.map((property, index) => (
             <tr key={property.serial_number || index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-              <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.serial_number || 'N/A'}</td>
-              <td className="px-3 py-2 text-yellow-400 text-xs">{property.owner_name || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.serial_number || '—'}</td>
+              <td className="px-3 py-2 text-yellow-400 text-xs">{property.owner_name || '—'}</td>
               <td className="px-3 py-2">
                 <ContactField
                   contact={property.owner_contact}
@@ -67,37 +62,43 @@ function MasterTableView({
                 />
               </td>
               <td className="px-3 py-2 text-green-400 font-semibold text-xs">
-                {property.rent_or_sell_price ? `₹${parseFloat(property.rent_or_sell_price.replace(/[,\s]/g, '')).toLocaleString()}` : 'N/A'}
+                {property.rent_or_sell_price
+                  ? (() => {
+                      const cleaned = property.rent_or_sell_price.replace(/[,\s]/g, '');
+                      const num = parseFloat(cleaned);
+                      return isNaN(num) ? property.rent_or_sell_price : `₹${num.toLocaleString()}`;
+                    })()
+                  : '—'}
               </td>
-              <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.property_id || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/60 font-mono text-xs">{property.property_id || '—'}</td>
               <td className="px-3 py-2 text-white/80 text-xs">
                 {property.property_type === 'Res_rental' ? 'Residential Rent' :
                  property.property_type === 'Res_resale' ? 'Residential Resale' :
                  property.property_type === 'Com_rental' ? 'Commercial Rent' :
                  property.property_type === 'Com_resale' ? 'Commercial Resale' :
-                 property.property_type || 'N/A'}
+                 property.property_type || '—'}
               </td>
-              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.special_note || 'N/A'}>
-                {property.special_note || 'N/A'}
+              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.special_note || ''}>
+                {property.special_note || '—'}
               </td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.area || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.address || 'N/A'}>
-                {property.address || 'N/A'}
+              <td className="px-3 py-2 text-white/80 text-xs">{property.area || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.address || ''}>
+                {property.address || '—'}
               </td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.sub_property_type || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.size || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.furnishing_status || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.availability || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.floor || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.tenant_preference || 'N/A'}</td>
-              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.additional_details || 'N/A'}>
-                {property.additional_details || 'N/A'}
+              <td className="px-3 py-2 text-white/80 text-xs">{property.sub_property_type || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.size || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.furnishing_status || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.availability || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.floor || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.tenant_preference || '—'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs max-w-32 truncate" title={property.additional_details || ''}>
+                {property.additional_details || '—'}
               </td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.age || 'N/A'}</td>
               <td className="px-3 py-2 text-white/80 text-xs">
-                {property.deposit ? `₹${parseFloat(property.deposit).toLocaleString()}` : 'N/A'}
+                {property.deposit ? `₹${parseFloat(property.deposit).toLocaleString()}` : '—'}
               </td>
-              <td className="px-3 py-2 text-white/80 text-xs">{property.date_stamp || 'N/A'}</td>
+              <td className="px-3 py-2 text-white/80 text-xs">{property.date_stamp || '—'}</td>
+              <td className="px-3 py-2 text-white/60 text-xs">{property.source || '—'}</td>
               <td className="px-3 py-2 text-xs">
                 <button
                   onClick={() => {
@@ -105,40 +106,16 @@ function MasterTableView({
                     window.open(`https://www.google.com/maps/search/${query}`, '_blank');
                   }}
                   className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 rounded transition-colors"
-                  title={`Open ${property.area || ''} ${property.address || ''} in Google Maps`}
                 >
                   <span className="text-sm">🗺️</span>
                   <span className="text-xs">Maps</span>
                 </button>
               </td>
-              <td className="px-3 py-2 text-xs">
-                {canEditRentSoldOut && onToggleRentSoldOut ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(property.rent_sold_out)}
-                      onChange={(e) => onToggleRentSoldOut(property.serial_number, e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-white/10 border-white/30 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <span className={`text-xs font-medium ${
-                      property.rent_sold_out ? 'text-red-400' : 'text-green-400'
-                    }`}>
-                      {property.rent_sold_out ? 'Sold/Rented' : 'Available'}
-                    </span>
-                  </div>
-                ) : (
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    property.rent_sold_out ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-                  }`}>
-                    {property.rent_sold_out ? 'Sold Out' : 'Available'}
-                  </span>
-                )}
-              </td>
             </tr>
           ))
         ) : (
           <tr>
-            <td colSpan={21} className="px-4 py-8 text-center text-white/60">
+            <td colSpan={20} className="px-4 py-8 text-center text-white/60">
               {loading ? 'Loading properties...' : 'No properties found matching your criteria'}
             </td>
           </tr>

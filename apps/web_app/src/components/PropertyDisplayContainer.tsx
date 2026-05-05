@@ -18,8 +18,6 @@ interface PropertyDisplayContainerProps {
   toggleContactVisibility: (propertyId: string) => void;
   isContactVisible: (propertyId: string) => boolean;
   getVisibleContactsCount: () => number;
-  onToggleRentSoldOut?: (serialNumber: number, rentSoldOut: boolean) => void;
-  canEditRentSoldOut?: boolean;
 }
 
 function PropertyDisplayContainer({
@@ -30,8 +28,6 @@ function PropertyDisplayContainer({
   toggleContactVisibility,
   isContactVisible,
   getVisibleContactsCount,
-  onToggleRentSoldOut,
-  canEditRentSoldOut = false,
 }: PropertyDisplayContainerProps) {
   const getViewModeTitle = () => {
     switch (viewMode) {
@@ -58,15 +54,7 @@ function PropertyDisplayContainer({
       case 'map':
         return <MapView properties={properties} loading={loading} {...contactProps} />;
       case 'master':
-        return (
-          <MasterTableView 
-            properties={properties} 
-            loading={loading} 
-            {...contactProps}
-            onToggleRentSoldOut={onToggleRentSoldOut}
-            canEditRentSoldOut={canEditRentSoldOut}
-          />
-        );
+        return <MasterTableView properties={properties} loading={loading} {...contactProps} />;
       default:
         return <CompactTableView properties={properties} loading={loading} {...contactProps} />;
     }
@@ -74,32 +62,31 @@ function PropertyDisplayContainer({
 
   return (
     <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-xl sm:rounded-2xl overflow-hidden mx-3 sm:mx-0">
-      {/* View Mode Header - Mobile Enhanced */}
-      <div className="bg-white/10 border-b border-white/20 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <h3 className="text-base sm:text-lg font-semibold text-white">
+      {/* View Mode Header */}
+      <div className="bg-white/10 border-b border-white/20 px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <h3 className="text-sm sm:text-base font-semibold text-white">
               {getViewModeTitle()}
             </h3>
-            <div className="text-xs sm:text-sm text-white/70">
+            <div className="text-xs text-white/70">
               {properties.length.toLocaleString()} of {totalCount.toLocaleString()} properties
             </div>
             {viewMode !== 'map' && (
-              <div className="text-xs text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">
+              <div className="text-xs text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded">
                 👁️ {getVisibleContactsCount()}/10 contacts visible
               </div>
             )}
           </div>
-          
-          {/* Status indicators - responsive */}
+
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {viewMode === 'master' && properties.length > 100 && (
-              <div className="text-xs text-yellow-400 bg-yellow-500/20 px-2 sm:px-3 py-1 rounded-full">
-                ⚠️ Large dataset - performance may vary
+              <div className="text-xs text-yellow-400 bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                ⚠️ Large dataset
               </div>
             )}
             {viewMode === 'map' && (
-              <div className="text-xs text-blue-400 bg-blue-500/20 px-2 sm:px-3 py-1 rounded-full">
+              <div className="text-xs text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded-full">
                 🗺️ Interactive location view
               </div>
             )}
@@ -107,7 +94,6 @@ function PropertyDisplayContainer({
         </div>
       </div>
 
-      {/* Content based on view mode - Mobile padding */}
       <div className="p-3 sm:p-4 lg:p-6">
         {renderContent()}
       </div>

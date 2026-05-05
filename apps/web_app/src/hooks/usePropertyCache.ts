@@ -7,12 +7,12 @@ interface FilterState {
   condition: string[];
   area: string[];
   availability: string[];
-  availabilityType: string[];
   budgetMin: string;
   budgetMax: string;
-  sqftFrom: string;
-  sqftTo: string;
   premise: string;
+  dateFrom?: string;
+  dateTo?: string;
+  [key: string]: unknown;
 }
 
 // Cache entry structure
@@ -56,12 +56,11 @@ export function usePropertyCache() {
       condition: filters.condition.sort(),
       area: filters.area.sort(),
       availability: filters.availability.sort(),
-      availabilityType: filters.availabilityType.sort(),
       budgetMin: filters.budgetMin,
       budgetMax: filters.budgetMax,
-      sqftFrom: filters.sqftFrom,
-      sqftTo: filters.sqftTo,
-      premise: filters.premise
+      premise: filters.premise,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo
     });
     return `${filterKey}_p${page}_s${pageSize}`;
   }, []);

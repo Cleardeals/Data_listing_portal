@@ -2,6 +2,7 @@ import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PropertyData } from '@/lib/dummyProperties';
+import { fallbackOptions } from '@/lib/propertyConstants';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -286,8 +287,24 @@ async function findMatchingProperties(
   options: SearchOptions
 ): Promise<MatchResult> {
   try {
+    // Extract area keywords from the prompt and pre-filter if any match known areas
+    const promptLower = userPrompt.toLowerCase();
+    const matchedAreas = fallbackOptions.areas.filter(area =>
+      promptLower.includes(area.toLowerCase())
+    );
+
+    let workingProperties = properties;
+    if (matchedAreas.length > 0) {
+      const filtered = properties.filter(p =>
+        p.area && matchedAreas.some(area => p.area!.toLowerCase().includes(area.toLowerCase()))
+      );
+      if (filtered.length > 0) {
+        workingProperties = filtered;
+      }
+    }
+
     // Create a focused dataset for AI analysis
-    const propertiesData = properties.slice(0, 80).map(property => ({
+    const propertiesData = workingProperties.slice(0, 80).map(property => ({
       id: property.serial_number,
       property_id: property.property_id,
       type: property.property_type,
@@ -307,10 +324,11 @@ async function findMatchingProperties(
     }));
 
     const matchingPrompt = createPropertyMatchingPrompt(
-      userPrompt, 
-      searchAnalysis, 
-      propertiesData, 
-      options
+      userPrompt,
+      searchAnalysis,
+      propertiesData,
+      options,
+      matchedAreas
     );
 
     const result = await generateText({
@@ -348,10 +366,10 @@ async function findMatchingProperties(
     }
 
     const rankedIds = aiResponse.ranked_property_ids || [];
-    
-    // Filter and order properties based on AI ranking
+
+    // Filter and order properties based on AI ranking (search in pre-filtered set first, then full set)
     const matchedProperties = rankedIds
-      .map((id: number) => properties.find(p => p.serial_number === id))
+      .map((id: number) => workingProperties.find(p => p.serial_number === id) || properties.find(p => p.serial_number === id))
       .filter(Boolean)
       .slice(0, options.maxResults);
 
@@ -385,7 +403,8 @@ function createPropertyMatchingPrompt(
   userPrompt: string,
   searchAnalysis: SearchAnalysis,
   propertiesData: Record<string, unknown>[],
-  options: SearchOptions
+  options: SearchOptions,
+  matchedAreas: string[] = []
 ): string {
   const searchTypeContext = {
     basic: 'Focus on core requirements like location, type, and price',
@@ -399,13 +418,17 @@ function createPropertyMatchingPrompt(
     premium: 'Emphasize luxury features and prime locations'
   };
 
+  const areaContext = matchedAreas.length > 0
+    ? `\nUSER IS SPECIFICALLY LOOKING IN: ${matchedAreas.join(', ')} — prioritize these areas and score non-matching areas lower.`
+    : '';
+
   return `
 You are a property matching expert for Pune real estate. Match properties based on user requirements.
 
 USER REQUIREMENTS: "${userPrompt}"
 SEARCH ANALYSIS: "${searchAnalysis.criteria}"
 SEARCH TYPE: ${options.searchType} (${searchTypeContext[options.searchType as keyof typeof searchTypeContext]})
-PRICE PREFERENCE: ${options.priceRange} (${priceRangeContext[options.priceRange as keyof typeof priceRangeContext]})
+PRICE PREFERENCE: ${options.priceRange} (${priceRangeContext[options.priceRange as keyof typeof priceRangeContext]})${areaContext}
 
 AVAILABLE PROPERTIES (top 80 for analysis):
 ${JSON.stringify(propertiesData.slice(0, 60), null, 2)}

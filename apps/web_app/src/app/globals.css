@@ -226,8 +226,8 @@ html {
 }
 
 .card-hover-3d:hover {
-  transform: translateY(-8px) rotateX(2deg) rotateY(2deg);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 40px rgba(59, 130, 246, 0.2);
+  transform: translateY(-4px) rotateX(1deg) rotateY(1deg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25), 0 0 24px rgba(59, 130, 246, 0.15);
 }
 
 /* Loading states */
@@ -720,12 +720,12 @@ a:focus-visible {
 
 /* Better typography scaling */
 .responsive-text {
-  font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+  font-size: clamp(0.8rem, 1.8vw, 1rem);
   line-height: 1.6;
 }
 
 .responsive-heading {
-  font-size: clamp(1.5rem, 5vw, 3rem);
+  font-size: clamp(1.125rem, 3vw, 2rem);
   line-height: 1.2;
 }
 

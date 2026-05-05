@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { useState, useEffect, useCallback } from 'react';
+import { fallbackOptions } from './propertyConstants';
+export { fallbackOptions };
 
 // Types for dynamic options
 export interface DynamicOptions {
@@ -144,53 +146,52 @@ export class DynamicOptionsService {
         this.getDistinctValues('age')
       ]);
 
-      // Helper function to ensure unique values with N/A first if not already present
-      const ensureUniqueWithNA = (values: string[]): string[] => {
-        const uniqueValues = [...new Set(values.filter(v => v && v.trim() !== ''))];
-        return uniqueValues.includes('N/A') ? uniqueValues : ['N/A', ...uniqueValues];
+      // Remove N/A, Other, and empty values from filter options
+      const cleanOptions = (values: string[]): string[] => {
+        return [...new Set(
+          values.filter(v => {
+            if (!v || v.trim() === '') return false;
+            const lower = v.trim().toLowerCase();
+            return lower !== 'n/a' && lower !== 'other';
+          })
+        )].sort();
+      };
+
+      // Standard BHK whitelist for sub_property_type filter
+      const BHK_WHITELIST = ['1 RK', '1 BHK', '1.5 BHK', '2 BHK', '2.5 BHK', '3 BHK', '3.5 BHK', '4 BHK', '5 BHK', '6 BHK'];
+      const cleanSubPropertyTypes = (values: string[]): string[] => {
+        const cleaned = cleanOptions(values);
+        // Keep only values that match a standard BHK pattern
+        return BHK_WHITELIST.filter(standard =>
+          cleaned.some(v => v.toLowerCase().replace(/\s/g, '') === standard.toLowerCase().replace(/\s/g, ''))
+            ? true
+            : false
+        );
       };
 
       const options: DynamicOptions = {
-        propertyTypes: ensureUniqueWithNA(propertyTypes),
-        areas: ensureUniqueWithNA(areas),
-        subPropertyTypes: ensureUniqueWithNA(subPropertyTypes),
-        furnishingStatuses: ensureUniqueWithNA(furnishingStatuses),
-        tenantPreferences: ensureUniqueWithNA(tenantPreferences),
-        availabilities: ensureUniqueWithNA(availabilities),
-        floors: ensureUniqueWithNA(floors),
-        ages: ensureUniqueWithNA(ages)
+        propertyTypes: cleanOptions(propertyTypes),
+        areas: cleanOptions(areas),
+        subPropertyTypes: cleanSubPropertyTypes(subPropertyTypes),
+        furnishingStatuses: cleanOptions(furnishingStatuses),
+        tenantPreferences: cleanOptions(tenantPreferences),
+        availabilities: cleanOptions(availabilities),
+        floors: cleanOptions(floors),
+        ages: cleanOptions(ages)
       };
 
       // Cache the results
       setCache(options);
       return options;
     } catch {
-      return {
-        propertyTypes: ['N/A'],
-        areas: ['N/A'],
-        subPropertyTypes: ['N/A'],
-        furnishingStatuses: ['N/A'],
-        tenantPreferences: ['N/A'],
-        availabilities: ['N/A'],
-        floors: ['N/A'],
-        ages: ['N/A']
-      };
+      return fallbackOptions;
     }
   }
 }
 
 // Custom hook for using dynamic options with real-time updates
 export const useDynamicOptions = (enableRealtime: boolean = false) => {
-  const [options, setOptions] = useState<DynamicOptions>({
-    propertyTypes: ['N/A'],
-    areas: ['N/A'],
-    subPropertyTypes: ['N/A'],
-    furnishingStatuses: ['N/A'],
-    tenantPreferences: ['N/A'],
-    availabilities: ['N/A'],
-    floors: ['N/A'],
-    ages: ['N/A']
-  });
+  const [options, setOptions] = useState<DynamicOptions>(fallbackOptions);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -248,35 +249,3 @@ export const useDynamicOptions = (enableRealtime: boolean = false) => {
   };
 };
 
-// Fallback options (used as defaults or when database is unavailable)
-export const fallbackOptions: DynamicOptions = {
-  propertyTypes: ['N/A', 'Res_resale', 'Res_rental', 'Com_resale', 'Com_rental'],
-  areas: [
-    'N/A', 'Aundh', 'Balewadi', 'Baner', 'Bavdhan', 'Bhosari', 'Bibwewadi', 'Budhwar Peth',
-    'Chakan', 'Dhanori', 'Dhanraj Road', 'Deccan Gymkhana', 'Dhayari', 'Hadapsar',
-    'Hinjewadi', 'Kalyani Nagar', 'Karve Nagar', 'Katraj', 'Kharadi', 'Kondhwa',
-    'Koregaon Park', 'Kothrud', 'Lohegaon', 'Lullanagar', 'Magarpatta', 'Marunji',
-    'Model Colony', 'Mohammedwadi', 'Moshi', 'Mundhwa', 'NIBM Road', 'Narayan Peth',
-    'Pashan', 'Pimple Saudagar', 'Pimple Gurav', 'Pimple Nilakh', 'Pimpri Chinchwad',
-    'Ravet', 'Sadashiv Peth', 'Sahakar Nagar', 'Shaniwar Peth', 'Shivajinagar',
-    'Sinhagad Road', 'Swargate', 'Talegaon', 'Tathawade', 'Undri', 'Uruli Kanchan',
-    'Viman Nagar', 'Vishrantwadi', 'Wagholi', 'Wakad', 'Wanwadi', 'Warje',
-    'Wadgaon Sheri', 'Yerawada', 'Chinchwad', 'Sus', 'Kate Wasti', 'Nigdi',
-    'Susgav', 'Suisgaon', 'Rahatani', 'Akurdi', 'Punawale'
-  ],
-  subPropertyTypes: [
-    'N/A', '1 BHK', '1.5 BHK', '1 Rk', '1RK', '1 RK', '1BHK',
-    '2 BHK', '2.5 BHK', '2.5BHK', '2 BHk', '2BHK',
-    '3 BHK', '3.5 BHK', '3BHK',
-    '4 BHK', '4.5 BHK',
-    '5 BHK', '6 BHK', '8 BHK', '10 BHK'
-  ],
-  furnishingStatuses: ['N/A', 'Furnished', 'Unfurnished', 'Semi-Furnished'],
-  tenantPreferences: [
-    'N/A', 'All', 'Bachelors (Men Only)', 'Bachelors (Men/Women)', 
-    'Bachelors (Women Only)', 'Both', 'Family Only'
-  ],
-  availabilities: ['N/A', 'Available', 'Occupied', 'Under Maintenance'],
-  floors: ['N/A', 'Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor+'],
-  ages: ['N/A', '0-1 years', '1-3 years', '3-5 years', '5-10 years', '10+ years']
-};

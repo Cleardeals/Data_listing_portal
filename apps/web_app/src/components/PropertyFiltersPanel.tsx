@@ -13,13 +13,14 @@ export interface FilterState {
   condition: string[];
   area: string[];
   availability: string[];
-  availabilityType: string[];
   budgetMin: string;
   budgetMax: string;
   premise: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   viewMode: ViewMode;
+  dateFrom: string;
+  dateTo: string;
 }
 
 // Initial filter state moved from page.tsx
@@ -29,13 +30,14 @@ export const initialFilters: FilterState = {
   condition: [],
   area: [],
   availability: [],
-  availabilityType: [],
   budgetMin: "",
   budgetMax: "",
   premise: "",
   sortBy: "serial_number",
-  sortOrder: "asc",
-  viewMode: "compact",
+  sortOrder: "desc",
+  viewMode: "master",
+  dateFrom: "",
+  dateTo: "",
 };
 
 interface PropertyFiltersPanelProps {
@@ -263,29 +265,38 @@ function PropertyFiltersPanel({
               </td>
             </tr>
 
-            {/* Tenant Preference */}
+            {/* Date Upload */}
             <tr className="border-b border-white/20">
               <th className="border-r border-white/20 px-4 py-3 text-left font-semibold bg-[#167f92] text-white">
                 <div className="flex flex-col">
-                  <span>Tenant Preference:</span>
+                  <span>Date Upload:</span>
                   <span className="text-xs text-orange-200 font-normal mt-1">
                     🔧 Requires Apply
                   </span>
                 </div>
               </th>
               <td className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-3 max-h-32 overflow-y-auto">
-                  {dynamicOptions.tenantPreferences.map((preference) => (
-                    <label key={preference} className="flex items-center space-x-2 text-white/80 cursor-pointer hover:text-white transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.availabilityType.includes(preference)}
-                        onChange={() => handleFilterChange('availabilityType', preference)}
-                        className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500"
-                      />
-                      <span className="text-sm">{preference}</span>
-                    </label>
-                  ))}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="dateFrom" className="text-sm text-white/80">From:</label>
+                    <input
+                      type="date"
+                      id="dateFrom"
+                      value={pendingFilters.dateFrom}
+                      onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                      className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="dateTo" className="text-sm text-white/80">To:</label>
+                    <input
+                      type="date"
+                      id="dateTo"
+                      value={pendingFilters.dateTo}
+                      onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                      className="px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
               </td>
             </tr>
@@ -350,7 +361,6 @@ function PropertyFiltersPanel({
                     >
                       <option value="serial_number" className="bg-gray-800">Serial Number</option>
                       <option value="price" className="bg-gray-800">Price</option>
-                      <option value="date" className="bg-gray-800">Date Added</option>
                     </select>
                   </div>
                   <div className="flex items-center gap-2">
@@ -554,24 +564,35 @@ function PropertyFiltersPanel({
             </div>
           </div>
 
-          {/* Tenant Preference Card */}
+          {/* Date Upload Card */}
           <div className="bg-slate-800/50 border border-white/20 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white font-semibold text-sm">Tenant Preference</h3>
+              <h3 className="text-white font-semibold text-sm">Date Upload</h3>
               <span className="text-xs text-orange-200">🔧 Requires Apply</span>
             </div>
-            <div className="grid grid-cols-1 gap-3 max-h-32 overflow-y-auto">
-              {dynamicOptions.tenantPreferences.map((preference) => (
-                <label key={preference} className="flex items-center space-x-3 text-white/80 cursor-pointer hover:text-white transition-colors p-2 hover:bg-white/5 rounded touch-manipulation">
-                  <input
-                    type="checkbox"
-                    checked={pendingFilters.availabilityType.includes(preference)}
-                    onChange={() => handleFilterChange('availabilityType', preference)}
-                    className="rounded border-white/20 bg-slate-800/50 text-blue-500 focus:ring-blue-500 w-4 h-4"
-                  />
-                  <span className="text-sm flex-1">{preference}</span>
-                </label>
-              ))}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor="dateFrom-mobile" className="text-sm text-white/80 min-w-[40px]">From:</label>
+                <input
+                  type="date"
+                  id="dateFrom-mobile"
+                  value={pendingFilters.dateFrom}
+                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="dateTo-mobile" className="text-sm text-white/80 min-w-[40px]">To:</label>
+                <input
+                  type="date"
+                  id="dateTo-mobile"
+                  value={pendingFilters.dateTo}
+                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-slate-800/50 border border-white/20 text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                  style={{ fontSize: '16px' }}
+                />
+              </div>
             </div>
           </div>
 
@@ -627,7 +648,6 @@ function PropertyFiltersPanel({
                 >
                   <option value="serial_number" className="bg-gray-800">Serial Number</option>
                   <option value="price" className="bg-gray-800">Price</option>
-                  <option value="date" className="bg-gray-800">Date Added</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">

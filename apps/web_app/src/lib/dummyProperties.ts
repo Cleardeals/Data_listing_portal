@@ -20,7 +20,9 @@ export interface PropertyData {
   deposit: string | null;
   date_stamp: string | null;
   rent_sold_out: boolean | null;
-  visibility?: boolean | null; // Optional field that web_app doesn't control
+  visibility?: boolean | null;
+  remarks?: string | null;
+  source?: string | null;
 }
 
 // Utility functions for Supabase operations

@@ -10,19 +10,44 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useRealTimeUserStatus } from "@/hooks/useRealTimeUserStatus";
+import { supabase } from "@/lib/supabase";
+
+interface DemoRequest {
+  id: string;
+  name: string;
+  mobile: string;
+  created_at: string;
+}
 
 function ProfilePageContent() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const { currentUser } = useRealTimeUserStatus();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([]);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   // Use real-time user data when available, fallback to auth user
   const displayUser = currentUser || user;
+
+  const canViewDemoRequests = displayUser?.role === 'super_admin' || displayUser?.role === 'data_operator';
+
+  useEffect(() => {
+    if (!canViewDemoRequests) return;
+    setDemoLoading(true);
+    supabase
+      .from('demo_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setDemoRequests(data || []);
+        setDemoLoading(false);
+      });
+  }, [canViewDemoRequests]);
 
 
 
@@ -148,6 +173,49 @@ function ProfilePageContent() {
               </button>
             </div>
           </div>
+
+          {/* Demo Requests — visible to super_admin and data_operator only */}
+          {canViewDemoRequests && (
+            <div className="backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg sm:text-xl font-bold text-white">📋 Demo Requests</h3>
+                <span className="text-xs text-white/50">{demoRequests.length} total</span>
+              </div>
+              {demoLoading ? (
+                <p className="text-white/50 text-sm py-4 text-center">Loading...</p>
+              ) : demoRequests.length === 0 ? (
+                <p className="text-white/50 text-sm py-4 text-center">No demo requests yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/20 text-left">
+                        <th className="pb-2 pr-4 text-white/60 font-medium">#</th>
+                        <th className="pb-2 pr-4 text-white/60 font-medium">Name</th>
+                        <th className="pb-2 pr-4 text-white/60 font-medium">Mobile</th>
+                        <th className="pb-2 text-white/60 font-medium">Submitted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {demoRequests.map((req, i) => (
+                        <tr key={req.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="py-2 pr-4 text-white/40 text-xs">{i + 1}</td>
+                          <td className="py-2 pr-4 text-yellow-300 font-medium">{req.name}</td>
+                          <td className="py-2 pr-4 text-white/80">{req.mobile}</td>
+                          <td className="py-2 text-white/50 text-xs">
+                            {new Date(req.created_at).toLocaleDateString('en-IN', {
+                              day: 'numeric', month: 'short', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Enhanced Information Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
