@@ -144,7 +144,7 @@ export default function TableViewPage() {
         if (filterState.area.length === 1) {
           query = query.ilike('area', `%${filterState.area[0]}%`);
         } else {
-          const areaConditions = filterState.area.map(area => `area.ilike.%${area}%`).join(',');
+          const areaConditions = filterState.area.map(area => `area.ilike."%${area}%"`).join(',');
           query = query.or(areaConditions);
         }
       }
